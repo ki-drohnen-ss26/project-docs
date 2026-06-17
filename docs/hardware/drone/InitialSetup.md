@@ -315,6 +315,29 @@ Given the onboard computer is already installed, it is possible to store the log
 
 On our Raspberry Pi it is advised to install MAVProxy, ArduPilots official command-line ground station tool and running it as background service.  The flight controllers .bin or .tlog files will be stored directly on the Pis micro SD card.
 
+#### Setup bi-directional DShot
+For our logging to work as intended, we still need to make some changes to our DShot settings, namely we want to set Bi-directional DShot, where the ESC will send back the exact revolutions per minute(RPM) of the motor, instead of just getting instructions from our flight controller. 
+
+For bi-directional DShot, we first have to set the `RPM1_TYPE` to 5, signifying using ESC telemetry. When we set the option and write the parameter, more parameters will show up.
+From these new parameters we want to set the `RPM1_ESC_MASK' bitmask for all of our motors, which sets each channel that supports ESC rpm telemetry. As our motors occupy channels 1 through 4, we set the value to 15. If they are set to different channels, or you have a drone with more motors, the parameter has to be set appropriately.
+
+Next we set the `SERVO_BLH_BDMASK` to the same value as `RPM1_ESC_MASK', in our case 15. This sets all channels that support bi-directional DShot telemetry.
+
+To allow the calculation of true RPM form the ESC's eRPM we need to kno the number of magnets in our motors. Generally there are 12 magnets in motors for 3 inch propellers, and 14 is typical for motors for 4 to 10 inch rotors. Our motor type has 12 magnets, so we set the parameter `SERVO_BLH_POLES` to 12.
+
+Lastly we also set the `SERVO_DSHOT_ESC` parameters, that specifies the ESC type for all outputs. In our case we have a AM32 flight controller, so we set the value 1, that is used for Kiss/AM32/BL32 controller, whereas 2 is used for Bluejay.
+Some newer ESC types also support Extended DShot Telemetry(EDT), where more data than just the RPM data is returned through bi-directional DShot, which we can enable through the value 3 for Kiss/AM32/BL32 controllers and through using 4 for Bluejay controllers.
+
+### Setup initial Harmonic notches
+To setup our initial harmoic notch settings, we set `INS_HNTCH_ENABLE` to 1, to enable harmonic notch filters. Writing the parameters will enable more parameters to be used. 
+
+First we look at the parameter `INS_HNTCH_HMNCS`, that allows us set the harmonic frequencies to be filtered. This generally depends on the number of blades on the propeller and will be changed after evaluating the log data. 
+For a start we can either ues the base frequency and first harmonic, which would be a value of 3, or we can add some higher harmonics, namely the 4th and/or the fifth. For our five bladed propeller, the third harmonic normally does not add a lot of noise. Do note though, that too many harmonics might cause excessive CPU loading and can lead to performance issues. Three harmonics are usually considered safe.
+
+Next we set the parameter INS_HNTCH_MODE to 3, that sets the dynamic frequency tracking mode to ESC telemetry.
+
+Then we set the parameter `INS_HNTCH_OPTIONS` to 6 to enable Multi-source, that attaches a harmonic notch to each detected noise frequency, in case of our ESC telemetry tracking mode it will attach notches to each of four motor RPM values and to update at the loop rate, that changes the notch center frequency at the scheduler loop rate.
+
 ### Set up indoor flying
 Ardupilot is very reliant on the GPS, which is problematic if we are trying to fly our drone in an indoor setting, where we generally will not have a GPS connection.
 
