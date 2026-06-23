@@ -271,4 +271,4 @@ if not ack_received:
         current_modes = [k for k, v in connection.mode_mapping().items() if v == msg.custom_mode]
         print(f"Current live vehicle mode is: {current_modes}")
 ```
-We can use the Mission Planner to check the changes in the mode.
+We can use the Mission Planner to check the changes in the mode. For a list of commands look at https://ardupilot.org/dev/docs/mavlink-commands.html.
