@@ -39,7 +39,7 @@ We need a program that listens for MAVLink traffic on one port and forwards it t
 
 The packages that we need to install mavlink router are
 ```
-sudo apt install git meson ninja-build pkg-config gcc g++ systemd libsystemd-dev cmake
+sudo apt install git meson ninja-build pkg-config gcc g++ systemd systemd-dev cmake
 ```
 If we have all packages installed we can download mavlink-router,
 ```
