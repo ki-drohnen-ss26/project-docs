@@ -130,11 +130,11 @@ First we need to install some packages:
 ```
 sudo apt-get install libxml2-dev libxslt-dev
 sudo apt install python3-pip
-sudo python3 -m pip install --upgrade lxml
+sudo python3 -m pip install --upgrade lxml --break-system-packages
 ```
 and we can install Pymavlink using:
 ```
-sudo python3 -m pip install --upgrade pymavlink
+sudo python3 -m pip install --upgrade pymavlink --break-system-packages
 ```
 Now we will have two example codes where we once receive data, namely the altitude, global position and airspeed, from the drone, that we will print in our console.
 ```
