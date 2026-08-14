@@ -53,7 +53,7 @@ meson setup build .
 and compile and install the files, the -j option denotes the number of parallel jobs. We use only one, because multiple jobs on 4 cores of our pi zero can fill up the ram fast and coorupt the image.
 ```
 sudo ninja -C build -j 1
-sudo ninja -C build instal
+sudo ninja -C build install
 ```
 After we installed everything, we will create the config file we will need.
 ```
