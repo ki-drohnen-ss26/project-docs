@@ -129,6 +129,7 @@ We will see seemingly random characters scrolling on the screen, which tells us 
 First we need to install some packages:
 ```
 sudo apt-get install libxml2-dev libxslt-dev
+sudo apt install python3-pip
 sudo python3 -m pip install --upgrade lxml
 ```
 and we can install Pymavlink using:
