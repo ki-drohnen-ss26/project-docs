@@ -11,6 +11,7 @@ This section documents our project progress on a weekly basis. Each entry captur
 |------|--------|-------|--------|
 | [Week 1](week-01.md) | _tbd_ | Kickoff, equipment handover, team formation | ✅ |
 | [Week 2](week-02.md) | _tbd_ | Familiarisation, ArduPilot flash, repo setup | ✅ |
+| [Week 3](week-03.md) | _tbd_ |  | X |
 <!-- Add new rows as the project progresses -->
 
 ## How to write a weekly entry
