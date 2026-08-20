@@ -5,6 +5,54 @@ based on the ardupilot documentation: https://ardupilot.org/dev/docs/simulation-
 
 We will install a Software in the loop(SITL) programm that runs the ArdiPilot firmware and sends the servo and motor outputs to the simulation, and the simulator Gazebo that receives the inputs from the SITL, uses them to move a simulated drone on a screen, and sends back the vehicle position, velocities and other data back to the firmware simulation, basically simulating real world sensors.
 
+## Before you start: two decisions that will bite you later
+
+!!! warning "Read this first"
+    Both points below cost us a full day of debugging. Neither produces a useful
+    error message when you get it wrong.
+
+### 1. Pin the firmware version to the one your drone actually flies
+
+`git clone` gives you the **master** branch, which is a moving development version
+(`4.8.0-dev` at the time of writing). Our flight controller runs **ArduCopter 4.6.3**.
+Testing against master means testing a different autopilot than the one you fly, and it
+has two concrete consequences:
+
+* **Parameter names differ between versions.** On 4.5/4.6 the rangefinder limits are
+  `RNGFND1_MIN_CM` / `RNGFND1_MAX_CM` (centimetres); from 4.7 on they are
+  `RNGFND1_MIN` / `RNGFND1_MAX` (metres). Same for `RTL_ALT` (cm) vs `RTL_ALT_M` (m)
+  and `SYSID_MYGCS` vs `MAV_GCS_SYSID`. A `.parm` file written for one version
+  **silently skips** the unknown lines on the other — the parameters simply keep their
+  defaults and you get a subtly broken vehicle rather than an error.
+* Parameter dumps taken from SITL cannot be loaded onto the real flight controller.
+
+So always check out the tag that matches your flight controller (see the firmware banner
+in Mission Planner / QGroundControl, e.g. `ArduCopter V4.6.3`):
+
+```
+git checkout Copter-4.6.3
+git submodule update --init --recursive
+```
+
+### 2. `setuptools` must be older than version 81
+
+The build generates DroneCAN sources with `dronecan_dsdlc.py`, which imports the
+`dronecan` package, which in turn imports `pkg_resources`. **`pkg_resources` was removed
+in setuptools 82.** With a newer setuptools the import fails, the generator prints the
+misleading message *"please install dronecan with pip install dronecan"* (the package
+**is** installed — that is not the problem) and then **hangs forever inside its
+`multiprocessing.Pool` instead of exiting.**
+
+The result is a build that produces no output, no error and no object files, and runs
+until you kill it. In our case it looked like a build that took "several hours". So:
+
+```
+pip install "setuptools<81"
+```
+
+Verify with `python3 -c "import pkg_resources"` — it should print a deprecation warning
+but succeed. See the troubleshooting section at the end of this page.
+
 ## Install WSL
 Gazebo only runs under Linux and Mac distributions which is why we first install Windows subsystem for Linux(WSL), that allows us to run a Linux environment on our Windows machine. Guides for the installation and basic commands can be found under https://learn.microsoft.com/en-us/windows/wsl/basic-commands.
 
@@ -39,18 +87,51 @@ wsl --distribution <Distribution Name> --user <User Name>
 After we set up WSL for our windows computer, we can install the SITL and the Gazebo simulation.
 
 ## Install Software in the loop (SITL)
-To install and run the SITL we first clone the ardupilot git repository
+To install and run the SITL we first clone the ardupilot git repository and check out the
+firmware version our flight controller runs (see the warning at the top of this page):
 ```
 git clone --recursive https://github.com/ArduPilot/ardupilot.git
+cd ardupilot
+git checkout Copter-4.6.3
+git submodule update --init --recursive
 ```
 and run the auto installer:
 ```
-ardupilot/Tools/environment_install/install-prereqs-ubuntu.sh -y
+Tools/environment_install/install-prereqs-ubuntu.sh -y
 ```
 For the changes to take effect we reload the provile using 
 ```
 source ~/.bashrc
 ```
+Then pin `setuptools` below version 81 so the DroneCAN code generator can import
+`pkg_resources` (otherwise the build hangs silently — see the warning at the top):
+```
+pip install "setuptools<81"
+```
+
+### On macOS or Linux, without WSL
+
+The WSL section above is only needed on Windows. On macOS and Linux, SITL runs natively —
+skip WSL entirely and use the same `sim_vehicle.py` commands. Instead of the Ubuntu
+installer script, create a Python environment and install the build dependencies:
+
+```
+conda create -n ardupilot python=3.11 -y
+conda activate ardupilot
+pip install "setuptools<81" empy pexpect future dronecan pymavlink MAVProxy
+```
+
+Two macOS notes:
+
+* The MAVProxy `--map` module is often missing. Leave `--map` off and use a ground
+  station (QGroundControl) for the map view.
+* Long builds die when the machine goes to sleep. Prefix the build with `caffeinate -i`
+  if you leave it unattended.
+
+A clean build of `bin/arducopter` takes about a minute on a current machine. If it takes
+substantially longer without printing progress, it is not slow — it is stuck; go to the
+troubleshooting section.
+
 Now we can run our software using
 ```
 ardupilot/Tools/autotest/sim_vehicle.py -v ArduCopter --map --console
@@ -196,3 +277,157 @@ accelcal
 and once it asks us to place the vehicle level, we once again just type `accelcal`.
 
 It is also possible to add simulated peripherals, see https://ardupilot.org/dev/docs/adding_simulated_devices.html.
+
+## Simulating indoor flight (GPS-denied, optical flow + LiDAR)
+
+For the delivery scenario the drone flies indoors without GPS, using the MicoAir MTF-01P
+(optical flow + rangefinder). SITL can stand in for that sensor. The parameter overlays
+live in the `Pi-Code` repository under `params/` and are loaded in the MAVProxy console:
+
+```
+param load .../Pi-Code/params/sitl_flow_phaseA.parm    # enable simulated flow + rangefinder
+reboot
+param load .../Pi-Code/params/sitl_flow_phaseB.parm    # configure them, point the EKF at flow
+reboot
+param load .../Pi-Code/params/sitl_gps_off.parm        # GPS truly off (Phase 3)
+reboot
+```
+
+The split into phases is necessary because the `RNGFND1_*` sub-parameters only come into
+existence after `RNGFND1_TYPE` is set **and** the autopilot has rebooted. The second
+reboot is likewise required, because the analog rangefinder backend only reads
+`RNGFND1_PIN` on the next boot.
+
+### Start SITL at the location of the real flight
+
+!!! warning "The simulated compass lives at the SITL home position"
+    SITL models the earth's magnetic field at the position it was **started** at
+    (CMAC, Canberra by default). Our companion code sets the EKF origin to the real hall
+    in Frankfurt via `SET_GPS_GLOBAL_ORIGIN`. If the two do not match, the magnetic field
+    the autopilot measures does not match the one it expects for that origin and pre-arm
+    fails with:
+
+    ```
+    PreArm: Check mag field (z diff:976>200)
+    ```
+
+    976 mGauss is exactly the difference between the northern and southern hemisphere.
+    So always start SITL at the same coordinates the companion uses as its origin:
+
+    ```
+    sim_vehicle.py -v ArduCopter --console \
+        --custom-location=50.131196,8.692972,112,0
+    ```
+
+Beware that this also changes the flight behaviour: SITL models air density over
+altitude, so the same vehicle climbs differently at 112 m (Frankfurt) than at 584 m
+(Canberra). Do not compare flights flown at different simulated locations.
+
+!!! danger "`--custom-location` also breaks the rangefinder unless you set `SIM_TERRAIN 0`"
+    This one cost us two days, so it is worth stating plainly.
+
+    With terrain enabled (the default), SITL measures the rangefinder against a terrain
+    model anchored at `SIM_OPOS_ALT`. That parameter defaults to **584 m — the altitude
+    of the default SITL home at CMAC, Canberra** — and `--custom-location` does **not**
+    change it. Start the simulator in Frankfurt (112 m) and the vehicle sits roughly
+    470 m *below* the modelled ground, so the rangefinder reports a constant **0.00 m**.
+
+    Nothing warns you. The consequences are severe and look like completely unrelated
+    bugs:
+
+    * Optical flow only measures an **angular** rate. Without a height above ground the
+      EKF cannot convert it into a velocity, so the position estimate drifts — we
+      measured **366 m of drift while the vehicle physically stood still**.
+    * Waypoints are therefore never reached and the mission times out.
+    * Altitude control oscillates and the vehicle repeatedly hits the ground
+      (`SIM Hit ground` in the console).
+
+    The fix is one parameter, and a flat ground plane is the correct model for an
+    indoor hall anyway:
+
+    ```
+    param set SIM_TERRAIN 0
+    reboot
+    ```
+
+    It is included in `Pi-Code/params/sitl_flow_phaseA.parm`, so loading the overlays
+    covers it. **How to check:** in QGroundControl's MAVLink Inspector, `DISTANCE_SENSOR`
+    must follow the actual altitude. In a dataflash log, the `RFND.Dist` values must
+    track `CTUN.Alt`. A rangefinder that reads 0.00 m at every altitude is this bug.
+
+### Parameters worth setting for indoor tests
+
+| Parameter | Value | Why |
+|---|---|---|
+| `WPNAV_SPEED_UP` | `50` (cm/s) | The default 250 cm/s overshoots a 2 m takeoff by more than 2 m, which breaches a low altitude fence. |
+| `FENCE_ACTION` | `2` (Always Land) | The default `1` means "RTL or Land" — and RTL first **climbs** to `RTL_ALT`, straight into the ceiling. |
+| `RTL_ALT` | `200` (cm) | Only in case RTL is triggered anyway. Note: centimetres on 4.5/4.6. |
+| `EK3_SRC_OPTIONS` | `0` | Disables FuseAllVelocities. The firmware default is `1`; our flight-controller setup uses `0`. |
+
+## Troubleshooting
+
+### The build runs forever and prints nothing
+
+Symptom: `./waf copter` stops after a line like `Copying fixed headers for protocol 2.0`
+or `[n/n] Processing dronecangen: ...`, produces no object files, no error, and no
+progress for hours. `ps` shows the waf process and its worker processes at 0 % CPU.
+
+Cause: `setuptools >= 82` removed `pkg_resources`, which `dronecan_dsdlc.py` needs. The
+script catches the import error, prints a misleading message and then deadlocks in its
+`multiprocessing.Pool`. waf never forwards the message, so all you see is silence.
+
+Fix:
+
+```
+pip install "setuptools<81"
+```
+
+**The general lesson:** when a build step hangs, run that step on its own, outside the
+build system — the build system may be swallowing the real error message. In our case:
+
+```
+python3 modules/DroneCAN/dronecan_dsdlc/dronecan_dsdlc.py -O/tmp/out \
+    modules/DroneCAN/DSDL/ardupilot modules/DroneCAN/DSDL/com modules/DroneCAN/DSDL/cuav \
+    modules/DroneCAN/DSDL/dronecan modules/DroneCAN/DSDL/mppt modules/DroneCAN/DSDL/tests \
+    modules/DroneCAN/DSDL/uavcan
+```
+
+This finished in one second once setuptools was pinned, and printed the real error
+(`No module named 'pkg_resources'`) before that.
+
+### Pre-arm fails with "Check mag field"
+
+SITL was started at a different location than the EKF origin your script sets. Use
+`--custom-location` as described above.
+
+### Arming is rejected with `result=4` and no explanation
+
+`MAV_RESULT_FAILED`. The reason is sent as a `STATUSTEXT` message, which pymavlink
+scripts usually discard. Type `arm throttle` in the MAVProxy console to see the actual
+pre-arm message, or log `STATUSTEXT` in your own code.
+
+### `param load` reports fewer parameters than the file contains
+
+The file was written for a different firmware version. Unknown parameter names are
+skipped silently — see the version warning at the top of this page.
+
+### The drone drifts away in GPS-denied mode
+
+Check the rangefinder first. Optical flow only measures an **angular** rate; the EKF
+needs the height above ground to convert it into a velocity. If the rangefinder reports
+0 m, the scaling collapses and the position estimate diverges — in one of our runs to
+366 m while the vehicle physically stood still. In the dataflash log, look at the `RFND`
+records: `Dist` must follow `CTUN.Alt`, and `Stat` must be 4 (Good).
+
+If `RFND.Dist` is 0.00 m at **every** altitude, it is almost certainly the
+`SIM_TERRAIN` / `--custom-location` interaction described above — not the rangefinder
+driver. We initially suspected the driver and switched `RNGFND1_TYPE` from 1 (Analog)
+to 100 (SITL); both read zero, which is what pointed at the terrain model instead.
+
+### The takeoff never "settles"
+
+Our companion code only reports a successful takeoff once the altitude has been *held*
+within a band for a few seconds, not on the first sample that crosses the target. If it
+reports the altitude repeatedly leaving the band, the altitude controller is genuinely
+oscillating — which in a GPS-denied setup again points at the rangefinder, not at the
+takeoff itself.
