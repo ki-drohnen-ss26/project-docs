@@ -256,11 +256,11 @@ We will go through each serial port that we will have to set based on the wiring
 - **UART 1**: Telemetry (DJI VTX), responsible for sending the telemetry data and uses the Mavlink protocol. The baud rate by MAVLink is entirely dependent on the physical hardware, the default value for the industry is 57600 baud. as it is more stable over long distances.
 - **UART 2**: The second serial port is used by the receiver. We set the protocol to RCIN, standing for radio control input. It is a hardware input and can accept and autodecode a variety of digital and analog receiver protocols. The baud rate will be automaitcally set by the firmware, meaning it does not matter to what it is set here. As our receiver is using ExpressLRS, we will also want to change the `RSSI_TYPE`, the radio receiver type, to 3 and set the RC_OPTIONS Bitmask to 'use 420K baud for LRS(Bit 13)', as well as the 'Suppress CRSF mode/rate message for ELRS systems' (Bit9) option. To set the bitmask we go to the Full Parameter List under the config tab and look for RC_OPTIONS.
 
-<img width="464" height="99" alt="image" src="https://github.com/user-attachments/assets/3e8d8bfe-d2ae-4805-bc28-7d31bb8992fc" />
+<img width="464" height="99" alt="image" src="../../Images/InitialSetup/EK3.png" />
 
   While we could manually set the correct value of the bitmask, we can just click the Set Bitmask button and that will show us all options:
 
-<img width="685" height="185" alt="image" src="https://github.com/user-attachments/assets/af74e1f1-4f40-49d4-bce1-62a1e568744f" />
+<img width="685" height="185" alt="image" src="../../Images/InitialSetup/RC_options.png" />
 
 - **UART 3**: Serial port 3 is connected to our video transmitter that uses the IRC Tramp communication protocol developed by ImmersionRC (IRC) to let the flight controller communicate to our analog video transmitter. The baud rate seems to be at 9600, but the firmware seems to also set this rate automatically, as no baud rate is mentioned at https://ardupilot.org/copter/docs/common-vtx.html
 - **UART 4**: Serial port 4 is set to be used for a onboard computer, namely a Raspberry Pi zero. The flight controller and the computer will use the MAVLink protocol to communicate. The baud rate here can be very high, as we want to share state data back and forth instantly. It is often recommended to set a baud rate of 921600. Higher rates might also be possible.
@@ -270,20 +270,20 @@ We will go through each serial port that we will have to set based on the wiring
 
 ### Flight Modes
 
-<img width="748" height="538" alt="image" src="https://github.com/user-attachments/assets/1d631e3d-abc3-44d2-88c5-b00050672f09" />
+<img width="748" height="538" alt="image" src="../../Images/InitialSetup/MissionPlanner_FlightModes.png" />
 
 Under the flight modes tab we can set different flight modes that can be changed through a set channel, that is defined through the `FLTMODE_CH` parameter. Here we see quite a few possible options, but depending on the channel used only some of the modes can realistcally be chosen. For example, most switches on our receiver have only three positions, one beneath 1000 PWM, one at 1500 PWM and one above 2000 PWM, which is also the reason we only have three different flight modes set.
 
 ### Failsafe
 
-<img width="870" height="528" alt="image" src="https://github.com/user-attachments/assets/9030016b-9788-4460-816e-35e5b4a16058" />
+<img width="870" height="528" alt="image" src="../../Images/InitialSetup/MissionPlanner_FailSafe.png" />
 
 The failsafe tab allows us to set the behaviour of our drone in case the battery is low, or the connection to the receiver is lost. In most cases RTL, return to home and land, is recommended. The problem is, that RTL needs GPS. As we are mainly using the drone to achieve indoor autonomous flight, we generally will not have a GPS signal. This can result in unwanted behavior for RTL, and it is recommended to either just set Land as failsafe, or just give out a warning.
 
 ### Compass interference
 It is possible that the motors influence the compass, this can be checked using Compass/Motor calibration under optional Hardware:
 
-<img width="621" height="512" alt="image" src="https://github.com/user-attachments/assets/88e91cf8-67ac-43a3-acf7-d5627cffd330" />
+<img width="621" height="512" alt="image" src="../../Images/InitialSetup/MissionPlanner_CompassCalibration.png" />
 
 To do the calibration, we flip propellers over, so that the drone is pulling down into the ground. Then we run up to 50% to 75% throttle for 5 to 10 seconds to see how this affects the compass reading. Interference less then 30% is good, less than 60% might be okay, but it could be beneficial to relocate the compass further away from motor wires and battery cables. By readings above 60% the compass should certainly be relocated. 
 
@@ -296,11 +296,11 @@ IMU1 is generally the primary IMU the drone is using, and because of that it is 
 
 The log bitmask should be set as seen in the following image. This setting captures everything that is needed for further tuning the drone.
 
-<img width="882" height="802" alt="image" src="https://github.com/user-attachments/assets/f7b3b820-f71d-40ea-9b10-ebce57dd0f74" />
+<img width="882" height="802" alt="image" src="../../Images/InitialSetup/MissionPlanner_Logging.png" />
 
 We will also set the options for the BatchSampler `INS_LOG_BAT_OPT` to log the sensor rate and the sample pre- and post-filter.
 
-<img width="952" height="485" alt="MissionPlanner_INS_LOG_BAT_OPT" src="https://github.com/user-attachments/assets/da93d2f0-3ee4-4e82-a46b-274392ab8ab7" />
+<img width="952" height="485" alt="MissionPlanner_INS_LOG_BAT_OPT" src="../../Images/InitialSetup/MissionPlanner_INS_LOG_BAT_OPT.png" />
 
 The BatchSampler captures the raw physical noise of the drone. The flight controller is not able to capture every single data point on an SD card, as the card is not fast enough. The BatchSampler triggers a batch sample where ardupilot allocates a small block of RAM memory and pushes every raw IMU reading into the RAM buffer. Once the RAM is full, ardupilot stops collecting data and streams the cached chunk of data onto our storage device as a single ISBH package. This process is repeated multiple times, and the data is needed to tune the harmonic notch filters.
 
@@ -348,7 +348,7 @@ We already set the failsafes in the Failsafes section. We can just use the same 
 
 We can also look at the Full parameter list. each parameter that is associated with the Failsafe settings starts with FS
 
-<img width="1380" height="425" alt="image" src="https://github.com/user-attachments/assets/82ba380d-7817-474b-9496-595a3c08d088" />
+<img width="1380" height="425" alt="image" src="../../Images/InitialSetup/Indoor.png" />
 
 Here we want to set `FS_EKF_ACTION`, `FS_GCS_ENABLE`, `FS_THR_ENABLE` and `FS_DR_ENABLE` to 0 so they do not trigger RTL.
 
@@ -396,7 +396,7 @@ The initial setup is completed, and we can start our first flight of the drone. 
 There will be many possible problems in the first flight, and we will address some of the most common.
 - **The drone does not arm**: Ardupilot has a lot of different checks it makes before arming, that are saved in the `ARMING_CHECK` parameter.
 
-<img width="1130" height="409" alt="image" src="https://github.com/user-attachments/assets/339f7168-4c41-46ec-870b-c0dce6d6b77b" />
+<img width="1130" height="409" alt="image" src="../../Images/InitialSetup/Hover.png" />
 	As we are trying to use our drone indoors, it will generally be a problem to get a GPS lock, which might stop the drone from arming, so we certainly do not want that option. If we do not care too much about the different checks, it is also possible to just set the bitmask to 0, as to disable all checks.
 
 - **The drone tries to flip upon increasing throttle**:
