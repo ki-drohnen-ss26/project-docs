@@ -15,7 +15,7 @@ The drone we used has the following components:
   - Raspberry Pi Zero
 The wiring can be seen here:
 
-<img width="3168" height="1944" alt="image" src="https://github.com/user-attachments/assets/c553a4ef-77b7-494d-ac45-a5ba56f4558c" />
+<img width="3168" height="1944" alt="image" src="../../Images/InitialSetup/Architecture.png" />
 
 ## Installaltion of Ardupilot
 ### Download correct firmware
@@ -24,26 +24,27 @@ For our installation, we first need our firmware to flash the flight controller,
 This approach works generally to be able to just fly a drone, but as our goal is to create an autopilot using a lidar and optical flow combination, as well as an onboard computer, we need a custom version of ardupilot, which we can create under 
 https://custom.ardupilot.org/. On the upper right we can see the option to create a new build:
 
-<img width="513" height="91" alt="image" src="https://github.com/user-attachments/assets/fa740ed2-9039-4651-b22c-3cdf89437e50" />
+<img width="513" height="91" alt="image" src="../../Images/InitialSetup/customBuild_1.png" />
 
 This leads to a page where we can choose our drone type, the version we want to use (use latest for most recent version) and the flight controller we are using
 
-<img width="889" height="134" alt="image" src="https://github.com/user-attachments/assets/e5cba9e1-607a-416f-a0e4-22f8b6007408" />
+<img width="889" height="134" alt="image" src="../../Images/InitialSetup/customBuild_addNewBuild.png" />
 
 and below are all options listed, that ardupilot can have. Most basic options shoud already be in the default version, but especially if extra sensors and functionality that goes above manually piloting the drone are needed, we will need to change our settings. For our personal use case we will add a mavlink optical flow sensor, enable OpticalFlow fusion for EKF3
 and to use our onboard computer we will also need the `Enable Mode Guided NoGPS` option:
 
-<img width="199" height="585" alt="image" src="https://github.com/user-attachments/assets/72bc237a-b652-4617-ae9b-263cb9a79340" />
-<img width="208" height="489" alt="image" src="https://github.com/user-attachments/assets/a86bfec8-b7b6-42b6-8a0f-ea27e0afe979" />
-<img width="207" height="595" alt="image" src="https://github.com/user-attachments/assets/a5f53c50-c488-4cd5-bac4-a99cfd408f33" />
+<img width="207" height="595" alt="image" src="../../Images/InitialSetup/customBuild_Sensors.png" />
+<img width="208" height="489" alt="image" src="../../Images/InitialSetup/customBuild_AHRS.png" />
+<img width="199" height="585" alt="image" src="../../Images/InitialSetup/customBuild_GuidedNoGPS.png" />
+
 
 After we made our selection of needed options, we can generate our build using the button on the lower right
 
-<img width="372" height="57" alt="image" src="https://github.com/user-attachments/assets/76cdffec-f8ef-412f-9e1b-e0957090f46f" />
+<img width="372" height="57" alt="image" src="../../Images/InitialSetup/customBuild_generate.png" />
 
 The build will then be shown on https://custom.ardupilot.org/, where, after the build finished, we can download it
 
-<img width="924" height="164" alt="image" src="https://github.com/user-attachments/assets/7215aed3-0842-436f-b1fc-ae61a54acd31" />
+<img width="924" height="164" alt="image" src="../../Images/InitialSetup/customBuild_finishedBuild.png" />
 
 And we are once again interested in the file ending with `bl.hex`, as this file contains the bootloader.
 
@@ -53,18 +54,18 @@ We can download the STM32 cube programmer through the website of STMicroelectron
 To install the Firmware onto our drone, we first have to start the Device Firmware Update(DFU) mode of the drone, which can be achieved by pressing the Boot button, or by manually bridging the boot pads, depending on the flight controller and connecting the drone to our computer through a USB cable while keeping the button pressed.
 For the flight controller we are using we see the boot button as seen here:
 
-<img width="300"  alt="FlightControllerFront_BootButton" src="https://github.com/user-attachments/assets/49b2ea95-186e-4e10-9652-13a1184fb9e1" />
+<img width="300"  alt="FlightControllerFront_BootButton" src="../../Images/InitialSetup/FlightControllerFront_BootButton.png" />
 
 In case there is already a firmware installed, there is often an option to use software to set the flight controller into DFU mode.
 
 Once we have set the drone into DFU mode, we can use the STM32 cube programmer to erase and reprogram our flight controller.
 On the upper right we need to use the correct settings to connect to our drone. As we are connecting our drone using USB, we choose the corresponding setting and set the used port. Pressing connect then connects our drone to the program 
 
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/d91ef573-64c1-489f-a411-5d83dce1d3a1" />
+<img width="400" alt="image" src="../../Images/InitialSetup/STM32CubeProgrammer_connect.png" />
 
 After we succesfully connected, we can use the option tab on the upper left to navigate to the erase and programming page.
 
-<img width="1920" height="1080" alt="STME32CubeProgrammer_EraseAndProgramming_edit" src="https://github.com/user-attachments/assets/b70e9c39-662e-4d52-a5e1-acfe891fe700" />
+<img width="1920" height="1080" alt="STME32CubeProgrammer_EraseAndProgramming_edit" src="../../Images/InitialSetup/STME32CubeProgrammer_EraseAndProgramming_edit.png" />
 
 First we have to erase our chip. We can manually erase the chip using the  middle window called Erase flash memory, and choose the Full chip erase function. We can also check the Full chip erase option under automatic mode, that will erase the chip before programming. 
 
@@ -75,23 +76,23 @@ After the chip is erased, we can choose the `bl.hex` file we downloaded in the e
 To setup our drone we are using the Mission planner available under https://ardupilot.org/planner/docs/mission-planner-installation.html. 
 After downloading and starting the apllication, we connect our drone using USB (the drone does not have to be in DFU mode) and click the connect button on the upper right of the mission planner.
 
-<img width="503" height="71" alt="image" src="https://github.com/user-attachments/assets/9fa3c119-faea-4298-b7bc-c93f53bf6e2f" />
+<img width="503" height="71" alt="image" src="../../Images/InitialSetup/InitialDroneSetup.png" />
 
 If the drone is already connected through USB, the mission planner will generally set the right port automatically, if this is not the case, we might need to manually choose the correct port using the drop down menu.
 
 Our first steps will be to set the mandatory hardware parameters, that can be found under the setup menu in the upper left:
 
-<img width="414" height="563" alt="image" src="https://github.com/user-attachments/assets/e0d81ff2-c344-49ab-914c-8eb2ac8c6f52" />
+<img width="414" height="563" alt="image" src="../../Images/InitialSetup/MissionPlanner_MandatoryHardware.png" />
 
 ### Frame Type
 First we look at the Frame Type. Ardupilot supports a lot of different frame types, from different copters to planes and even land and water vehicles, but as we have the copter firmware installed, we will only get approptiate options. In our case we have a quadcopter, that we can choose first though the upper image and then specify using the corresponding options. In our case, the frame is in X form.
 
-<img width="833" height="591" alt="image" src="https://github.com/user-attachments/assets/4b30bbea-531a-41fa-8c49-66c22f3e4f37" />
+<img width="833" height="591" alt="image" src="../../Images/InitialSetup/MissionPlanner_FrameType.png" />
 
 ### Initial tuning parameters and linear thrust
 The next mandatory configuration we will look at are the initial tuning parameters. They comprise of information about the propellers we are using, in our case the size is 3.5 inch, and information about the used batteries. We are using 4 LiIon cells, with fully charged voltage set at 4.1 and fully discharged voltage set to 2.8. Further, as we are using a current version of Ardupilot, we can check the 'Add suggested settings for 4.0 and up' checkbox. These settings are used by the mission planner to calculate initial settings for our PID(Proportional Integral Derivative) controllers, and sets some security functions like battery failsafes, that will trigger warnings and return to launch on low cell voltage, or geofence limits for altitude and distance to prevent flyaways.
 
-<img width="771" height="565" alt="MissionPlanner_InitialTuning" src="https://github.com/user-attachments/assets/7267cb4e-db5f-4045-8930-c3f91e63e8c4" />
+<img width="771" height="565" alt="MissionPlanner_InitialTuning" src="../../Images/InitialSetup/MissionPlanner_InitialTuning.png" />
 
 The goal of the our initial settings is to have a thrust curve of the motors that is as linearly as possible.
 There are three main reasons that cause non-linear thrust:
@@ -114,12 +115,12 @@ For setting the voltage, we have these main parameters:
 - **MOT_THST_EXPO**:
   This controls the motor thrust curve exponent, that is used to correct the non-linear relationship betweem the controllers throttle stick and the actual thrust that is produced by the motors. A linear relationship would mean we get the exact thrust that is indicated by the thrust stick position. 10% increase in thrust stick position would mean 10% increase in throttle. This would be the relation when ´MOT_THST_EXPO` is set to 0. Sadly this is not the case in most situations and the thrust increases exponentially relative to the motor RPM, because of aerodynamics. For professional use, we would have to use a thrust stand to measure the true thrust given our combination of motor, ESC and propeller. But for general use , it is often suffcient to use the following graph:
 
-<img width="486" height="412" alt="image" src="https://github.com/user-attachments/assets/70cdd294-07de-41ee-8d06-68823f99956b" />
+<img width="486" height="412" alt="image" src="../../Images/InitialSetup/relationship_Mot_THST_EXPO_and_props_size.png" />
 
 #### PID controller initial setup
 We will first introduce the PID controller that is used by ardupilot. PID stands for Proportional, Integral and Derivative.
 
-<img width="1201" height="525" alt="image" src="https://github.com/user-attachments/assets/e9c764f8-fe25-4d8e-a39e-bd4de0b78cb2" />
+<img width="1201" height="525" alt="image" src="../../Images/InitialSetup/PID_Controller.png" />
 
 As we can see in the image of the PID-Controller flow diagram, we have two more terms associated with the ardupilot PID-controller. These are the Feedforward(FF) and derivative Feedforward (dFF) terms. 
 The basic idea is the following. When we are controlling the drone and want to move along one of the pitch or roll axes, we will have the actual angle of the drone that is measured in the moment, and we will have a target angle, where we would like our drone to be. The difference between those two angles is called the angle error.
@@ -149,15 +150,15 @@ On the ardupilot copter, we have generally 3 rate controllers, one for roll, pit
 - **INS_ACCEL_FILTER:** This parameter defines the cutoff frequency for accelerometers and can be set to lower values in case there are very high vibration levels in the aircraft. The default values is 10hz.
 - **INS_GYRO_FILTER:** This parameter defines the cutoff frequency for gyroscopes. Once again, if there are very high vibration levels in the aircraft, it can be set to a lower value. The default value depends on the size of the propellers and can be approximated using the following graph:
 
-  <img width="1280" height="960" alt="image" src="https://github.com/user-attachments/assets/21b395f6-ce2c-419b-a66c-07a6312f3e14" />
+  <img width="1280" height="960" alt="image" src="../../Images/InitialSetup/relationship_Gyro_props.png" />
 
 - **ATC_ACC_P_MAX and ATC_ACC_R_MAX:** Both those parameters set the maximum acceleration for pitch and roll and the unit is degrees per square second. It is once again dependend on the propeller size and will be automatically set using the initial tuning parameters. once again a graph is used to approximate the max values:
 
-<img width="1280" height="960" alt="image" src="https://github.com/user-attachments/assets/e7fb5122-c97c-444c-88b5-ec9380b549da" />
+<img width="1280" height="960" alt="image" src="../../Images/InitialSetup/relationship_Accel_props.png" />
 
 - **ATC_ACC_Y_MAX:** This parameter sets the maximum acceleration for the yaw axis. It is also dependend on the propeller size and approximated by the initial tuning parameters. The graph that shows propeller size in inches to the maximum yaw acceleration is given here:
 
-<img width="530" height="409" alt="image" src="https://github.com/user-attachments/assets/4379f0ae-c757-4ce2-aa7c-f47e6166d290" />
+<img width="1280" height="960" alt="image" src="../../Images/InitialSetup/relationship_AccelY_props.png" />
 
 The Following parameters should look familiar, as they define the low-pass filters used in our PID controller for each axis. They are by default all set to half the gyro filter frequence. Only the filter for the yaw rate error differs.
 - **ATC_RAT_PIT_FLTD:** INS_GYRO_FILTER / 2
