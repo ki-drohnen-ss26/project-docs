@@ -2,6 +2,105 @@
 
 This section looks at how we are able to connect our board computer, in our case a Raspberry Pi Zero 2 WH, to our flight controller. First off, there are multiple possibilities to set up a board computer to work with a flight controller. For example there are prebuild operating systems we could install, like [BlueOS](https://blueos.cloud/docs/latest/usage/installation/), [Rpanion-Server](https://www.docs.rpanion.com/software/rpanion-server) or [APSync](https://firmware.ardupilot.org/Companion/apsync/) and multiple programms that allow us to use the MAVLink protocol, such as [MAVProxy](https://ardupilot.org/mavproxy/docs/getting_started/download_and_installation.html#mavproxy-downloadinstalllinux), [DroneKit](https://github.com/dronekit/dronekit-python/), [MAVSDK](https://github.com/ArduPilot/ardupilot-mavsdk) or [mavlink-router](https://github.com/mavlink-router/mavlink-router). As we are constrained in using a Raspberry Pi Zero, we will use the lightweight mavlink-router for our project. An overview about the most common ways to use a Raspberry Pi with ardupilot can be found under https://ardupilot.org/dev/docs/raspberry-pi-via-mavlink.html.
 
+## Install OS & Enable SSH
+Use the [Raspberry Pi Imager](https://www.raspberrypi.com/software/) to flash Raspberry Pi OS onto your primary server storage. Ensure SSH is enabled during the customization step.
+
+If SSH needs to be enabled manually later via terminal, use:
+```bash
+sudo raspi-config
+# Navigate to: Interfacing Options -> SSH -> Choose "Yes"
+```
+Accessing the Pi through SSH can be done through the following commands
+
+```bash
+ssh [username]@[IP address]
+# or
+ssh [username]@[hostname].local
+```
+
+## Enable persistent logging
+By default, the Raspberry Pi will save all logs into RAM under `/run/log/journal`, which is not retained upon reboot. As we will need to look into error messages in case something goes wrong, we will first change our setup, so the log messages will be saved on our persistent storage. To do that we will have to change our journal.conf file. Normally the file would be saved in  `/etc/systemd/journald.conf`, but for some reason the Raspberry Pi OS stores the needed file in `/usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf`, that overrides the journald.conf file. Inside that file we change the Storage option to persistent and if needed, add a maximum file size. It should look something like
+```
+[Journal]
+Storage=persistent
+SystemMaxUse=200M
+```
+If we want to keep using the /etc/systemd/ file path, we can add a file to a folder `/etc/systemd/journald.conf.d/` that has a prefix higher than the 40 that in 40-rpi-volatile-storage.conf. The new file will then be loaded last and overwrites the other file.
+```
+sudo mkdir -p /etc/systemd/journald.conf.d/
+sudo touch /etc/systemd/journald.conf.d/99-persistent-journal.conf
+```
+The file contents are the same as earlier.
+
+After our updates we can restart the journald process
+```
+sudo systemctl restart systemd-journald
+```
+and if we want to write the logs already written onto RAM into our persistent log, we can use:
+```
+sudo journalctl --flush
+```
+
+To see if everything worked, we can use
+```
+sudo systemctl status systemd-journald --no-pager | grep -I 'Journal ('
+```
+and we will see something like:
+<img width="921" height="32" alt="image" src="https://github.com/user-attachments/assets/efe93274-1684-46a0-83c2-e1ce5359a204" />
+
+The directory `/var/log/journal/` should have been created and the logs will be saved on the persistent storage.
+
+We will go over the most important functions of the `journalctl` command:
+```
+journalctl [options] [unit]
+```
+- Just using `journalctl` will display the recent log messages from all units starting from the most recent entries
+- **-r**: Reverses the log order.
+- **-n**: Specify a specific number of log entries to be shown.
+- **-f**: Continuously print new entries when they are appended to the journal.
+- **-u**: Display logs for a specific systemd unit or service.
+- **-p**: Filters the output by message priorities.
+	- "emerg" (0)
+	- "alert" (1)
+  	- "crit" (2)
+  	- "err" (3)
+  	- "warning" (4)
+  	- "notice" (5)
+  	- "info" (6)
+  	- "debug" (7)
+- **--list-boots**: View information about system boots.
+- **-b**: Show messages from a specific boot, for the last boot use `journalctl -b -1`.
+- **-g**: Filter Message field that matches specified regular expression.
+- **-o verbose**: shows the full-structured entry items with all fields.
+
+
+See all options under https://man7.org/linux/man-pages/man1/journalctl.1.html
+
+## Setup USB 
+It is possible to access the Raspberry Pi using ssh through the USB port. This is called the USB Gadget Mode, where the Pi is emulating an USB Ethernet adapter. 
+It is important to note, that we have to use the middle USB connection of our Pi zero 2, as this port allows or data transfer.
+
+In our Bootfiles we have to change the `config.txt` and `cmdline.txt`.
+
+In `config.txt` we have to add the line 
+```dtoverlay=dwc2,dr_mode=peripheral```
+at the very bottom, and in `cmdline.txt`, we add
+```
+modules-load=dwc2,g_ether
+```
+right after `rootwait` in the first line of the file. Do note, that there should not be any newlines in the file, everything has to be on the first line.
+
+After those two changes, Linux and Mac computers should already be able to access the Raspberry Pi using the USB connection, but for Windows we might need to install the [Pi RNDIS Driver](https://github.com/raspberrypi/rpi-usb-gadget/releases), before we can access the raspberry Pi, as it might be shown as normal port.
+
+## Setup Tailscale
+Tailscale is a mesh Virtual Private Network(VPN) service, that allows us to connect computers, like our Raspberry Pi, severs, cloud instances and other devices to another, no matter in which Network they are, as long as they have Internet access, by building a private and encrypted peer to peer network that is called tailnet.
+
+To use Tailscale we need need a Tailscale account we can create under https://tailscale.com/, and after adding our first device, we can install Tailscale on our Raspberry Pi using the command:
+```
+curl -fsSL https://tailscale.com/install.sh | sh
+```
+Running tailscale up, will show a link, which we can use to register the device under our Tailscale account, that allows us to access the Raspberry Pi using the Tailnet, even when the devices are in different Networks.
+We just have to run the ssh command using the IP provided by Tailscale.
 ## Configure serial port on pi
 We have to set up our Pi to allow the use of the serial ports we need, as the Raspberry Pi Linux uses the hardware serial pins GPIO 14 and GPIO 15 for a Linux console login shell, which blocks mavlink-router from reading the pins. To do that we use the command
 ```
