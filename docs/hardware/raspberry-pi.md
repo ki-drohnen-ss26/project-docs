@@ -22,6 +22,79 @@ and it ask: "Would you like the serial port hardware to be enabled?" directly af
 
 We save our changes, exit and reboot the Pi, which allows us to use the hardware serial pins for our MAVLink protocol.
 
+## Setup Hotspot
+It is possible, that we do not always have access to WiFi, and we might not be able to access the board computer using a wireless Network, and while flying, accessing the Pi using a USB cable might not be ideal.
+
+For that Reason we will let the Raspberry Pi create a hotspot we can access using our laptop, in case it does not have access to another WiFi Network.
+
+To do that we first use the Netork Managers command line interface(nmcli) to create a new Hotspot connection:
+```
+sudo nmcli connection add type wifi ifname wlan0 mode ap con-name Hotspot ssid MyPiHotspot autoconnect no wifi-sec.key-mgmt wpa-psk wifi-sec.psk "Password123"
+```
+- `connection add` instructs the Network Manager to create and save a new network profile
+- ' type' specifies what type of connection we want to use, in our case `wifi`
+- 'ifname` specifies the interface name, which is a physical or virtual network device. We want to bind our connection to our built-in Wi-Fi adapter, which is named `wlan0`.
+- `mode` is an alias for the property `802-11-wireless.mode`, and the option `ap` sets this mode to Access Point, making the wireless card act like a Wi-Fi router that is broadcasting a network, and allows us to connect to it.
+- `con-name` specifies the internal name of this network profile.
+- `ssid` sets the broadcastname that is visible to other devices
+- `autoconnect no` This prevents the Pi from automatically starting the Hotspot. As we generally want to access a known WiFi connection instead.
+- `wifi-sec.key-mgmt` is the property `802-11-wireless-security.key-mgmt`, that specifies the authentication framework that the network will use, in our case we are using `wpa-psk`, that sets the mechanism to WPA Pre-shared key, that is the password-based security standard, generally used for home usage.
+- `wifi-sec.psk` is a short form of the Property `802-11-wireless-security.psk` that specifies the Pre-shared key, the actual passphrase. The actual password then is the following String, here as Example given as "Password123". 
+
+After we set up the Conncetion Profile, we still want it to open the Hotspot, after it failed to set up another WiFi connection. To do that we will create a systemd service, that waits a little while, so it allows for automatic connection to known WiFi networks, and launches the Hotspot in case no connection has been found.
+
+First we create a script that our service will use
+```
+sudo nano /usr/local/bin/autohotspot.sh
+```
+The contents of the script are
+```
+#!/bin/bash
+# Give Wi-Fi hardware a few seconds to initialize
+sleep 10
+
+# Force a Wi-Fi scan for visible SSIDs
+sudo nmcli dev wifi rescan
+
+# Check if currently connected to any Wi-Fi network
+ACTIVE_CON=$(nmcli -t -f TYPE,STATE dev | grep "wifi:connected")
+
+if [ -n "$ACTIVE_CON" ]; then
+    echo "Successfully connected to home Wi-Fi."
+    exit 0
+else
+    echo "No Wi-Fi connection found. Launching Hotspot..."
+    sudo nmcli connection up Hotspot
+fi
+```
+To make the file executable we use:
+```
+sudo chmod +x /usr/local/bin/autohotspot.sh
+```
+Now we create the service, first is the creation of another file:
+```
+sudo nano /etc/systemd/system/autohotspot.service
+```
+And write in the following content:
+```
+[Unit]
+Description=Automatic Wi-Fi Hotspot Fallback
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/autohotspot.sh
+
+[Install]
+WantedBy=multi-user.target
+```
+Lastly we enable the service using the two commands
+```
+sudo systemctl daemon-reload
+sudo systemctl enable autohotspot.service
+```
+
 ## Setup the flight controller
 While we already set the needed options in the setup section of our drone, we will repeat the needed settings for our flight controller to be able to work with our board computer. 
 We need to set the following parameters, do note that for our setup we need to set the options for serial port 4, this might be different for other configurations:
