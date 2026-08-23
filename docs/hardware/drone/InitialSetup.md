@@ -1,6 +1,7 @@
 # Drone Setup
 This readme contains the setup of a drone to be used with ardupilot and ultimately allow for autonomous flight to a target.
 The drone we used has the following components:
+
 - **Frame**: SpeedyBee BEE35 Pro 3.5 CineWhoop Frame Kit
 - **Flightcontroller**: Flywoo GOKU GN745 (STM32F745, 216MHz, 1MB Flash) 45A AIO 2-6S AM32
 - **Receiver**: Radiomaster XR4 Gemini Xrossband Dual-Band ELRS receiveer, Firmware ExpressLRS 4.0.0
@@ -11,10 +12,11 @@ The drone we used has the following components:
 - **Propellers**: Gemfan 90mm D90-5 3.5" Ducted 5-rotor Propeller
 - **GPS**: HGLRC M100 with integrated compass
 - **additional Hardware**
-  - MicroAir MTF-01P
-  - Raspberry Pi Zero
+    - MicroAir MTF-01P
+    - Raspberry Pi Zero
 The wiring can be seen here:
 
+![Architecture](../../Images/InitialSetup/Architecture.png)
 <img width="3168" height="1944" alt="image" src="../../Images/InitialSetup/Architecture.png" />
 
 ## Installaltion of Ardupilot
