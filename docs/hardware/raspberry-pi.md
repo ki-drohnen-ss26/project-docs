@@ -124,7 +124,7 @@ We need a program that listens for MAVLink traffic on one port and forwards it t
 
 The packages that we need to install mavlink router are
 ```
-sudo apt install git meson ninja-build pkg-config gcc g++ systemd
+sudo apt install git meson ninja-build pkg-config gcc g++ systemd systemd-dev cmake
 ```
 If we have all packages installed we can download mavlink-router,
 ```
@@ -135,10 +135,10 @@ run the meson build inside our downloaded folder
 cd mavlink-router
 meson setup build .
 ```
-and compile and install the files:
+and compile and install the files, the -j option denotes the number of parallel jobs. We use only one, because multiple jobs on 4 cores of our pi zero can fill up the ram fast and coorupt the image.
 ```
-sudo ninja -C build
-sudo ninja -C build instal
+sudo ninja -C build -j 1
+sudo ninja -C build install
 ```
 After we installed everything, we will create the config file we will need.
 ```
@@ -214,11 +214,12 @@ We will see seemingly random characters scrolling on the screen, which tells us 
 First we need to install some packages:
 ```
 sudo apt-get install libxml2-dev libxslt-dev
-sudo python3 -m pip install --upgrade lxml
+sudo apt install python3-pip
+sudo python3 -m pip install --upgrade lxml --break-system-packages
 ```
 and we can install Pymavlink using:
 ```
-sudo python3 -m pip install --upgrade pymavlink
+sudo python3 -m pip install --upgrade pymavlink --break-system-packages
 ```
 Now we will have two example codes where we once receive data, namely the altitude, global position and airspeed, from the drone, that we will print in our console.
 ```
