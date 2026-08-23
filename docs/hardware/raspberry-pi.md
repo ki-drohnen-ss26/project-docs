@@ -22,6 +22,91 @@ and it ask: "Would you like the serial port hardware to be enabled?" directly af
 
 We save our changes, exit and reboot the Pi, which allows us to use the hardware serial pins for our MAVLink protocol.
 
+## Setup Hotspot
+It is possible, that we do not always have access to WiFi, and we might not be able to access the board computer using a wireless Network, and while flying, accessing the Pi using a USB cable might not be ideal.
+
+For that Reason we will let the Raspberry Pi create a hotspot we can access using our laptop, in case it does not have access to another WiFi Network.
+
+To do that we first use the Netork Managers command line interface(nmcli) to create a new Hotspot connection:
+```
+sudo nmcli connection add type wifi ifname wlan0 mode ap con-name Hotspot ssid MyPiHotspot autoconnect no wifi-sec.key-mgmt wpa-psk wifi-sec.psk "Password123"
+```
+- `connection add` instructs the Network Manager to create and save a new network profile
+- ' type' specifies what type of connection we want to use, in our case `wifi`
+- 'ifname` specifies the interface name, which is a physical or virtual network device. We want to bind our connection to our built-in Wi-Fi adapter, which is named `wlan0`.
+- `mode` is an alias for the property `802-11-wireless.mode`, and the option `ap` sets this mode to Access Point, making the wireless card act like a Wi-Fi router that is broadcasting a network, and allows us to connect to it.
+- `con-name` specifies the internal name of this network profile.
+- `ssid` sets the broadcastname that is visible to other devices
+- `autoconnect no` This prevents the Pi from automatically starting the Hotspot. As we generally want to access a known WiFi connection instead.
+- `wifi-sec.key-mgmt` is the property `802-11-wireless-security.key-mgmt`, that specifies the authentication framework that the network will use, in our case we are using `wpa-psk`, that sets the mechanism to WPA Pre-shared key, that is the password-based security standard, generally used for home usage.
+- `wifi-sec.psk` is a short form of the Property `802-11-wireless-security.psk` that specifies the Pre-shared key, the actual passphrase. The actual password then is the following String, here as Example given as "Password123". 
+
+After we set up the Conncetion Profile, we still want it to open the Hotspot, after it failed to set up another WiFi connection. To do that we will create a systemd service, that waits a little while, so it allows for automatic connection to known WiFi networks, and launches the Hotspot in case no connection has been found.
+
+A systemd service, or daemon, is a type of background process that systemd is responsible for starting, stopping, and monitoring.
+
+First we create a script that our service will use
+```
+sudo nano /usr/local/bin/autohotspot.sh
+```
+The contents of the script are
+```
+#!/bin/bash
+# Give Wi-Fi hardware a few seconds to initialize
+sleep 10
+
+# Force a Wi-Fi scan for visible SSIDs
+sudo nmcli dev wifi rescan
+
+# Check if currently connected to any Wi-Fi network
+ACTIVE_CON=$(nmcli -t -f TYPE,STATE dev | grep "wifi:connected")
+
+if [ -n "$ACTIVE_CON" ]; then
+    echo "Successfully connected to home Wi-Fi."
+    exit 0
+else
+    echo "No Wi-Fi connection found. Launching Hotspot..."
+    sudo nmcli connection up Hotspot
+fi
+```
+To make the file executable we use:
+```
+sudo chmod +x /usr/local/bin/autohotspot.sh
+```
+Now we create the service, first is the creation of another file:
+```
+sudo nano /etc/systemd/system/autohotspot.service
+```
+And write in the following content:
+```
+[Unit]
+Description=Automatic Wi-Fi Hotspot Fallback
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/autohotspot.sh
+
+[Install]
+WantedBy=multi-user.target
+```
+We can see that the service file is divided into three sections:
+- **The unit section**: 
+The unit section defines the metadata for services and tells systemd when in the boot sequence the process is started
+  - **Description**: Label(Name) for the service.
+  - **After=NetworkManager.service**: Defines which services have to run earlier, as we only want to create a Hotspot after we made sure there are no other WiFi connections, we let our service run after the Network Manager.
+- **The service section**: Defines how the script is executed and managed.
+  - **Type**: The Type defines how the startup process is managed and how systemd determines when the service is fully up and running. `oneshot`is gererally used for single-run tasks and systemd waits for the process to fully complete before marking the unit as started or moving to dependent sevices.
+  - **ExecStart**: Points to path of the bash script. Systemd will execute this command when starting the service.
+- **The install section**: Defines behaviour upon running `sudo systemctl enable`, for the service, meaning what happens after it is enabled.
+  - **WantedBy**: This directive specifies the relationship between this service and other services. `multi-user.target` is the state where the system can accept multiple non-graphical user sessions.
+
+Lastly we enable the service using the two commands
+```
+sudo systemctl daemon-reload
+sudo systemctl enable autohotspot.service
+```
 ## Setup the flight controller
 While we already set the needed options in the setup section of our drone, we will repeat the needed settings for our flight controller to be able to work with our board computer. 
 We need to set the following parameters, do note that for our setup we need to set the options for serial port 4, this might be different for other configurations:
