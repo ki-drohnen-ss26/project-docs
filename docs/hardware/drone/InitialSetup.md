@@ -171,7 +171,7 @@ The Following parameters should look familiar, as they define the low-pass filte
 ### Accel Calibration and Orientation
 Before we can calibrate the acceleration, we first need to make sure the board alignment is how it is supposed to be. We can change the alignment going to the Config tab, then to the Full Parameter List, where we want to look for the AHRS_ORIENTATION parameter.
 
-<img width="1178" height="431" alt="MissionPlanner_AHRS_Small_edited" src="https://github.com/user-attachments/assets/61f2ae84-e943-4f8e-9c70-e76e8df41c91" />
+<img width="1178" height="431" alt="MissionPlanner_AHRS_Small_edited" src="../../Images/InitialSetup/MissionPlanner_AHRS_Small_edited.png" />
 
 On the right of the image we see some of the most important options used in the Full Parameter List. FIrst we see the options to load from and save to file. The later option saves the full parameter list to a text file, which can then be loaded through the load from file option. It is highly recommended to save the parameters before major changes, so it is easily possible to revert to an earlier parameter selection.
 
@@ -180,31 +180,31 @@ Another important function is the Compare Params option. This allows us to compa
 
 On the bottom on the right we can also see the search bar, that allows us to look for certain strings in the name of the parameters. As there are lots of parameters, the search function is incredibly useful. Here we are searching for the AHRS_ORIENTATION parameter. This parameter allows us to change the orientation of the flight controller. we can give different values for yaw, roll and pitch values, that rotate a given degree around the axes seen in the following image:
 
-<img width="600" alt="yaw_roll_pitch" src="https://github.com/user-attachments/assets/557d6190-3b56-4a0b-b6c9-c0ca5c4f344d" />
+<img width="600" alt="yaw_roll_pitch" src="../../Images/InitialSetup/yaw_roll_pitch.png" />
 
 We can see that our drone has the AHRS_ORIENTATION value 13, that gives us a 225 degree yaw rotation and a 180 degree roll rotation, but this depends on the flight controller used and how it is built into the drone. To check that the given AHRS_ORIENTATION is correct, we can go to the data tab of our mission planner. On the upper left we can see a Heads up Display, that mirrors the Primary Flight Display of traditional aircrafts, that gives us real-time telemetry data of our drone, given it is connected to Mission Planner.
 
-<img width="782" height="586" alt="HUD" src="https://github.com/user-attachments/assets/eb180fa1-2b2a-464f-b4df-7a962b4585ad" />
+<img width="782" height="586" alt="HUD" src="../../Images/InitialSetup/HUD.png" />
 
 We see the artificial horizon, where the blue part signifies the sky and the green part the ground. Moving our drone while it is connected will result in the HUD moving, and we can use that to verify that our pitch, roll and yaw move in the intended directions. Pitch and roll can be directly seen in the HUD, while we will look at the compass at the top to check our yaw direction.
 
 After we have set the correct orientation for our flight controller, we can go to the Accel Calibration tab.
 
-<img width="686" height="529" alt="MissionPlanner_AccelCalibration" src="https://github.com/user-attachments/assets/45a0a9eb-d714-46b8-9df0-c4c679b81f38" />
+<img width="686" height="529" alt="MissionPlanner_AccelCalibration" src="../../Images/InitialSetup/MissionPlanner_AccelCalibration.png" />
 
 To calibrate the accelerometer, we press the Calibrate Accel button and follow the instructions that will be shown right above the button. This will set the Min and Max values of our accelerometer in all 3 axes by setting our drone on each edge. After calibrating, it is advised to reboot the drone. After we calibrated the Min/Max values, we use the button right underneath and calibrate the level, which will set the default accelerometer offsets. Here and in the first step of Calibrating the acceleration, the drone should be fully level. If it is not, it might lead to the drone drifting, as the level position will be off.
 
 ### Compass Calibration
 Next we will go to the Compass tab to calibrate the magnetometer
 
-<img width="897" height="625" alt="MissionPlanner_Compass" src="https://github.com/user-attachments/assets/76b4445e-b47d-4a7b-923f-a24528bea09b" />
+<img width="897" height="625" alt="MissionPlanner_Compass" src="../../Images/InitialSetup/MissionPlanner_Compass.png" />
 
 Pressing start will start the calibration, where we will have to rotate the drone around all axes. This will adjust the compass, so that it can read the earth magnetic field more accurately. The process might have to be repeated numerous times, and if it still does not work, it is recommended to go outside, as indoors there might be metal or electric devices that can corrupt the reading  of the magnetic field. After a succesful calibration, the values can be saved and the drone will have to be rebooted to finalize it.
 
 ### Radio Calibration
 Radio Calibration is the following mandatory setting. 
 
-<img width="813" height="547" alt="MissionPlanner_RadioCalibration_Connected" src="https://github.com/user-attachments/assets/7ba877d2-2f06-4f28-96a4-793e8c0cbcb1" />
+<img width="813" height="547" alt="MissionPlanner_RadioCalibration_Connected" src="../../Images/InitialSetup/MissionPlanner_RadioCalibration_Connected.png" />
 
 The calibration starts by pressing the button `Calibrate Radio`, while the receiver has to be connected to the drone. Most important are the roll, pitch and yaw channels, that are controlled using the sticks of the receiver. Normally the centres of the sticks should be exactly at 1500. That is here the case, but it might not always be the case. If the numbers are off, the parameters `HS1_TRIM` value for the roll and the HS2_TRIM for the pitch value will have to be changed to the value at the center position of the stick. Another important point is that the lower position of the sticks should be below 1000 
 
@@ -216,17 +216,17 @@ This is one of the most important steps. First we define some important terms we
 
 The first thing we will be doing is make sure that our motors are setup correctly. To do that we need to go to the tabs Optional Hardware and the subsection Motor test:
 
-<img width="724" height="831" alt="MissionPlanner_MotorTest" src="https://github.com/user-attachments/assets/c0f973f1-f41a-4d38-a6fa-708fc270eee0" />
+<img width="724" height="831" alt="MissionPlanner_MotorTest" src="../../Images/InitialSetup/MissionPlanner_MotorTest.png" />
 
 The motor numbering is given for our quadcopter as:
 
-<img width="531" height="561" alt="MotorNumbersQuadX" src="https://github.com/user-attachments/assets/5caaec0f-be30-4007-bc1a-03e2e3ab9ba3" />
+<img width="531" height="561" alt="MotorNumbersQuadX" src="../../Images/InitialSetup/MotorNumbersQuadX.png" />
 
 If we have a different Frame type, we will have to look up the correct order under https://ardupilot.org/copter/docs/connect-escs-and-motors.html#motor-order-diagrams
 
 Most ESCs will not directly have the correct motor position using default options. This means we have to look how our motors spin and if they spin in the correct direction. Each motor from A to D should work in clockwise rotation, meaning when we press `Test motor A, the upper right motor should spin counter clockwise, as depicted int he motor numbering image. By pressing Test motor B the lower right motor should spin, and so on. If another motor spins, we have to change the servo output under the mandatory hardware tab:
 
-<img width="708" height="547" alt="MissionPlanner_ServoOutput" src="https://github.com/user-attachments/assets/6cdd97c8-11e5-4468-9d21-956341c393f4" />
+<img width="708" height="547" alt="MissionPlanner_ServoOutput" src="../../Images/InitialSetup/MissionPlanner_ServoOutput.png" />
 
 Here we see each motor, the left number shows the position as given in the motor numbering, the Motors in the function column are the actual motors, which we will have to change so they match the correct order we see using the motor test. If the motor spins in the correct place, but spins in the incorrect direction, we can set the checkmark in the reverse column. 
 
@@ -245,12 +245,12 @@ Now there are some more parameters we will have to change for our initial motor 
 
 All the parameters but MOT_THST_HOVER can also be set using the Mandatory Hardware subsection called ESC calibration.
 
-<img width="804" height="543" alt="MissionPlanner_ESCCalibration" src="https://github.com/user-attachments/assets/5e485d77-0382-49eb-bb0f-450183353ccd" />
+<img width="804" height="543" alt="MissionPlanner_ESCCalibration" src="../../Images/InitialSetup/MissionPlanner_ESCCalibration.png" />
 
 ### Serial ports
 The serial ports in this section are set according to the wiring. In the image at the very top we see the wiring for our drone and set the corresponding ports in this setting:
 
-<img width="981" height="532" alt="MissionPlanner_SerialPorts2" src="https://github.com/user-attachments/assets/63ce39c2-3dc1-4fe6-9d1d-0a147f4dd69a" />
+<img width="981" height="532" alt="MissionPlanner_SerialPorts2" src="../../Images/InitialSetup/MissionPlanner_SerialPorts2.png" />
 
 We will go through each serial port that we will have to set based on the wiring of our drone:
 - **UART 1**: Telemetry (DJI VTX), responsible for sending the telemetry data and uses the Mavlink protocol. The baud rate by MAVLink is entirely dependent on the physical hardware, the default value for the industry is 57600 baud. as it is more stable over long distances.
