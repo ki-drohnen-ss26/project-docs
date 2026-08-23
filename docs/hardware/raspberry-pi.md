@@ -131,8 +131,8 @@ To do that we first use the Netork Managers command line interface(nmcli) to cre
 sudo nmcli connection add type wifi ifname wlan0 mode ap con-name Hotspot ssid MyPiHotspot autoconnect no wifi-sec.key-mgmt wpa-psk wifi-sec.psk "Password123"
 ```
 - `connection add` instructs the Network Manager to create and save a new network profile
-- ' type' specifies what type of connection we want to use, in our case `wifi`
-- 'ifname` specifies the interface name, which is a physical or virtual network device. We want to bind our connection to our built-in Wi-Fi adapter, which is named `wlan0`.
+- `type` specifies what type of connection we want to use, in our case `wifi`
+- `ifname` specifies the interface name, which is a physical or virtual network device. We want to bind our connection to our built-in Wi-Fi adapter, which is named `wlan0`.
 - `mode` is an alias for the property `802-11-wireless.mode`, and the option `ap` sets this mode to Access Point, making the wireless card act like a Wi-Fi router that is broadcasting a network, and allows us to connect to it.
 - `con-name` specifies the internal name of this network profile.
 - `ssid` sets the broadcastname that is visible to other devices
@@ -214,7 +214,7 @@ We need to set the following parameters, do note that for our setup we need to s
 - `LOG_BACKEND_TYPE` = 3 We only need this option if we want to save logs onto our Raspberry Pi.
 
 ## Connect the flight controller with the board computer
-To connect the flight controller and the board computer, we have to connect the Raspberry Pi's TX pin (GPIO 14/Pin 8) to the RX pin of the flight controllers, the RX pin (GPIO 15/Pin 10) of the Pi to the TX pin of the flight controller and make sure they have common ground by plugging setting the ground of the flight controller to the ground of the Pi. Make sure that you are only ever power the Pi using either the drones battery, or the usb-c port, as using both might damage the board. The GPIO serial port is called `/dev/serial0` on our Pi.
+To connect the flight controller and the board computer, we have to connect the Raspberry Pi's TX pin (GPIO 14/Pin 8) to the RX pin of the flight controllers, the RX pin (GPIO 15/Pin 10) of the Pi to the TX pin of the flight controller and make sure they have common ground by plugging setting the ground of the flight controller to the ground of the Pi. Make sure that you only ever power the Pi using either the drones battery, or the usb-c port, as using both might damage the board. The GPIO serial port is called `/dev/serial0` on our Pi.
 <img width="2064" height="1185" alt="image" src="https://github.com/user-attachments/assets/1521c14e-dfba-4fbf-9ba0-d6705322b6e0" />
 
 ## Install MAVLink-router
