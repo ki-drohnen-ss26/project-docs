@@ -43,6 +43,8 @@ sudo nmcli connection add type wifi ifname wlan0 mode ap con-name Hotspot ssid M
 
 After we set up the Conncetion Profile, we still want it to open the Hotspot, after it failed to set up another WiFi connection. To do that we will create a systemd service, that waits a little while, so it allows for automatic connection to known WiFi networks, and launches the Hotspot in case no connection has been found.
 
+A systemd service, or daemon, is a type of background process that systemd is responsible for starting, stopping, and monitoring.
+
 First we create a script that our service will use
 ```
 sudo nano /usr/local/bin/autohotspot.sh
@@ -89,12 +91,22 @@ ExecStart=/usr/local/bin/autohotspot.sh
 [Install]
 WantedBy=multi-user.target
 ```
+We can see that the service file is divided into three sections:
+- **The unit section**: 
+The unit section defines the metadata for services and tells systemd when in the boot sequence the process is started
+  - **Description**: Label(Name) for the service.
+  - **After=NetworkManager.service**: Defines which services have to run earlier, as we only want to create a Hotspot after we made sure there are no other WiFi connections, we let our service run after the Network Manager.
+- **The service section**: Defines how the script is executed and managed.
+  - **Type**: The Type defines how the startup process is managed and how systemd determines when the service is fully up and running. `oneshot`is gererally used for single-run tasks and systemd waits for the process to fully complete before marking the unit as started or moving to dependent sevices.
+  - **ExecStart**: Points to path of the bash script. Systemd will execute this command when starting the service.
+- **The install section**: Defines behaviour upon running `sudo systemctl enable`, for the service, meaning what happens after it is enabled.
+  - **WantedBy**: This directive specifies the relationship between this service and other services. `multi-user.target` is the state where the system can accept multiple non-graphical user sessions.
+
 Lastly we enable the service using the two commands
 ```
 sudo systemctl daemon-reload
 sudo systemctl enable autohotspot.service
 ```
-
 ## Setup the flight controller
 While we already set the needed options in the setup section of our drone, we will repeat the needed settings for our flight controller to be able to work with our board computer. 
 We need to set the following parameters, do note that for our setup we need to set the options for serial port 4, this might be different for other configurations:
