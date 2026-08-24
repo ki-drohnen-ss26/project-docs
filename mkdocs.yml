@@ -125,9 +125,9 @@ nav:
       - RC & FPV: hardware/rc-fpv.md
   - Software:
       - software/index.md
+      - SITL Simulation: software/SetupSimulation.md
       - Flight Controller Firmware: software/flight-controller.md
       - Raspberry Pi OS: software/raspberry-pi-os.md
-      - SITL Simulation: software/SetupSimulation.md
       - Ground Control Station: software/gcs.md
       - AI Software: software/ai-software.md
   - Autopilot:

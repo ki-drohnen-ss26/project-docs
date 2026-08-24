@@ -70,7 +70,7 @@ wsl --list --verbose
 ```
 that also shows the WSL version version:
 
-<img width="381" height="56" alt="image" src="https://github.com/user-attachments/assets/2a75edbd-ec0c-43f2-bcb0-354a8798f669" />
+![WSL](../Images/Simulation/WSL.png)
 
 For our use case we need WSL version 2, as we need graphics. In case the version is 1, we can change the WSL version using
 ```
@@ -138,23 +138,24 @@ ardupilot/Tools/autotest/sim_vehicle.py -v ArduCopter --map --console
 ```
 The option `-v` sets the vehicle type, as we want to simulate a quadcopter, we set it to ArduCopter, but there can be many different vehicle types. like ArduPlane or Rover, and it is a needed option to run the SITL. The main command opens up the command line client that allows us to run commands through our SITL.
 
-<img width="939" height="520" alt="image" src="https://github.com/user-attachments/assets/4140e002-e35f-44bb-9d1d-b90c8492f0f6" />
+![Built](../Images/Simulation/Built.png)
 
 It will also open the SITL elf execution window, that outputs raw flight controller logs and debug data directly from the simulated hardware.
-<img width="810" height="517" alt="image" src="https://github.com/user-attachments/assets/61dbe98c-3634-4d43-9644-bb3388b38129" />
+
+![Elf](../Images/Simulation/ElfExecution.png)
 Do not close theís window, as this is the simulated flight controller and without it everything else will crash.
 
 The `--map` option opens a 2D map that shows our drone
 
-<img width="747" height="604" alt="image" src="https://github.com/user-attachments/assets/1972f866-1733-4a63-b44c-12f572ce23eb" />
+![Map](../Images/Simulation/Map.png)
 
 and the `--console` command opens a status terminal for messages
 
-<img width="746" height="248" alt="image" src="https://github.com/user-attachments/assets/c386103e-defb-4a6e-b3a1-d893cd2dd20d" />
+![Console](../Images/Simulation/Console.png)
 
 We can also connect our Mission planner with the simulated flight controller. Normally the mission planner connects automatically if the SITL is already running, else we will have to look after the UDP connection:
 
-<img width="325" height="50" alt="image" src="https://github.com/user-attachments/assets/de0b0c99-ae7e-4e43-961a-871211ba9356" />
+![Connection](../Images/Simulation/Connection.png)
 
 Now that we have started our application, we can look at some commands to see if everything works as intended.
 First we will change into guided mode using the command
@@ -171,11 +172,11 @@ takeoff 40
 ```
 that will increase the drones altitude by 40 meters, which we can confirm using the console, where we will see the Alt parameter being 40. 
 
-<img width="905" height="163" alt="image" src="https://github.com/user-attachments/assets/c6fbb28c-8042-4d7d-9949-a187b53278f5" />
+![Console2](../Images/Simulation/Console_2.png)
 
 If we have the mission planner connected, we can also see the same in the mission planner data.
 
-<img width="590" height="459" alt="image" src="https://github.com/user-attachments/assets/921dd91d-1571-4e78-b783-3c61b3f0618c" />
+![PlannerData](../Images/Simulation/PlannerData.png)
 
 Further commands to try are setting the throttle to 1500 PWM
 ```
@@ -192,7 +193,7 @@ param set CIRCLE_RADIUS_M 20
 
 We can look at the mission planner how our drone behaves, we see the drone is tilted and on the map we can see how it circles.
 
-<img width="1919" height="1028" alt="image" src="https://github.com/user-attachments/assets/fe1cf58e-eb23-4556-9e66-253253fc6996" />
+![Ardupilot](../Images/Simulation/Ardupilot.png)
 
 If everything works as intended, we have succesfully set up the system in the loop and can now install the Gazebo simulation that lets us simulate a drone in three dimensions.
 Sources for the installation and use of SITL:
@@ -260,8 +261,7 @@ and a second to run
 ```
 where the `-f` option tells the arducopter simulation to look for a gazebo physics mode and `--model JSON` tells it to use the JSON communication protocol.
 
-<img width="1917" height="1025" alt="image" src="https://github.com/user-attachments/assets/4b54c330-abac-459c-a98f-2e68a3007268" />
-
+![Gazeebo](../Images/Simulation/Gazeebo.png)
 
 At first we will not be able to arm the drone, as the frame class and type seem to not be set, so we use the following commands in the MAVProxy command line:
 
