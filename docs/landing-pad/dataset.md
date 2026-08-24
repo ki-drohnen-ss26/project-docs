@@ -116,7 +116,7 @@ python3 build_dataset.py      # 175 train / 25 val / 16 test, leak-free
 |---|---|---|
 | Median pad size | **47 % of the image side** | the model had essentially never seen a distant pad |
 | Camera height (hall photos) | handheld, standing height | no nadir view |
-| Pad-free images | **3 of 175** | "there is no pad here" was never a supported answer |
+| Pad-free images | **0 of 175** | "there is no pad here" was never a supported answer |
 | Cut-out images (public set) | 31 % of source photos | a view the drone will never have |
 
 The first row explains the altitude weakness in [Evaluation](evaluation.md), and
@@ -142,9 +142,29 @@ taken from the parts of the frame where there is no pad — floor, lines, shadow
 skirting boards. The model is shown them with an empty answer sheet: *this picture
 contains nothing*.
 
-76 negatives brings the training set to 251 images, of which 30 % contain no pad. (In
-the finished dataset 79 images have an empty answer sheet: these 76, plus 3 that
-happened to be pad-free already.)
+76 negatives brings the training set to 251 images, of which 30 % contain no pad.
+
+!!! bug "Three of the empty answer sheets are a labelling mistake"
+    The finished set has **79** images with an empty answer sheet, not 76. The extra
+    three are not pad-free — they are three copies of photo **1776**, which shows the
+    pad filling most of the frame and was simply never marked up in Roboflow.
+
+    <figure markdown>
+      ![Photo 1776 with an empty label, next to its correctly labelled neighbour](../Images/LandingPad/mislabelled-1776.jpg){ width="640" }
+    </figure>
+
+    It is the only mistake of its kind in the export — 3 empty labels out of 295 images,
+    all three of them copies of that one photo, and every neighbouring frame is labelled
+    correctly. The Roboflow augmentation then multiplied one missed annotation into
+    three training images.
+
+    **Effect:** 3 of 251 training images (1.2 %) tell the model that a large, clear,
+    high-contrast pad is *nothing*. That is a small dose of exactly the wrong lesson —
+    it trains the model to suppress the easiest detection there is. Whether it measurably
+    hurt the deployed model is untested.
+
+    **Fix:** annotate 1776 in Roboflow and re-export, or drop the three images. Either
+    takes minutes. Worth doing before the next training run.
 
 That single change turned out to be the most valuable one in the whole project — see
 [Training](training.md#the-false-positive-lesson).
