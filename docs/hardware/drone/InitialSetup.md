@@ -450,6 +450,11 @@ Alsot the frames balance might be off center, make sure the battery is centered 
     - https://www.youtube.com/watch?v=9laDDE3tv-g
 - CRSF Receivers: https://ardupilot.org/copter/docs/common-tbs-rc.html#common-tbs-rc
 - Common problems: https://ardupilot.org/copter/docs/troubleshooting.html
+- GPS and Non-GPS transitions:
+    - https://ardupilot.org/copter/docs/common-non-gps-to-gps.html#common-non-gps-to-gps
+	- https://ardupilot.org/copter/docs/common-non-gps-navigation-landing-page.html
+- Extended Kalman Filter:
+    - https://ardupilot.org/copter/docs/common-apm-navigation-extended-kalman-filter-overview.html
 - Handbooks
     - Frame: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/SpeedyBee-Bee35-Manual-EN.pdf
     - Flight controller: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/F745-V3.pdf
