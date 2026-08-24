@@ -56,6 +56,12 @@ In this project we develop, implement, and evaluate a practical drone-AI applica
 
     Configure ArduPilot and enable Position / Altitude Hold.
 
+-   :material-target: **[Landing Pad Detection](landing-pad/index.md)**
+
+    ---
+
+    The AI detector that finds the delivery target — data, training, measured results.
+
 </div>
 
 ## Project structure
@@ -69,6 +75,7 @@ The documentation follows the task structure defined in the project brief:
 | 3 | Autopilot integration | [Autopilot](autopilot/index.md) |
 | 4 | Position & Altitude Hold | [Sensors](sensors/index.md) |
 | 5 | Delivery mechanism | [Delivery System](delivery-system/index.md) |
+| 5a | Finding the target (AI detector) | [Landing Pad Detection](landing-pad/index.md) |
 | 6 | Frame extension | [Frame Extension](frame/index.md) |
 | 7 | Documentation & presentation | This site + poster + live demo |
 

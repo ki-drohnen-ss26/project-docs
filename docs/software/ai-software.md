@@ -85,17 +85,34 @@ inference off the Pi, which is why the *only* deployable model format for us is 
 
 ## Detector status
 
-!!! info "Status: `.rpk` export pending"
-    A pad detector has been trained and exists as **`pad_320_int8.tflite`** — which,
-    per the above, the IMX500 cannot load. The re-export through
-    `yolo export format=imx` → `imx500-package` is **pending** (a teammate is on it).
-    Until the `.rpk` is on the Pi, the companion flies with `camera_source = "timed"`
-    (a camera-less test mode that drops after a fixed time) rather than pretending to
-    detect; the mission logic itself is already validated against simulated detections
-    in SITL.
+!!! success "Status (2026-08-24): the `.rpk` exists and is measured"
+    The re-export is **done**. The deployed detector is a single-class YOLO11n
+    (`landingPad`, 320 px), and both artefacts exist:
+
+    - **`pad_320_int8.tflite`** — the CPU model, kept only as a reference for the
+      comparison above;
+    - **`network.rpk`** — the IMX500 package, built 2026-08-19 via
+      `packerOut.zip` → `imx500-package`. The ARM-only packaging step runs on a free
+      `ubuntu-24.04-arm` GitHub Actions runner, so no Pi has to be powered on for it.
+
+    Quantisation was measured rather than assumed: **mAP50 0.9950 and recall 1.000
+    unchanged**, only mAP50-95 falls 0.8098 → 0.6737 (looser boxes, same detections).
+
+    **What is still outstanding** is deployment and bench verification, not the model:
+    copy the `.rpk` to the Pi, switch `camera_source` from `"timed"` to `"real"`, and
+    set the two values the measurements call for — `cam_box_order = "xyxy"` and
+    `camera_confidence = 0.3`. Until milestone 2 has confirmed the decoded `dx`/`dy`
+    against a tape measure, the companion should keep flying `"timed"`.
+
+    Full write-up: **[Landing Pad Detection](../landing-pad/index.md)** —
+    [deployment](../landing-pad/deployment.md) and
+    [flight-code integration](../landing-pad/integration.md).
 
 ## Where to go next
 
+- [Landing Pad Detection](../landing-pad/index.md) — the detector itself: dataset,
+  training runs, robustness measurements, both deployment paths, and the contract
+  with the flight code
 - [Raspberry Pi AI Camera](../hardware/ai-camera.md) — connecting the camera, IMX500
   firmware install, first detection demo
 - [Raspberry Pi OS](raspberry-pi-os.md) — the OS the stack runs on

@@ -130,6 +130,13 @@ nav:
       - Raspberry Pi OS: software/raspberry-pi-os.md
       - Ground Control Station: software/gcs.md
       - AI Software: software/ai-software.md
+  - Landing Pad Detection:
+      - landing-pad/index.md
+      - Dataset: landing-pad/dataset.md
+      - Training: landing-pad/training.md
+      - Evaluation: landing-pad/evaluation.md
+      - Deployment: landing-pad/deployment.md
+      - Flight-Code Integration: landing-pad/integration.md
   - Autopilot:
       - autopilot/index.md
       - ArduPilot Setup: autopilot/ardupilot-setup.md
