@@ -56,6 +56,13 @@ polygons (outlines), not just rectangles.
 is *checked during learning* on the validation part, and is *finally graded* on the
 test part — which it must never have seen. Otherwise the grade is meaningless.
 
+**Generalise**
+: Whether a model works on pictures it has **never seen before**, rather than just on
+the ones it learned from. A model can be good in two very different ways: it memorised
+the training pictures, or it learned what a landing pad actually looks like. Only the
+second is useful, because in flight every picture is new. Everything on the
+[Evaluation](evaluation.md) page is an attempt to tell the two apart.
+
 **Leakage**
 : When pictures from the test part are also, effectively, in the training part — for
 example two near-identical photos taken a second apart. The model then scores well by

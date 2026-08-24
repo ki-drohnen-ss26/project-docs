@@ -47,7 +47,8 @@ format.
 !!! warning "The only operational scene is the smallest part of the dataset"
     The hall is the environment the drone flies in, and it is **37 %** of the source
     material. The other 63 % is a room we have never flown in and a background that
-    does not exist. Every "it generalises" claim below rests on that split.
+    does not exist. Every claim further down about the model coping with *new* pictures
+    rests on that split.
 
 !!! info "Attribution"
     The `1739 … 1778` images originate from **[`cgomolak/landing-pad-zvclx`](https://universe.roboflow.com/cgomolak/landing-pad-zvclx)**,
@@ -67,8 +68,17 @@ has two consequences that are worth stating rather than discovering later:
 
 - **31 % of the source material is a view the drone will never have.** A pad freed
   from its background on black is not a floor.
-- **"Does it generalise to a different pad?" is untested by construction.** The pad was
-  chosen to match the data, so the data cannot answer the question.
+- **Nobody knows whether it would recognise a _different_ landing pad.** Every picture
+  in the dataset — the ones we train on *and* the ones we test on — shows this one pad
+  design, because we built our pad to match the downloaded photos. So there is no
+  picture of a different pad anywhere to test against.
+
+    This is not something we forgot to check. It follows from how the data was put
+    together, and no amount of testing with *this* data can answer it.
+
+    For our project that hardly matters: the drone lands on this pad. It starts to
+    matter if the pad is ever rebuilt differently, or if someone wants to reuse the
+    model somewhere else.
 
 ### 123 photos became 295 images
 
@@ -82,7 +92,7 @@ different reasons. That matters immediately below.
 
 ## Why we rebuilt the train/test split
 
-!!! warning "The original 0.94 mAP was never a generalisation score"
+!!! warning "The original 0.94 mAP only proved the model had a good memory"
     Roboflow splits images **at random**, and two things made that fatal here:
 
     1. **Augmented copies.** Three versions of the same photograph exist. A random
