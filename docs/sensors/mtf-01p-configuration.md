@@ -25,7 +25,7 @@ ever meets the flight controller:
 
 1. Connect the MTF-01P to a PC through a **CP2102 USB-UART adapter**
    (sensor TX → adapter RX, sensor RX → adapter TX, 5 V, GND).
-2. Open the **MicroAir assistant software**, connect to the sensor's COM port.
+2. Open the **MicoAssistant software**, connect to the sensor's COM port, and set the output protocol to **"mav-apm"** (the MAVLink/ArduPilot mode).
 3. Set the output protocol to **MAVLink** and the baud rate to **115200**, save to
    the sensor.
 
@@ -48,6 +48,7 @@ In Mission Planner (CONFIG → Full Parameter List):
 |---|---|---|
 | `SERIAL5_PROTOCOL` | `1` | MAVLink1 — what the MTF-01P speaks |
 | `SERIAL5_BAUD` | `115` | 115200 baud, matching the sensor setting from step 1 |
+| `SERIAL5_OPTIONS` | `1024` | do not forward MAVLink traffic on this port — the sensor is a private FC↔sensor link, not part of the telemetry network |
 | `FLOW_TYPE` | `5` | Optical flow source: MAVLink |
 | `RNGFND1_TYPE` | `10` | Rangefinder source: MAVLink |
 

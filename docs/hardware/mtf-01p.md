@@ -14,6 +14,8 @@ needs. How exactly the data feeds the EKF is covered in the
 [sensors section](../sensors/index.md); this page is about the module as a
 piece of hardware.
 
+The [MicoAir MTF-01P](https://micoair.com/optical_range_sensor_mtf-01p/) is sold as a compact 2-in-1 optical-flow range sensor for drones and autonomous aircraft; the module officially supports ArduPilot, PX4, INAV and FMT.
+
 ## Interfaces: MSP by default, MAVLink for ArduPilot
 
 The module has a single UART. It can speak two protocols:

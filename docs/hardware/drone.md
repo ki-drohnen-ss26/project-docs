@@ -25,6 +25,26 @@ The GN745 is an *all-in-one* board: flight controller and 45 A 4-in-1 ESC on a
 single PCB. That keeps the CineWhoop build compact, but it also means one board
 failure can take out both flight control and motor drive.
 
+## Component details
+
+### SpeedyBee BEE35 Pro frame
+
+The [SpeedyBee BEE35 Pro 3.5" CineWhoop frame kit](https://www.speedybee.com/speedybee-bee35-3-5-inch-frame/#Parameters)
+is designed for the DJI O3 Air Unit, with dedicated heat-dissipation hardware and
+support for other compatible 20×20 video transmitters as well as external action
+cameras. For this project its ducts/propeller guards are what matter: they make
+indoor flight near people and walls survivable.
+
+### Flywoo GOKU GN745 45A AIO
+
+The [Flywoo GOKU GN745 45A AIO 2-6S AM32](https://flywoo.net/products/goku-gn745-45a-aio-bl_32-mpu6000-v3)
+combines the flight controller and a 4-in-1 ESC on a single 33.5 × 33.5 mm board,
+reducing wiring, weight and required frame space. At its core sits an STM32F745
+32-bit processor at 216 MHz, paired with an onboard gyro, barometer, 16 MB
+blackbox storage and seven hardware UARTs. The integrated ESC supports 2S-6S
+packs, delivers 45 A continuous and runs AM32 firmware with protocols up to
+DShot1200 (we use DShot600).
+
 ## FC quirks every rebuilder must know
 
 These are properties of the FlywooF745 hardware definition that are easy to miss
@@ -42,10 +62,10 @@ in the datasheet and that directly affected this project.
     This is exactly what happened after our
     [crash on 2026-08-21](../problems/incident-analysis-2026-08-21.md): the GPS connector
     was torn off, and afterwards the FC no longer *detected* the barometer at all
-    (plus "Bad Compass Health" errors). The working hypothesis is that the damaged
-    compass wiring hangs the shared bus. The zero-cost diagnostic is to unplug the
-    GPS module's I2C wires and boot stock 4.6.3 — if the baro reappears, the bus
-    (not the baro chip) is the problem.
+    (plus "Bad Compass Health" errors). The hypothesis was confirmed on
+    2026-08-24: **bent pins in the GPS connector** had hung the shared bus. After
+    straightening them, compass *and* barometer worked again — no chip had died.
+    The full story: [crash & barometer recovery](../problems/crash-2026-08-21.md).
 
     Practical consequence for rebuilders: treat the GPS/compass cable as
     flight-critical wiring even indoors where GPS itself is useless, and after
