@@ -158,13 +158,33 @@ contains nothing*.
     correctly. The Roboflow augmentation then multiplied one missed annotation into
     three training images.
 
-    **Effect:** 3 of 251 training images (1.2 %) tell the model that a large, clear,
-    high-contrast pad is *nothing*. That is a small dose of exactly the wrong lesson —
-    it trains the model to suppress the easiest detection there is. Whether it measurably
-    hurt the deployed model is untested.
+    **And it spread.** `negatives.py` builds hard negatives by cutting random windows
+    out of the photos, rejecting any window that overlaps a **labelled** pad. Photo 1776
+    has no labelled pad, so nothing was rejected — and three windows were cut straight
+    out of the pad and saved as *background*:
 
-    **Fix:** annotate 1776 in Roboflow and re-export, or drop the three images. Either
-    takes minutes. Worth doing before the next training run.
+    <figure markdown>
+      ![Three hard negatives that are actually close-ups of the pad](../Images/LandingPad/poisoned-negatives.jpg){ width="720" }
+      <figcaption>neg_0003, neg_0004 and neg_0005 — traced back to the three copies of 1776 by template matching.</figcaption>
+    </figure>
+
+    These are worse than the original mistake. They are close-ups of exactly the feature
+    the detector is supposed to key on — red tape on a dark mat — labelled "nothing
+    here".
+
+    **Effect:** 6 of 251 training images (2.4 %) tell the model that a clear pad is
+    nothing: 3 whole images plus 3 crops. One missed annotation, amplified twice — first
+    by the augmentation, then by the negative harvester. Whether it measurably hurt the
+    deployed model is untested.
+
+    **Fix:** annotate 1776 in Roboflow, re-export, and re-run `negatives.py` — the
+    harvester will then avoid the pad by itself. Alternatively drop the three images and
+    the three crops. Either takes minutes and is worth doing before the next training
+    run.
+
+    The held-out false-positive benchmark (`pad-negatives-bench`, 91 crops) is **not**
+    affected: it is built from the validation and test splits, and 1776 is in training.
+    The measured 0.02 false positives per image stands.
 
 That single change turned out to be the most valuable one in the whole project — see
 [Training](training.md#the-false-positive-lesson).
@@ -181,6 +201,34 @@ It produced 124 extra images and *improved box precision*, but lost on exactly
 the hard cases it was meant to fix (run E in [Training](training.md)). The
 composites look plausible and are evidently not a substitute for real distant
 photographs.
+
+## A full audit of every image
+
+Every image in the export and in the training set was checked mechanically — label
+present and well-formed, class id, coordinates in range, box geometry, duplicate
+detection, and a colour test comparing how much red tape falls inside the marked
+region versus outside it. Everything the checks flagged was then looked at by eye.
+
+| Check | Result |
+|---|---|
+| Missing, malformed or empty-by-mistake labels | **1 photo** — `1776`, above |
+| Wrong class id, coordinates outside 0–1 | none |
+| Identical images across splits (leakage) | none |
+| More than one object marked | **1 photo** — `1761`, below |
+| Extremely elongated boxes (up to 1:6.5) | 26 images, **all correct** — the pad seen almost edge-on really is that shape |
+| Box containing almost no red | 1 image, **correct** — the pad is far away and only a few pixels across |
+| Lots of red *outside* the marked pad | 65 images, **all correct** — the sports hall floor is painted with red lines |
+
+The last row is worth noting on its own: in two thirds of the hall photographs, most of
+the red in the picture is **not** the pad. That is the same fact that makes the red-X
+verification filter useless, measured from a completely different direction — see
+[Evaluation](evaluation.md#pattern-recognition).
+
+**The double annotation (`1761`).** One image carries two overlapping outlines of the
+same pad. Ground truth would then expect two detections where there is one, counting a
+correct answer as a miss. It has no effect on anything here: the image is in the
+original export's validation split and was dropped by our leak-free re-split, so no run
+ever saw it and no measurement includes it.
 
 ## Files
 
