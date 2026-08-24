@@ -147,13 +147,16 @@ no pad.
 
 <figure markdown>
   ![Twelve of the 76 pictures without a pad](../Images/LandingPad/negatives.jpg){ width="720" }
-  <figcaption>Twelve of the 76 — pieces of our own photos, cut from wherever the pad is not.</figcaption>
+  <figcaption>Twelve of the 76, taken evenly across the whole set: hall floor, painted lines, a wall, an office — and one plain black background, cut from the downloaded photos. No pad anywhere.</figcaption>
 </figure>
 
-These are not new photographs. They are **cut-outs of pictures we already had**, taken
-from parts of the frame where there is no pad: floor, painted lines, shadows, skirting
-boards. Each one is given to the model with an empty answer sheet — *this picture
-contains nothing*.
+These are not new photographs. They are **cut-outs of pictures we already had** — ours
+and the downloaded ones — taken from parts of the frame where there is no pad: floor,
+painted lines, shadows, skirting boards. Each one is given to the model with an empty
+answer sheet: *this picture contains nothing*.
+
+Three of the 76 are **not** like this, and that is
+[the mistake described below](#a-mistake-we-found).
 
 ```bash
 python3 negatives.py          # 76 cut-outs -> 30 % of the pictures are now empty
@@ -225,10 +228,23 @@ red in the picture is not the pad.** It is the floor. That is the same fact that
 the "check for a red cross" idea useless, arrived at from a completely different
 direction — see [Evaluation](evaluation.md#two-ideas-about-the-red-cross).
 
-**The double marking (1761).** One picture has the same pad outlined twice. The answer
-sheet then expects two pads where there is one, and a correct answer gets counted as a
-miss. It changes nothing here: that picture sits in a pile our re-sorting threw away
-entirely, so no training run ever saw it and no measurement includes it.
+### The double marking (1761)
+
+One picture has the same pad outlined **twice** — once loosely around the edge of the
+mat, once tighter along the red tape:
+
+<figure markdown>
+  ![Photo 1761 with two outlines around one pad](../Images/LandingPad/double-annotation-1761.jpg){ width="420" }
+  <figcaption>One pad, two outlines: red follows the mat's edge (71 points), blue follows the tape (68 points).</figcaption>
+</figure>
+
+The answer sheet then expects two pads where there is one, so a model that correctly
+finds the single pad gets marked down for missing the other.
+
+It changes nothing here. That picture sits in a pile our re-sorting threw away
+entirely — it appears in none of the training sets — so no training run ever saw it and
+no measurement includes it. It is recorded so that it does not quietly come back with
+the next export.
 
 The check can be repeated after any new export:
 
