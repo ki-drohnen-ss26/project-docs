@@ -405,15 +405,15 @@ The initial setup is completed, and we can start our first flight of the drone. 
 There will be many possible problems in the first flight, and we will address some of the most common.
 
 - **The drone does not arm**: Ardupilot has a lot of different checks it makes before arming, that are saved in the `ARMING_CHECK` parameter.
-- 
+
 ![Hover.png](../../Images/InitialSetup/Hover.png)
 	As we are trying to use our drone indoors, it will generally be a problem to get a GPS lock, which might stop the drone from arming, so we certainly do not want that option. If we do not care too much about the different checks, it is also possible to just set the bitmask to 0, as to disable all checks.
 
 - **The drone tries to flip upon increasing throttle**:
 There are mutilple reasons that might happen:
-  - This could mean that there is a problem regarding the motor setup and we should make sure that they are in the correct order and spin in the right diretion using the motor test.
-  -  The orientation is set up incorrectly and the drone believes to be on its head. In this case we will have to change the orientation like we did in the section about acceleration calibration and orientation.
-  -  Propellers are not mounted correctly
+    - This could mean that there is a problem regarding the motor setup and we should make sure that they are in the correct order and spin in the right diretion using the motor test.
+    -  The orientation is set up incorrectly and the drone believes to be on its head. In this case we will have to change the orientation like we did in the section about acceleration calibration and orientation.
+    -  Propellers are not mounted correctly
 - **The drone leaves the ground but oscillates strongly**: If the drone oscillates strongly, there is generally a problem in the PID controllers. As a start for later tuning, it is recommended to reduce the following PID parameters of the roll and pitch PID controllers by 50% until we no longer see the oscillations:
  	- ATC_RAT_PIT_P
 	-	ATC_RAT_PIT_I
@@ -427,12 +427,12 @@ There are mutilple reasons that might happen:
 	In extreme cases the vibrations can blind the gyroscope, leading to the flight controller thinking the drone is tilting violently and while trying to correct the orientation sets the motors to full throttle, leading the drone to ignore RC inputs and flying away with full speed.
 
 - **The drone leaves the ground, but the inputs do not match the movements of the drone**
-  - The orientation of the drone might be wrong, resulting in the drone moving differently then intended. In this case look at the acceleration calibration and orientation section to
-  - If the Mission planner HUD shows the correct movements, but the drone still does not move in the right direction, the axis might be reversed. For example, Betaflight has a reversed pitch axis compared to ardupilot. If that is the case, we need to set the RC reversed bit. For the pitch axis we would set `RC2_REVERSED` to 1, which was the case in this particular drone.
+    - The orientation of the drone might be wrong, resulting in the drone moving differently then intended. In this case look at the acceleration calibration and orientation section to
+    - If the Mission planner HUD shows the correct movements, but the drone still does not move in the right direction, the axis might be reversed. For example, Betaflight has a reversed pitch axis compared to ardupilot. If that is the case, we need to set the RC reversed bit. For the pitch axis we would set `RC2_REVERSED` to 1, which was the case in this particular drone.
  
 - **The drone flies normally but drifts away**:
-	- The center of Gravity might be off. Make sure the center of gravity is dead center of the drone and run the level command on a fully flat surface. Another possibility is to run in auto-trim mode in a windless environment. It is important that there is no wind, as the trim will take that into account and the problem might worsen in another environment.
-	- The PWM value at the center positions of the sticks is not exactly 1500. When the drone thinks the center position is off, the drone will drift. Make sure the parameters `HS1_TRIM` for roll and `HS2_TRIM` for pitch match the PWM registered for the center position.
+	  - The center of Gravity might be off. Make sure the center of gravity is dead center of the drone and run the level command on a fully flat surface. Another possibility is to run in auto-trim mode in a windless environment. It is important that there is no wind, as the trim will take that into account and the problem might worsen in another environment.
+	  - The PWM value at the center positions of the sticks is not exactly 1500. When the drone thinks the center position is off, the drone will drift. Make sure the parameters `HS1_TRIM` for roll and `HS2_TRIM` for pitch match the PWM registered for the center position.
 
 -  **The drone yaws to the right or left on takeoff**: This generally happens when the airframe is out of tune and one of the motors is slightly tilted or the weight balance is not centered. In most cases the drone will yaw around 30 to 45 degrees on takeoff and then the PID controller kicks in to stabilize the rotation. It is possible to adjust the PID terms to mitigate the problem to some extent, but as it does not solve the root problem, it is advised to look at each motor and see if any of the arms is slightly tilted and bend it back to vertical in case it is.
 Alsot the frames balance might be off center, make sure the battery is centered and redo the acceleration calibration if needed.
