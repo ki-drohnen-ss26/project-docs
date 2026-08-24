@@ -400,6 +400,7 @@ Not all parameters are shown when some parameters are not set. The rangefinder p
 - **`RNGFND1_MAX_CM` = 800:** This parameter sets the range finder’s maximum range, **in centimetres** on ArduCopter 4.6.
 - **`RNGFND1_MIN_CM` = 1:** sets the minimum range in centimetres. **Not the 20 cm default:** the MTF-01P sits only a few cm above the floor; with a higher minimum the driver reports "out of range low" on the ground, the EKF gets no terrain height, optical flow cannot be scaled and arming fails with *"Need Position Estimate"*.
 - **`RNGFND1_ORIENT` = 25**: sets the orientation of the rangefinder, in our case we want it to be downwards.
+- **`RNGFND1_GNDCLEAR` = 2:** ground clearance in **centimetres**, set to the sensor's real mounted height (~2 cm above the floor) instead of the 10 cm default. EKF3 treats `RNGFND1_GNDCLEAR` as the rangefinder reading it should expect when the aircraft is landed, so an over-large value biases the height the filter sees on the ground — aligning it with the true mounting height is one of the mitigations we are testing for the on-ground divergence (see the danger box below).
 
 !!! warning "`RNGFND1_MIN`/`RNGFND1_MAX` (in metres) are the **4.7** names"
     On our pinned 4.6.3 they do not exist, and ArduPilot silently ignores unknown
@@ -420,22 +421,44 @@ The default parameters that are set for the extended Kalman filter:
 The parameters we are using for indoor flight are:
 
 - `EK3_SRC1_POSXY` = 0 (None)
-- `EK3_SRC1_POSZ` = **1 (Baro)** — see the warning below; this project flew with `2` (Range Finder) and crashed
+- `EK3_SRC1_POSZ` = **2 (Range Finder)** — **mandated by the assignment**: the rangefinder is the EKF height source, and the barometer as the EKF source (`= 1`) is not permitted. This is the exact configuration that crashed us on 2026-08-21 *without* a safety protocol, so we now fly it *only* with the protocol in the danger box below
 - `EK3_SRC1_VELXY` = 5 (Optical Flow)
 - `EK3_SRC1_VELZ` = 0 (None)
 - `EK3_SRC1_YAW` = 1 (Compass)
 - `EK3_SRC_OPTIONS` = 0 (Disable FuseAllVelocities)
 
-!!! danger "`EK3_SRC1_POSZ = 2` (Range Finder) caused our crash — use 1 (Baro)"
-    An earlier version of this guide set the rangefinder as the EKF's *only* height
-    source. In practice EKF3 never fused a single height measurement from it: the
-    vertical estimate diverged quadratically **while the drone stood on the floor**
-    (−268 m after 90 s, −1070 m after three minutes, "climb rate" −12.6 m/s while
-    stationary), and the first altitude-controlled mode — a fence-forced LAND — went
-    to full throttle and flew the aircraft into the hall ceiling on 2026-08-21.
-    Keep the **barometer as the primary height source** (`EK3_SRC1_POSZ = 1`); the
-    rangefinder still improves low-altitude flight via ArduPilot's terrain-following
-    (`EK3_RNG_USE_HGT`) without ever being the only reference. Full analysis:
+!!! danger "`EK3_SRC1_POSZ = 2` is mandated — and it is the configuration that crashed us; fly it only under the protocol"
+    The assignment requires the rangefinder to be the EKF height source
+    (`EK3_SRC1_POSZ = 2`); the barometer as the EKF source (`= 1`) is **not permitted**.
+    This is exactly the configuration our aircraft flew on 2026-08-21, **without any
+    safety protocol**, and it crashed: EKF3 fused no height on the ground, the vertical
+    estimate diverged quadratically **while the drone stood on the floor** (−268 m after
+    90 s, −1070 m after three minutes, "climb rate" −12.6 m/s while stationary), a
+    leftover fence forced LAND, and that first altitude-controlled mode went to full
+    throttle into the hall ceiling. We may **not** fix this by moving the EKF back to the
+    barometer — that is what the task forbids. We fly `POSZ = 2` deliberately and
+    mitigate it, only with the full protocol:
+
+    - **Ground-drift GO/NO-GO before every arming** (`preflight.py`): the divergence is
+      quadratic, so seconds of EKF-altitude drift on the disarmed aircraft already print
+      a DO-NOT-FLY verdict.
+    - **Bench hand-lift test** proving the EKF altitude actually follows a real lift
+      before any flight.
+    - **`ARMING_CHECK = 786390`** — everything except the GPS lock that can never pass
+      indoors.
+    - **Geofence off** — no barometric fence inside the takeoff downwash noise band.
+    - **Rangefinder-gated pilot takeover** (`--takeover`): the handover trusts the raw
+      rangefinder, not the EKF altitude, and refuses when the two disagree.
+    - **Continuous in-flight EKF-vs-rangefinder cross-check** (`EKF_ALT_DIVERGED` →
+      LAND).
+    - **`RNGFND1_GNDCLEAR = 2`** aligned with the true mounting height (see the
+      rangefinder block above).
+
+    Why fusion never engaged is **still under investigation**: a colleague team flies
+    the same sensor with `POSZ = 2` successfully, so the next step is a full parameter
+    diff against their aircraft (hot suspects: `RNGFND1_GNDCLEAR`, `RNGFND1_MIN_CM`,
+    `EK3_ALT_M_NSE`). The barometer stays wired as an independent witness in the logs —
+    a reference, never the EKF source. Full analysis:
     [incident report](../../problems/incident-analysis-2026-08-21.md).
 
 We set the parameter `EK3_SRC_OPTIONS` to zero, to avoid that the drone fuses all velocities, as fusing velocities of GPS and optical flow will lead to problems, especially if the GPS coverage is spotty at best.

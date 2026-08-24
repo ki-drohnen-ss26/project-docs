@@ -63,6 +63,7 @@ set and the FC has booted with it.
 | `RNGFND1_MIN_CM` | `1` | Minimum range in **centimetres** — see the warning below |
 | `RNGFND1_MAX_CM` | `800` | Maximum range, 8 m |
 | `RNGFND1_ORIENT` | `25` | Facing down |
+| `RNGFND1_GNDCLEAR` | `2` | Ground clearance in **cm** = the sensor's real mounted height (~2 cm), not the 10 cm default: EKF3 treats it as the rangefinder reading to expect when landed, so it must match reality — a mitigation for the on-ground EKF divergence with `EK3_SRC1_POSZ = 2`. |
 
 Reboot once more so the rangefinder backend re-reads its limits.
 
@@ -91,8 +92,10 @@ not this sensor — see the [incident analysis](../problems/incident-analysis-20
 
 !!! note "The sensor being healthy is only half the job"
     These steps make the FC *receive* flow and range data. Making the EKF *use*
-    them (`EK3_SRC1_VELXY = 5`, and — critically — `EK3_SRC1_POSZ = 1`, **never**
-    `2`) is a separate step with its own failure modes, covered in
+    them (`EK3_SRC1_VELXY = 5` and the assignment-mandated `EK3_SRC1_POSZ = 2` — the
+    rangefinder as the EKF height source, **not** the barometer) is a separate step
+    with its own failure modes: it is exactly this configuration that crashed us on
+    2026-08-21, so it is flown only under the safety protocol covered in
     [Position & Altitude Hold](../autopilot/position-altitude-hold.md) and on the
     [LiDAR page](lidar.md).
 

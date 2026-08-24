@@ -17,7 +17,7 @@ with two measurements from a single sensor, the **MicroAir MTF-01P**:
 |---|---|---|
 | Horizontal velocity | **Optical flow** — a downward camera tracking ground texture | `EK3_SRC1_VELXY = 5` |
 | Horizontal position | None (flow is integrated → *relative* position only) | `EK3_SRC1_POSXY = 0` |
-| Altitude | **Barometer** (primary) + LiDAR rangefinder for height-above-ground | `EK3_SRC1_POSZ = 1` |
+| Altitude | **LiDAR rangefinder** (EKF height source, mandated) + barometer as an independent witness in the logs | `EK3_SRC1_POSZ = 2` |
 
 The two halves of the MTF-01P depend on each other: optical flow measures an *angular*
 rate (radians per second of ground moving through the image), and turning that into a
@@ -46,18 +46,22 @@ flowchart LR
     A[MTF-01P<br/>flow camera + LiDAR] -- "OPTICAL_FLOW<br/>DISTANCE_SENSOR (MAVLink1, SERIAL5)" --> B[ArduCopter 4.6.3<br/>flow + rangefinder drivers]
     B --> C[EKF3]
     C -- "position / velocity /<br/>altitude estimate" --> D[Position & altitude<br/>controllers]
-    E[Barometer<br/>primary height source] --> C
+    E[Barometer<br/>independent witness, logged<br/>not the EKF height source] -. cross-check .-> C
 ```
 
 EKF3 fuses the flow rates (scaled by the rangefinder height) as horizontal velocity,
-and uses the rangefinder as a **terrain/height-above-ground** reference at low
-altitude while the barometer remains the primary vertical position source.
+and — as the assignment mandates — uses the rangefinder as the **only** vertical
+position source (`EK3_SRC1_POSZ = 2`). The barometer is logged alongside as an
+independent witness against that estimate, never as the EKF height source.
 
-!!! danger "Configuration order matters more than the hardware"
+!!! danger "Configuration, not hardware — and it is the mandated configuration"
     Our 2026-08-21 crash was **not** a sensor failure — the MTF-01P performed
     flawlessly in every log (rangefinder status good in 3441/3441 samples, flow
-    quality 45–113). The crash came from *how the EKF was told to use it*
-    (`EK3_SRC1_POSZ = 2`, rangefinder as the only height source). Read the
+    quality 45–113). The crash was the failure mode of the configuration the assignment
+    *mandates*: `EK3_SRC1_POSZ = 2`, the rangefinder as the only EKF height source — on
+    the ground EKF3 fused no height and the vertical estimate diverged. We may not switch
+    the EKF to the barometer (the task forbids it); we fly `POSZ = 2` under the safety
+    protocol and are still investigating why fusion never engaged. Read the
     [incident analysis](../problems/incident-analysis-2026-08-21.md) and the
     [LiDAR page](lidar.md) before changing any `EK3_SRC*` parameter.
 

@@ -55,7 +55,8 @@ parameter block. The [Autopilot section](../autopilot/index.md) explains *why* t
 choices ([ArduPilot Setup](../autopilot/ardupilot-setup.md) collects the parameter
 work). Our recovered known-good parameter set lives in the Pi-Code repository
 (`params/fc_baseline_463_20260821.parm` plus `params/fc_safe_overrides.parm` — fence
-off, `EK3_SRC1_POSZ=1`, `ARMING_CHECK=786390`, `BATT_LOW_VOLT=12.8`).
+off, the mandated `EK3_SRC1_POSZ=2` with `RNGFND1_GNDCLEAR=2`, `ARMING_CHECK=786390`,
+`BATT_LOW_VOLT=12.8`).
 
 **Done when:** all calibrations pass, no `PreArm` errors, and the
 [Quick Start](quickstart.md) hover test in Stabilize is calm and controllable.
@@ -77,10 +78,13 @@ the [Sensors section](../sensors/index.md), with deep dives on
 when you lift the drone by hand, and optical-flow data arrives with usable quality
 over textured, lit ground.
 
-!!! warning "Never make the rangefinder the *only* EKF height source"
-    `EK3_SRC1_POSZ` must stay on barometer (`1`). Setting it to rangefinder-only was
-    one third of the causal chain in our
-    [crash](../problems/incident-analysis-2026-08-21.md).
+!!! danger "The rangefinder is the mandated EKF height source — fly it under the protocol"
+    The assignment requires `EK3_SRC1_POSZ = 2` (rangefinder, not barometer). This is
+    the configuration that crashed us on 2026-08-21 when flown without mitigations, so it
+    is flown only under the safety protocol (ground-drift preflight, rangefinder-gated
+    takeover, in-flight EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 2`), and why
+    on-ground fusion never engaged is still under investigation — see the
+    [crash analysis](../problems/incident-analysis-2026-08-21.md).
 
 ## Step 5 — Raspberry Pi OS and MAVLink routing
 

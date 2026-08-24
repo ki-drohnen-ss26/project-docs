@@ -83,7 +83,7 @@ under `params/`:
 | File | Content |
 |---|---|
 | `params/fc_baseline_463_20260821.parm` | Full real-FC baseline (1154 parameters, incl. accel calibration, ESC/servo setup, MTF-01P and Pi serial config). **Byte-faithful to the crash-day state — contains the crash configuration.** |
-| `params/fc_safe_overrides.parm` | The corrections from the crash analysis: fence off, `EK3_SRC1_POSZ = 1` (baro, not rangefinder), `ARMING_CHECK = 786390`, `BATT_LOW_VOLT = 12.8`. |
+| `params/fc_safe_overrides.parm` | The safety overlay from the crash analysis: fence off, the mandated `EK3_SRC1_POSZ = 2` (rangefinder) with `RNGFND1_GNDCLEAR = 2`, `ARMING_CHECK = 786390`, `BATT_LOW_VOLT = 12.8`. |
 
 !!! danger "Load order is mandatory"
     The baseline alone restores the configuration **that crashed the aircraft**.

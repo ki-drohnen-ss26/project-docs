@@ -148,16 +148,17 @@ Additionally, flashing the custom firmware **wiped all parameters to defaults**
 (including the accel calibration and the MTF-01P serial setup). The full pre-crash
 parameter state was recovered from the crash log's own parameter records and lives in
 `Pi-Code/params/fc_baseline_463_20260821.parm`, together with
-`fc_safe_overrides.parm` which overrides exactly the causal values (fence off,
-`EK3_SRC1_POSZ=1`, arming checks on, correct Li-Ion battery failsafe). Load the
-baseline, then the overrides, then reboot — see `Pi-Code/params/README.md`.
+`fc_safe_overrides.parm` which overrides the other causal values (fence off, arming
+checks on, correct Li-Ion battery failsafe) and pins the mandated `EK3_SRC1_POSZ = 2`
+together with the protocol parameters (`RNGFND1_GNDCLEAR = 2`). Load the baseline, then
+the overrides, then reboot — see `Pi-Code/params/README.md`.
 
 ## What changed
 
 | Link | Fix |
 |---|---|
 | Leftover fence | Companion: geofence **off by default**; every FC parameter the companion changes is saved first, restored on every exit, and mirrored to disk so even a killed run is cleaned up by the next one. A stale fence found enabled at startup is disarmed and logged. |
-| EKF height source | `EK3_SRC1_POSZ = 1` (barometer primary) once the baro works again; the rangefinder stays available for low-altitude terrain following. `preflight.py` now measures EKF-altitude drift on the ground and prints a DO-NOT-FLY verdict — twenty seconds would have caught this before any of the five flights. |
+| EKF height source | The assignment mandates `EK3_SRC1_POSZ = 2` (rangefinder), so switching the EKF to the barometer is **not** an available fix — this is the documented failure mode of the configuration we must fly. Instead we fly it under a safety protocol: `preflight.py` measures EKF-altitude drift on the ground and prints a DO-NOT-FLY verdict (twenty seconds would have caught this before any of the five flights); a bench hand-lift test proves the EKF follows a real lift; the takeover gate and an in-flight cross-check watch the estimate against the raw rangefinder; and `RNGFND1_GNDCLEAR` is aligned to the true 2 cm mounting height. Why fusion never engaged is still under investigation — a parameter diff against a team flying the same sensor with `POSZ = 2` is pending. The barometer stays logged as an independent witness, never the EKF source. |
 | Arming checks | `ARMING_CHECK = 786390` (everything except GPS lock). Documented in the setup guide with the reason. |
 | Takeover safety | The companion's pilot-takeover gate now trusts the **rangefinder**, not the EKF altitude (which read +1070 m on the floor), and refuses the handover when the two disagree. |
 | In-flight watch | The companion continuously cross-checks EKF altitude against the raw rangefinder during the whole flight (`EKF_ALT_DIVERGED` → land) — the estimate is monitored, not just the sensors. |

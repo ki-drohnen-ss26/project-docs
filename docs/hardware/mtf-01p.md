@@ -81,10 +81,15 @@ optional detail — it decides whether the sensor works at all:
   our logs show flow quality between 45 and 113 on the hall floor.
 - **Range limits.** Configured usable rangefinder window is 1 cm to 8 m
   (`RNGFND1_MIN_CM`/`RNGFND1_MAX_CM`).
-- **Height *reference*, not sole height *source*.** Using the LiDAR as the
-  EKF's only altitude source (`EK3_SRC1_POSZ = 2`) caused our crash — keep the
-  barometer primary and let the rangefinder assist near the ground. Details in
-  the [incident report](../problems/incident-analysis-2026-08-21.md) and the
+- **Mandated as the EKF height source, and mitigated.** The assignment requires
+  the LiDAR to be the EKF's only altitude source (`EK3_SRC1_POSZ = 2`) — the
+  barometer as the EKF source is not permitted. This is the configuration that
+  crashed us on 2026-08-21 when flown without mitigations, so we fly it only under
+  the safety protocol (ground-drift preflight, rangefinder-gated takeover, in-flight
+  EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 2`) and are still investigating
+  why on-ground fusion did not engage. The barometer stays as an independent witness
+  in the logs. Details in the
+  [incident report](../problems/incident-analysis-2026-08-21.md) and the
   [sensors section](../sensors/index.md).
 
 ## Related pages
