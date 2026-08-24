@@ -21,26 +21,48 @@ tags:
 
     **What we deployed:** the sixth attempt, called run F.
 
-## Before the retraining: the weakest of three checkpoints was the deployed one
+## We were using the worst of three models
 
-Three landing-pad checkpoints existed when this work started, and the inference
-script on the Pi loaded the **oldest and worst** of them. Measured in FP32 on the
-leak-free test split:
+When this work started, three trained models from earlier attempts were lying around,
+all with names like *"best"*. The one actually copied onto the drone was the **oldest
+and the weakest** of the three.
 
-| Checkpoint | Trained | mAP50 | mAP50-95 |
-|---|---|---|---|
-| `best.pt` — **the one the Pi and the live demo loaded** | May, 50 ep @ 320 | 0.734 | 0.643 |
-| `best-2.pt` | 27 May, 80 ep @ 416 | 0.799 | 0.647 |
-| `pad_v2/weights/best.pt` | 24 Jun, 80 ep @ 416 | 0.995 | 0.971 |
+Here they are, all graded on the same test photos. The grade is **mAP** — a single
+number between 0 and 1 that says how good a detector is; higher is better, 1.0 would be
+perfect. ([What mAP actually measures](glossary.md#measuring-it).)
 
-After INT8 quantisation the deployed `best_int8.tflite` measured **mAP50 0.657**
-(confirmed independently by `yolo val` on the `.tflite` itself). Simply pointing the
-export at the June checkpoint was the single largest available improvement, and it
-cost nothing.
+| Model file | Trained | Grade |
+|---|---|---|
+| `best.pt` — **this was the one on the drone** | May | 0.73 |
+| `best-2.pt` | end of May | 0.80 |
+| `pad_v2` | June | **0.99** |
 
-That is also why the comparison below **retrains the old recipe from scratch** (run A)
-instead of reusing any of these weights: all three were trained on the leaky split, so
-none of them has uncontaminated data left to be measured on.
+So a much better model already existed — nobody had swapped it in. Simply exporting the
+June one instead was free, and was the biggest single improvement available anywhere in
+the project.
+
+!!! warning "None of these three grades can be trusted"
+    All three were trained on the badly organised data described in
+    [Dataset](dataset.md#why-we-rebuilt-the-traintest-split): they had already seen the
+    photos they were being graded on. Those grades measure memory, not skill.
+
+    That is why the comparison below **trains the old settings again from scratch**
+    (called run A) rather than reusing any of these files. Only then are the numbers
+    comparable.
+
+??? note "The exact figures, for the record"
+    Scored in **FP32** — the full-precision model on a laptop, before any shrinking for
+    the drone — on the leak-free test split:
+
+    | Checkpoint | Trained | mAP50 | mAP50-95 |
+    |---|---|---|---|
+    | `best.pt` (deployed) | May, 50 epochs @ 320 px | 0.734 | 0.643 |
+    | `best-2.pt` | 27 May, 80 epochs @ 416 px | 0.799 | 0.647 |
+    | `pad_v2/weights/best.pt` | 24 Jun, 80 epochs @ 416 px | 0.995 | 0.971 |
+
+    The file that was actually on the drone had additionally been shrunk to INT8 for
+    speed, and in that form measured **mAP50 0.657** — confirmed independently by
+    running `yolo val` against the `.tflite` itself.
 
 ## The six runs
 

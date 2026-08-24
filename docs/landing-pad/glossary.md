@@ -98,11 +98,38 @@ means it found every one.
 : How well the model's rectangle overlaps the correct one, from 0 (no overlap) to 1
 (perfect). Usually a detection counts as correct at IoU ≥ 0.5.
 
-**mAP / mAP50 / mAP50-95**
-: The standard single score for object detectors, combining precision and recall.
-`mAP50` grades at IoU ≥ 0.5 — did you find it? `mAP50-95` also demands an accurate
-rectangle. In our case this score turned out to be useless, because every attempt
-scored almost the same; see [Evaluation](evaluation.md).
+**mAP**
+: The standard **school grade for an object detector**: one number between 0 and 1,
+where 1 is perfect. It rolls two things into one — did the model find the objects that
+were there, and did it avoid inventing ones that were not. When someone says "the model
+scores 0.99", they mean mAP.
+:
+    It comes in two strengths:
+:
+    - **mAP50** — *did you find it?* A detection counts as correct if the rectangle
+      roughly overlaps the real pad (at least half).
+    - **mAP50-95** — *did you find it AND draw a tight rectangle?* Much stricter, so
+      this number is always lower. Our model scores 0.995 on the first and 0.81 on the
+      second: it always finds the pad, but the rectangle is sometimes loose.
+:
+    In our project this grade turned out to be **useless for choosing between models**,
+    because all six attempts scored almost exactly the same. See
+    [Evaluation](evaluation.md).
+
+**FP32 / INT8**
+: How precisely the model's numbers are stored. **FP32** is full precision — the
+original model as trained on a laptop. **INT8** stores the same numbers much more
+coarsely, which makes the model roughly four times smaller and much faster, at a small
+cost in accuracy. The drone needs INT8; the laptop does not.
+
+**Epoch**
+: One complete pass through all the training pictures. "80 epochs" means the model
+looked at every picture 80 times.
+
+**Checkpoint / weights**
+: The saved file produced by training — the model itself. Ultralytics calls the best one
+`best.pt`, which is why a folder can end up with several different files all called
+"best".
 
 **Saturated metric**
 : A score that has stopped telling you anything because everything scores near the

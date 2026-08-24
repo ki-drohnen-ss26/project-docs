@@ -132,9 +132,22 @@ labelled pad, so a "negative" cannot accidentally contain the target:
 python3 negatives.py          # 76 negatives -> 30 % background images
 ```
 
-76 negatives brings the training set to 251 images, of which 30 % contain no
-pad. That single change turned out to be the most valuable one in the whole
-project — see [Training](training.md#the-false-positive-lesson).
+<figure markdown>
+  ![Twelve of the 76 pad-free training images](../Images/LandingPad/negatives.jpg){ width="720" }
+  <figcaption>Twelve of the 76 negatives — pieces of our own hall and office photos, cut from wherever the pad is not.</figcaption>
+</figure>
+
+These are not new photographs. They are **cut-outs of the pictures we already had**,
+taken from the parts of the frame where there is no pad — floor, lines, shadows,
+skirting boards. The model is shown them with an empty answer sheet: *this picture
+contains nothing*.
+
+76 negatives brings the training set to 251 images, of which 30 % contain no pad. (In
+the finished dataset 79 images have an empty answer sheet: these 76, plus 3 that
+happened to be pad-free already.)
+
+That single change turned out to be the most valuable one in the whole project — see
+[Training](training.md#the-false-positive-lesson).
 
 !!! tip "Negatives help training and hurt calibration"
     The same negatives must be **excluded** from the calibration set used for
