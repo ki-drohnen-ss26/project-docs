@@ -65,7 +65,7 @@ Three properties of the design matter for everything below:
 | Training images | 251 (175 pad + 76 pad-free negatives) |
 | Framework | Ultralytics 8.4 |
 | Deployed artefacts | `pad_320_int8.tflite` (Pi CPU) · `network.rpk` (AI Camera) |
-| Confidence threshold | **0.4** on TFLite · **0.3** on the `.rpk` |
+| Confidence threshold | **0.4** on TFLite · **0.5** on the `.rpk` ([why](evaluation.md#choosing-the-threshold)) |
 
 ## Results
 
@@ -75,7 +75,7 @@ Held-out test set, 16 images from stretches of the dataset the model never saw:
 |---|---|---|---|---|
 | PyTorch (FP32) | 0.9950 | 0.8098 | 1.000 | 0.02 |
 | TFLite INT8 | 0.9950 | 0.6764 | 1.000 | 0.00 |
-| IMX500 quantised (`.rpk`) | 0.9950 | 0.6737 | 1.000 | — |
+| IMX-quantised, ONNX simulation | 0.9950 | 0.6737 | 1.000 | 0.02 |
 
 Quantisation costs essentially nothing in *detection*. It only loosens the
 boxes, which is what the mAP50-95 column shows.
@@ -88,13 +88,18 @@ the inference script:
 | **`pad_320_int8.tflite`** (run F) | **1.000** | 0.851 | **0.00** |
 | `best_int8.tflite` (previously deployed) | 0.625 | 0.919 | 0.31 |
 
-!!! info "Status (2026-08-24)"
-    The model is trained, exported and measured, and **`network.rpk` is deployed on
-    the Pi**. It has **not flown yet** — no detection has been produced in the air.
+!!! success "Status (2026-08-24): it runs on the sensor"
+    `network.rpk` is on the Pi and **detecting in real time on the IMX500's own NPU**.
+    A bench run tracked the pad across dozens of consecutive frames and reported "no
+    pad" continuously once it left the field of view. The chain from training on a
+    laptop to inference on the camera chip is closed.
 
-    What stands between here and the first detecting flight is not model work: it is
-    three configuration values and one bench check, listed in
-    [Flight-Code Integration](integration.md#settings-that-have-to-change-before-the-detector-flies).
+    **It has not flown.** No detection has been produced in the air, and none of the
+    numbers on these pages comes from a flight.
+
+    Remaining before the detector may steer the aircraft: one wrong configuration
+    value, a single-frame outlier filter, and the milestone-2 tape-measure check —
+    [Flight-Code Integration](integration.md#open-items-to-verify-on-the-bench).
 
 !!! note "Where the pipeline lives"
     The scripts referenced throughout this section (`build_dataset.py`,
@@ -162,11 +167,14 @@ the inference script:
   be re-measured from scratch.
 - **Negatives from two rooms, only one of them ours.** They are crops of the hall and
   of the public set's office, so corridor and outdoor clutter is untested.
-- **Nothing has been measured in the air.** The `.rpk` is on the Pi and the
-  quantised model measures as well as the float one on the test set — but every
-  number on these pages comes from photographs, not from a flight. Detection range,
-  frame rate under vibration and the behaviour of the approach loop are all still
-  unknown.
+- **Nothing has been measured in the air.** The detector runs on the sensor and
+  tracks the pad on the bench, but every *number* on these pages comes from
+  photographs. Detection range, frame rate under vibration and the behaviour of the
+  approach loop are all still unknown.
+- **The robustness figures for the quantised model are a simulation.** They were
+  measured on `model_imx.onnx`, not on the sensor — and the sensor has already been
+  shown to differ in one respect the simulation could not predict, its
+  [discrete confidence output](evaluation.md#what-the-sensor-does-that-the-simulation-does-not).
 
 ## What would move the needle next
 

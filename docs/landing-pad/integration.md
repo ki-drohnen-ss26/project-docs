@@ -81,7 +81,7 @@ detector*, not for this model. Five values have to be set:
 |---|---|---|---|
 | `camera_source` | `"timed"` | `"real"` | `"timed"` is the honest camera-less mode — it declares "found" after a fixed delay and detects nothing |
 | `cam_box_order` | `"yxyx"` | **`"xyxy"`** | `"yxyx"` is the picamera2 sample convention. Ultralytics `format=imx` — which produced our `.rpk` — emits `(x0, y0, x1, y1)`. The order cannot be inferred from the numbers |
-| `camera_confidence` | `0.5` | **`0.3`** | at 0.5 the quantised model starts missing distant pads: recall at ×0.3 zoom falls 0.94 → 0.75 ([Evaluation](evaluation.md#what-quantisation-costs)) |
+| `camera_confidence` | `0.5` | **keep `0.5`** | confirmed correct on the sensor. Everything implausible in the live bench run sat at 0.32, the lowest quantisation step; the real pad tracked at 0.50–0.78. 0.5 costs one distant-pad image in sixteen ([Evaluation](evaluation.md#choosing-the-threshold)) |
 | `camera_model_path` | `/home/drone/models/pad/network.rpk` | keep — and copy the `.rpk` there | the team convention from [AI Software](../software/ai-software.md) is `imx500-package -o ~/models/pad`; the on-Pi reader scripts still point one directory higher, so make them agree |
 | `camera_target_class` | `None` (accept any class) | keep `None` | correct for the deployed **single-class** model. If the two-class model H is ever loaded this **must** be set to the pad's class id — chasing a person instead of the pad is worse than not detecting at all |
 
@@ -94,25 +94,27 @@ be checked before flying:
 [CAM] First raw box [...] (cam_box_order=xyxy) -> normalised (x0=…, y0=…, x1=…, y1=…)
 ```
 
-!!! success "Fixed upstream: pixel-valued boxes"
-    Earlier the decoder assumed boxes normalised to 0…1, while the sensor returns
+!!! success "Closed: pixel-valued boxes"
+    The decoder once assumed boxes normalised to 0…1, while the sensor returns
     **pixels in the model's input window**. `_decode_box()` now detects this
-    (`max(box) > 1.5`) and normalises by the model's input size, so the case is
-    handled automatically.
+    (`max(box) > 1.5`) and normalises by the model's input size.
 
-!!! warning "1. The input-size fallback is 640, our model is 320"
-    `_input_size()` falls back to **640 × 640** — the Ultralytics default — if
-    `IMX500.get_input_size()` raises. Our model is **320 px**. If that fallback ever
-    fires, every box is divided by twice the right number and **every correction is
-    halved**, silently and plausibly. Confirm the logged input size once on the Pi,
-    or pin the fallback to 320.
+!!! success "Closed: the input-size fallback"
+    `_input_size()` falls back to 640 × 640 if `IMX500.get_input_size()` raises, which
+    would have halved every correction for our 320 px model. On the aircraft's own
+    hardware the call **works and returns `(320, 320)`**, so the fallback never fires.
+    Pinning it to 320 anyway costs nothing and removes the trap.
 
-!!! warning "2. `cam_box_order` must be flipped to `xyxy`"
-    Not a bug any more — a setting. But the default is the wrong one for our export,
-    and a wrong order shows up as **swapped `dx`/`dy`**, which is easy to
-    "fix" with `cam_swap_axes` in a way that hides the real cause.
+!!! warning "1. `cam_box_order` must be flipped to `xyxy`"
+    **Confirmed on the sensor.** The raw tensor is `(x0, y0, x1, y1)` in 320 px units;
+    the working on-Pi decoder divides by the input height and then reorders to
+    `(y0, x0, y1, x1)` for `convert_inference_coords()`.
 
-!!! warning "3. The height that scales every offset is barometric near the ground"
+    Pi-Code's default is `"yxyx"`, which reads that raw tensor transposed. A wrong
+    order shows up as **swapped `dx`/`dy`** — easy to "fix" with `cam_swap_axes` in a
+    way that hides the real cause. This is the one setting that is still wrong.
+
+!!! warning "2. The height that scales every offset is barometric near the ground"
     `_height_above_ground()` takes the EKF vertical estimate
     (`get_local_position()["down"]`). After the [2026-08-21
     incident](../problems/incident-analysis-2026-08-21.md) the EKF height source is
@@ -126,21 +128,32 @@ be checked before flying:
     large, precisely during the final approach. Worth checking whether the
     rangefinder should feed this conversion directly instead of the EKF estimate.
 
-!!! note "4. Tensor count"
-    The guard accepts *at least three* tensors (boxes, scores, classes); the sensor
-    was measured to return **four** — the fourth is the number of valid detections.
-    The guard passes and the extra tensor is ignored: all rows are scanned and
-    filtered by score instead. Workable, but using the count tensor is cheaper.
+!!! note "3. Tensor count"
+    Confirmed on hardware: the sensor returns **four** tensors — boxes `(300, 4)`,
+    scores `(300,)`, classes `(300,)` and the number of valid detections `(1,)`.
+    Pi-Code's guard accepts *at least three* and ignores the fourth, scanning all 300
+    rows and filtering by score. Workable; using the count tensor is cheaper.
 
-!!! tip "How to check items 1–3 in one hover"
+!!! warning "4. Nothing rejects a single-frame outlier"
+    Not a Pi-Code defect — a missing layer. `RealCamera` returns the
+    highest-confidence detection **per frame**, and `APPROACH` acts on it. The bench
+    run produced occasional impossible boxes (frame edge, 1:2.5 aspect) that a
+    single-frame consumer cannot tell from a real pad.
+
+    Before the detector drives the aircraft, the mission side needs either a
+    persistence requirement (pad present in 3 of 4 consecutive frames at roughly the
+    same place) or a plausibility filter (reject aspect ratios beyond ~1:3 and boxes
+    touching the frame edge). See
+    [Evaluation](evaluation.md#what-the-sensor-does-that-the-simulation-does-not).
+
+!!! tip "How to check items 1 and 2 in one hover"
     Milestone 2 (`python main.py --milestone 2`) runs the detector in logging-only
     mode with no drop. Put the pad at a **measured** offset — say 1.0 m to the
     drone's right, 0 m ahead, at a known height — and compare the logged metres
     against the tape measure.
 
-    - factor ≈ 2 too small → item 1 (640 vs 320)
-    - `dx` and `dy` swapped → item 2
-    - factor ≈ 4 too large near the floor → item 3
+    - `dx` and `dy` swapped → item 1, `cam_box_order`
+    - factor ≈ 4 too large near the floor → item 2, the barometric height
 
 ## Related pages
 

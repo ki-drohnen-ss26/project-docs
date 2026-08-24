@@ -94,13 +94,18 @@ Measured rather than assumed, on the same held-out test set:
 |---|---|---|---|
 | PyTorch FP32 | 0.9950 | 0.8098 | 1.000 |
 | TFLite INT8 | 0.9950 | 0.6764 | 1.000 |
-| IMX500 quantised | 0.9950 | 0.6737 | 1.000 |
+| IMX-quantised (ONNX) | 0.9950 | 0.6737 | 1.000 |
 
 Detection is unaffected; only box tightness drops. Under the stress probes, the
 quantised `.rpk` matches the float model to within one or two images out of
 sixteen:
 
-| Probe | PyTorch | Quantised (`.rpk`) |
+!!! note "These are simulated, not measured on the sensor"
+    The quantised column is `model_imx.onnx` — the MCT-quantised network run in ONNX
+    on a laptop. It is the right proxy for *what quantisation does to the weights*,
+    and the section below shows where it stops being a proxy for the sensor.
+
+| Probe | PyTorch | IMX-quantised (ONNX) |
 |---|---|---|
 | Yaw, worst case | 0.94 | 0.94 |
 | Altitude, worst case (24 px pad) | 0.69 | 0.69 |
@@ -108,10 +113,51 @@ sixteen:
 | Combined: yaw 90°, ×0.12, all degradations | 0.62 | 0.69 |
 | mAP50 | 0.995 | 0.995 |
 
-!!! warning "But the threshold has to move"
-    Quantisation shifts the whole confidence distribution **down**. The `.tflite`
-    model works at conf **0.4**; the `.rpk` should run at conf **0.3**. At 0.5 it
-    starts missing distant pads — recall at ×0.3 zoom falls from **0.94 to 0.75**.
+### Choosing the threshold
+
+`fp_imx.txt`, on the quantised model, against 91 pad-free crops and the 16 test
+images:
+
+| conf | 0.25 | 0.40 | **0.50** | 0.60 | 0.70 | 0.80 |
+|---|---|---|---|---|---|---|
+| False pos. / img | 0.03 | 0.03 | **0.02** | 0.00 | 0.00 | 0.00 |
+| Recall | 1.00 | 1.00 | **1.00** | 0.94 | 0.81 | 0.44 |
+| Recall at ×0.3 zoom | 0.94 | 0.88 | **0.88** | 0.75 | 0.56 | 0.00 |
+
+**0.50 is nearly free.** Full recall on the test set, and distant-pad recall costs one
+image in sixteen against 0.25 (0.94 → 0.88). The cliff is at **0.60**, where recall
+itself starts to go.
+
+## What the sensor does that the simulation does not
+
+The ONNX proxy above is faithful about *detections*. It is not faithful about
+*scores*. On the real IMX500 the confidence output arrives in **discrete steps of
+roughly 0.06**:
+
+```
+0.32   0.38   0.44   0.50   0.56   0.62   0.68   0.73   0.78
+```
+
+Two consequences that no offline measurement showed:
+
+- **The threshold has about nine usable positions.** Setting 0.30 and setting 0.35
+  are the same threshold — both admit the 0.32 step and nothing between.
+- **The lowest admitted step is where the junk lives.** In a live bench run at
+  conf 0.3, every implausible detection sat at exactly **0.32**: boxes glued to the
+  frame edge, aspect ratios of 1:2.5 and worse, present for a single frame. The real
+  pad tracked at **0.50–0.78** and held for dozens of consecutive frames.
+
+So the sensor and the table agree on the same answer for a different reason: **run the
+`.rpk` at conf 0.50**. Below it, the first quantisation step contributes almost no
+real recall and all of the noise.
+
+!!! tip "Persistence separates them better than confidence does"
+    The false detections appeared **singly**; the true ones persisted. A consumer that
+    requires the pad in 3 of 4 consecutive frames at roughly the same place removes
+    this noise entirely — and a landing controller should never act on a single frame
+    anyway. Rejecting geometrically impossible boxes (aspect ratio beyond ~1:3, or
+    touching the frame edge) removes the rest. Both are cheaper than giving up
+    detection range.
 
 ## Pattern recognition
 

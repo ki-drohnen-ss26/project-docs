@@ -102,8 +102,9 @@ rate together with the new recipe's range, and improves everything else too:
     that **the target is always present**. Measure on images that contain
     nothing.
 
-**Run F is the deployed model, at conf 0.4** (0.3 on the quantised `.rpk` — see
-[Deployment](deployment.md)).
+**Run F is the deployed model, at conf 0.4** (0.5 on the quantised `.rpk`, for
+reasons that only showed up on the sensor — see
+[Evaluation](evaluation.md#choosing-the-threshold)).
 
 ## The cost: box precision
 

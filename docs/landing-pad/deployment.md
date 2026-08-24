@@ -15,7 +15,7 @@ aircraft, and there are **two targets** with different trade-offs.
 | Where inference runs | Pi Zero 2 W CPU | **on the sensor's NPU** |
 | Frame rate | needs `SKIP_FRAMES = 2` to keep up | up to 30 fps, CPU free |
 | Models per frame | two (pad + person) | **one** — the sensor holds one network |
-| Confidence threshold | 0.4 | **0.3** |
+| Confidence threshold | 0.4 | **0.5** ([why](evaluation.md#choosing-the-threshold)) |
 
 !!! tip "Why the AI Camera is the better target"
     The Pi Zero 2 W has four cores that are already busy with MAVLink and the
@@ -136,7 +136,7 @@ Two scripts, because there are two ways into the sensor:
     Loads `network.rpk` directly through the `picamera2` device API.
 
     ```bash
-    python3 detect_pad.py                # conf 0.3
+    python3 detect_pad.py                # conf 0.5
     python3 detect_pad.py --conf 0.4
     python3 detect_pad.py --preview      # needs a monitor
     ```
@@ -184,6 +184,36 @@ Two scripts, because there are two ways into the sensor:
     ships models in. It does **not** match Ultralytics' YOLO output layout, so
     the built-in demo will not display our detections correctly. Use one of the
     two scripts above.
+
+### What a working bench run looks like
+
+Confirmed on the aircraft's own Pi: the firmware uploads in a few seconds, the model
+reports `(320, 320)`, and the sensor returns four tensors.
+
+```
+model input size: (320, 320)
+number of tensor outputs: 4
+Output 0: shape=(300, 4)     boxes
+Output 1: shape=(300,)       confidences
+Output 2: shape=(300,)       classes
+Output 3: shape=(1,)         number of valid detections
+```
+
+NMS has already run on the sensor, so the Pi only reads and converts. A tracked pad
+looks like this — note how smoothly the centre moves between frames:
+
+```
+landingPad  Mitte 0.637,0.131  Groesse 0.189x0.175  conf 0.50  px=(347, 21, 121, 84)
+landingPad  Mitte 0.637,0.132  Groesse 0.189x0.177  conf 0.50  px=(347, 21, 121, 85)
+landingPad  Mitte 0.638,0.133  Groesse 0.189x0.175  conf 0.56  px=(348, 22, 121, 84)
+```
+
+!!! note "Confidences arrive in steps"
+    The sensor's score output is discrete — roughly 0.06 apart
+    (0.32, 0.38, 0.44, 0.50, 0.56, 0.62, 0.68, 0.73, 0.78). Thresholds between two
+    steps are identical in effect, and the lowest admitted step is where the
+    implausible boxes live. This is why the `.rpk` runs at **0.5** rather than 0.3 —
+    see [Evaluation](evaluation.md#what-the-sensor-does-that-the-simulation-does-not).
 
 ### Three things that look like failures and are not
 

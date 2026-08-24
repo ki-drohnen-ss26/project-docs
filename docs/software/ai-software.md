@@ -85,7 +85,7 @@ inference off the Pi, which is why the *only* deployable model format for us is 
 
 ## Detector status
 
-!!! success "Status (2026-08-24): the `.rpk` exists and is measured"
+!!! success "Status (2026-08-24): the detector runs on the sensor"
     The re-export is **done**. The deployed detector is a single-class YOLO11n
     (`landingPad`, 320 px), and both artefacts exist:
 
@@ -98,11 +98,15 @@ inference off the Pi, which is why the *only* deployable model format for us is 
     Quantisation was measured rather than assumed: **mAP50 0.9950 and recall 1.000
     unchanged**, only mAP50-95 falls 0.8098 → 0.6737 (looser boxes, same detections).
 
-    **`network.rpk` is on the Pi.** What is still outstanding is configuration and one
-    bench check, not model work: switch `camera_source` from `"timed"` to `"real"` and
-    set the two values the measurements call for — `cam_box_order = "xyxy"` and
-    `camera_confidence = 0.3`. Until milestone 2 has confirmed the decoded `dx`/`dy`
-    against a tape measure, the companion should keep flying `"timed"`.
+    **`network.rpk` is on the Pi and detecting in real time**, on the IMX500's own
+    NPU. A bench run tracked the pad across dozens of consecutive frames.
+
+    Outstanding is configuration and one check, not model work: switch
+    `camera_source` from `"timed"` to `"real"`, set `cam_box_order = "xyxy"` (the
+    default reads the box tensor transposed), and add a single-frame outlier filter
+    on the mission side. `camera_confidence = 0.5` turns out to be correct as it
+    stands. Until milestone 2 has confirmed the decoded `dx`/`dy` against a tape
+    measure, the companion should keep flying `"timed"`.
 
     **Nothing has flown yet.** No detection has been produced in the air.
 
