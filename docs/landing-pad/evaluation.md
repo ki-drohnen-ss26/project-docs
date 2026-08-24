@@ -60,6 +60,27 @@ The cause is in the pictures, not the training: the typical pad in the collectio
 [47 % of the image width](dataset.md#what-the-collection-is-biased-towards), because
 every photo was taken standing next to it.
 
+!!! tip "What these sizes mean in flight"
+    The camera's lens covers 66° across, so how big the pad looks depends directly on
+    how high the drone is. For a pad about a metre across:
+
+    | Pad fills | Equivalent flying height | Model finds it |
+    |---|---|---|
+    | 47 % (the training average) | 1.6 m | every time |
+    | **38 %** | **2 m — the actual search height** | every time |
+    | 24 % | 3.3 m | every time |
+    | 19 % | 4 m — the indoor safety limit | reliably |
+    | 12 % | 6.4 m | starts to struggle |
+    | 8 % | 9.6 m | fails badly |
+
+    **The drone cannot fly high enough to reach the weak part of this table.** Indoors
+    it searches at 2 m and may not exceed 4 m. Read the first four rows; the last two
+    describe a situation this aircraft never gets into.
+
+    That does not make the test pointless — it is what chose the settings, and it is the
+    right test for any future outdoor use. It does mean the weakness should not be read
+    as a problem for the current mission.
+
 ??? note "All five attempts, at every size"
     | | ×1.0 | ×0.5 | ×0.3 | ×0.2 | ×0.12 | ×0.08 |
     |---|---|---|---|---|---|---|

@@ -132,8 +132,8 @@ python3 build_dataset.py      # 175 to learn from / 25 to check / 16 to grade
 
 | Property | Value | What it causes |
 |---|---|---|
-| Typical pad size in the picture | **47 % of the image width** | the model has almost never seen a pad far away |
-| Camera position (our photos) | handheld, standing height | never seen from directly above |
+| Typical pad size in the picture | **47 % of the image width** | the model has almost never seen a pad far away — though at the 2 m search height the pad appears at about 38 %, so this matters less than it sounds ([why](evaluation.md#height-where-the-old-settings-broke)) |
+| Camera position (all photos) | handheld, at an angle | **never seen from straight above — which is exactly how the drone's camera is mounted** |
 | Pictures with no pad | **0 of 175** | "there is nothing here" was never a possible answer |
 | Pictures on a black background | 31 % | a view the drone will never have |
 

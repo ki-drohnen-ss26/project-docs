@@ -23,6 +23,23 @@ into something like *"the pad is 1.2 m to your right"* and nudges the drone that
 That is the whole job. Everything else on these pages is about making that answer
 reliable.
 
+## How the drone uses it
+
+The camera is mounted **pointing straight down**. The drone takes off, climbs to about
+**2 metres**, and then flies a search pattern — back and forth across the hall,
+widening as it goes — with the camera watching the floor beneath it the whole time.
+
+When the pad appears in the picture, the drone stops searching, nudges itself until the
+pad is centred underneath, and only then acts: it releases the package, and lands.
+
+Three numbers from the flight software shape everything on these pages:
+
+| | |
+|---|---|
+| Search height | **2 m** |
+| Highest it may go indoors | 4 m (safety limit) |
+| "Centred" means | pad within **15 cm** of directly below |
+
 !!! tip "New to the vocabulary?"
     These pages use words like *recall*, *quantisation* and *false positive*. Each one
     is explained in one sentence in the **[Glossary](glossary.md)**. You do not need to
@@ -78,14 +95,37 @@ one is the actual hardware doing the actual job.
 
 ## What it cannot do yet
 
-- **It has never seen the pad from the air.** Every training photo was taken by hand,
-  standing up, pointing down. The drone sees something quite different.
+- **It has never seen the pad from straight above.** Every training photo was taken by
+  hand from standing height, at an angle. Seen from an angle a square pad looks like a
+  slanted trapezoid — and that is the only shape the model has ever been shown. Looking
+  straight down it is a square. This is the real untested gap, and a bigger one than
+  distance (see the box below).
+
+- **It has never seen the pad while moving.** Every training photo is a still shot of a
+  stationary pad. The drone searches continuously.
 - **It has never flown.** The camera detects the pad on a table. Nobody has yet flown
   the drone while it does so.
 - **Indoors only.** Grass, asphalt, sunlight — all untested.
 - **Only this one pad.** Because we built our pad to match the training data, we cannot
   say whether the model would recognise a *different* landing pad. It might just have
   learned "this exact strip of red tape".
+
+!!! tip "Distance matters much less than these pages first suggest"
+    Several pages here measure how the model copes as the pad shrinks in the picture,
+    and it does get noticeably worse once the pad becomes small. That is worth putting
+    in the context of *this* drone.
+
+    At the 2 m search height, a pad about a metre across fills roughly **38 %** of the
+    picture width. The photos the model learned from have the pad at **47 %** on
+    average. Those are close together, and both sit in the range where every version of
+    the model finds the pad **every time**.
+
+    The point where the model starts to struggle corresponds to flying at about **6 m**,
+    and the point where it fails badly to about **10 m** — both far above the 4 m indoor
+    limit, let alone the ceiling.
+
+    So the weakness is real, and this drone cannot climb high enough to meet it. What it
+    *will* meet is the viewing angle, which is a different problem.
 
 !!! info "Status (2026-08-24)"
     The model is trained, converted, and **running on the camera on the drone**. A
@@ -98,12 +138,16 @@ one is the actual hardware doing the actual job.
 
 ## The one thing worth doing next
 
-**Film the pad from the drone while flying, and train on those pictures.**
+**Film the pad from the drone while it flies its search pattern, and train on those
+pictures.**
 
-Every other improvement is small next to this one. The model has only ever seen the pad
-from standing height, and the drone looks at it from above and from further away. A few
-hundred frames from a real flight recording would be worth more than any amount of
-further tuning — and the drone already records video.
+Every other improvement is small next to this one — but the reason is not what it first
+looks like. It is not that the drone is *further away*: at 2 m the pad is nearly the
+size the model already knows. It is that the drone looks **straight down while moving**,
+and every training photo was taken **at an angle while standing still**.
+
+A few hundred frames from an actual search flight would fix both at once, and would be
+worth more than any amount of further tuning. The drone already records video.
 
 ## Where to read what
 
