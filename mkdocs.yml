@@ -132,11 +132,11 @@ nav:
       - AI Software: software/ai-software.md
   - Landing Pad Detection:
       - landing-pad/index.md
-      - Dataset: landing-pad/dataset.md
-      - Training: landing-pad/training.md
-      - Evaluation: landing-pad/evaluation.md
-      - Deployment: landing-pad/deployment.md
-      - Flight-Code Integration: landing-pad/integration.md
+      - The pictures: landing-pad/dataset.md
+      - Teaching the model: landing-pad/training.md
+      - How we tested it: landing-pad/evaluation.md
+      - Onto the drone: landing-pad/deployment.md
+      - Talking to the flight software: landing-pad/integration.md
       - Glossary: landing-pad/glossary.md
   - Autopilot:
       - autopilot/index.md

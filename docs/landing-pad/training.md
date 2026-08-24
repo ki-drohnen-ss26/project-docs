@@ -4,32 +4,30 @@ tags:
   - landing-pad
 ---
 
-# Training
+# Teaching the model
 
 !!! abstract "In short"
     We trained the model six times with different settings, to find out which settings
     actually help.
 
-    **What helped most:** showing the model the pad at many different sizes. Without
-    that, it only recognised pads that were large in the picture — useless for a drone
-    that looks down from a height.
+    **What helped most:** showing it the pad at many different sizes. Without that it
+    only recognised pads that were large in the picture — useless for a drone looking
+    down from a height.
 
-    **The mistake worth remembering:** our best-scoring model reported landing pads on a
-    rucksack, a poster and a chair. It had almost never seen a photo *without* a pad, so
-    "there is nothing here" was an answer it had never learned. Adding 76 empty photos
-    fixed it.
+    **The mistake worth remembering:** our best-scoring model reported landing pads on
+    a rucksack, a poster and a chair. It had almost never seen a photo *without* a pad,
+    so "there is nothing here" was an answer it had never learned.
 
-    **What we deployed:** the sixth attempt, called run F.
+    **What we use:** the sixth attempt, which we call run F.
 
-## We were using the worst of three models
+## First: we were using the worst of three models
 
 When this work started, three trained models from earlier attempts were lying around,
-all with names like *"best"*. The one actually copied onto the drone was the **oldest
-and the weakest** of the three.
+all with names like *"best"*. The one actually on the drone was the **oldest and
+weakest** of the three.
 
-Here they are, all graded on the same test photos. The grade is **mAP** — a single
-number between 0 and 1 that says how good a detector is; higher is better, 1.0 would be
-perfect. ([What mAP actually measures](glossary.md#measuring-it).)
+Here they are, graded on the same photos. The grade is a single number between 0 and 1;
+higher is better, 1.0 would be perfect. (It is called *mAP* — [what it measures](glossary.md#measuring-it).)
 
 | Model file | Trained | Grade |
 |---|---|---|
@@ -37,22 +35,20 @@ perfect. ([What mAP actually measures](glossary.md#measuring-it).)
 | `best-2.pt` | end of May | 0.80 |
 | `pad_v2` | June | **0.99** |
 
-So a much better model already existed — nobody had swapped it in. Simply exporting the
-June one instead was free, and was the biggest single improvement available anywhere in
-the project.
+A much better model already existed. Nobody had swapped it in. Simply using the June one
+instead cost nothing and was the biggest single improvement available anywhere in the
+project.
 
 !!! warning "None of these three grades can be trusted"
-    All three were trained on the badly organised data described in
-    [Dataset](dataset.md#why-we-rebuilt-the-traintest-split): they had already seen the
-    photos they were being graded on. Those grades measure memory, not skill.
+    All three were trained on the badly sorted pictures described in
+    [Dataset](dataset.md#the-sorting-problem). They had already seen the photos they
+    were being graded on, so the grades measure memory, not ability.
 
-    That is why the comparison below **trains the old settings again from scratch**
-    (called run A) rather than reusing any of these files. Only then are the numbers
-    comparable.
+    That is why the comparison below **starts the old settings again from scratch**
+    (we call it run A). Only then are the numbers comparable.
 
 ??? note "The exact figures, for the record"
-    Scored in **FP32** — the full-precision model on a laptop, before any shrinking for
-    the drone — on the leak-free test split:
+    Measured at full precision on a laptop, on the re-sorted grading pile:
 
     | Checkpoint | Trained | mAP50 | mAP50-95 |
     |---|---|---|---|
@@ -60,177 +56,170 @@ the project.
     | `best-2.pt` | 27 May, 80 epochs @ 416 px | 0.799 | 0.647 |
     | `pad_v2/weights/best.pt` | 24 Jun, 80 epochs @ 416 px | 0.995 | 0.971 |
 
-    The file that was actually on the drone had additionally been shrunk to INT8 for
-    speed, and in that form measured **mAP50 0.657** — confirmed independently by
-    running `yolo val` against the `.tflite` itself.
+    The file actually on the drone had additionally been shrunk for speed, and in that
+    form measured **mAP50 0.657**.
 
-## The six runs
+## The six attempts
 
-Six runs, all on the **same leak-free split**, so only the recipe differs.
+Same pictures every time, so only the settings differ.
 
-| Run | Recipe | Outcome |
+| Run | What changed | Result |
 |---|---|---|
-| A | the old recipe reproduced — 80 ep @ 416, `degrees=0`, `scale=0.5` | weak at altitude |
-| B | drone recipe @ 320 — `degrees=180`, `flipud=0.5`, `scale=0.8`, `perspective`, cosine LR, 150 ep | large gain at altitude |
-| C | drone recipe @ 416 | worse *and* 1.69× the compute |
-| D | as B + FPV capture-path degradation (`fpv_aug.py`) | best under combined stress |
-| E | as D + 124 composited distant pads (`synth.py`) | no improvement |
-| **F** | **as D + 76 pad-free hard negatives** | **deployed** |
+| A | the old settings, repeated | bad at spotting distant pads |
+| B | show the pad at many more sizes, and rotated | big improvement at distance |
+| C | feed the model larger pictures (416 instead of 320 px) | worse, and 1.7× slower |
+| D | as B, plus fake motion blur, noise and compression | best under combined stress |
+| E | as D, plus fake distant pads pasted onto floors | no improvement |
+| **F** | **as D, plus the 76 pictures with no pad** | **this is the one we use** |
 
-Every run reaches **mAP50 0.995** on validation. mAP does not separate them at
-all — the stress probes in [Evaluation](evaluation.md) do.
+**Every single one scored about 0.995.** The standard grade could not tell them apart
+at all — which is what the [Evaluation](evaluation.md) page is about.
 
-## What each change was actually worth
+## What actually helped, and what did not
 
-- **Scale augmentation** (`scale=0.5 → 0.8`, run B) is the bulk of the gain.
-  Worst-case altitude recall goes **0.25 → 0.56** purely from showing the
-  network pads at more sizes.
-- **FPV degradation** (run D) looks worthless on the capture-path probe alone,
-  where every model scores 1.00 — a sharp photo downscaled to 320 px is easy no
-  matter what. It only pays off *combined* with a small, rotated pad:
-  **0.12 → 0.69** on the hardest case. Blur alone is easy; blur on a 35 px pad
-  is not.
-- **416 px** (run C) is not worth 1.69× the compute. It is *worse* than 320 at
-  small sizes (0.00 vs 0.56 worst case), because the model is then run further
-  from its training scale.
-- **`degrees=180`** bought nothing measurable (rotation worst case 0.88 → 0.75,
-  a two-image difference on 16). The pad is a square with a symmetric cross, so
-  it is already 90°-symmetric and rotation invariance was largely free. Kept
-  because it costs nothing, but it is not where the gain came from.
-- **Synthetic distant pads** (run E) improved box precision (test mAP50-95 0.833
-  vs D's 0.732) but lost on the hard combined cases.
+**Showing the pad at many sizes: this was the whole gain.** In the first attempt the
+model lost half its detections once the pad got small in the picture. Simply varying the
+size during training more than doubled how well it coped. Nothing else came close.
 
-!!! tip "Run each model at its training resolution"
-    Every model degrades sharply off its native size. Run D produces **0.00**
-    false positives per image at 320 px and **1.12** at 416 px — the same
-    weights, a different input size.
+**Fake motion blur: useless on its own, valuable in combination.** Tested by itself, it
+made no measurable difference — every model handled a blurry photo fine. But on a pad
+that was *both* small *and* rotated *and* blurred — which is what an approaching drone
+actually sees — it lifted the hit rate from 0.12 to 0.69.
 
-## The false-positive lesson
+**Bigger pictures: not worth it.** 416 pixels instead of 320 costs 1.7× the computing
+time and made the model *worse* at small pads, because it was then being used further
+from the size it was trained at.
 
-Run D was the pick — and it was wrong.
+**Turning the pad through a full circle during training: bought nothing.** That was
+expected in hindsight — the pad is a square with a symmetrical cross, so it already
+looks the same every quarter turn. We kept it because it costs nothing.
 
-Running D on a live webcam in an office produced landing pads on a **rucksack, a
-wall poster and a chair back**. The tables above could not have caught this:
-every one of the 16 test images *contains* a pad, so "false positives per image"
-there only counts spurious *extra* boxes — never the failure that matters, a
-detection in a scene with no pad in it at all.
+**Pasted-on fake distant pads: no.** They made the box slightly tighter but performed
+worse on exactly the hard cases they were meant to fix. See
+[Dataset](dataset.md#what-did-not-work-fake-pictures).
 
-`fp_bench.py` scores detections on **91 pad-free crops from the held-out
-splits**, against recall on real pads:
+!!! tip "Use the model at the size it was trained at"
+    The same model produces **no** false alarms at 320 pixels and **more than one per
+    picture** at 416. Nothing about the model changed — only the size of the picture fed
+    into it.
 
-| At conf 0.4 | False pos. / img | Recall | Recall at ×0.3 | Max conf. on an empty image |
-|---|---|---|---|---|
-| A (old recipe) | 0.02 | 1.00 | 0.81 | 0.54 |
-| D | **0.33** | 1.00 | 0.94 | **0.87** |
-| **F** = D + 76 negatives | **0.02** | 1.00 | **0.94** | 0.66 |
+## The false-alarm lesson
 
-Run D fired on pad-free images with up to **0.87** confidence — higher than many
-true detections, so **no threshold could have separated them**. Adding negatives
-until the training set is 30 % background gives the old recipe's false-positive
-rate together with the new recipe's range, and improves everything else too:
+Attempt D was the winner, and it was the wrong choice.
 
-| | Rotation, worst | Altitude, worst | Test mAP50-95 |
+Run on a live webcam in an office, it reported landing pads on a **rucksack, a wall
+poster and a chair back** — with confidence up to 0.87, higher than many of its correct
+detections. No threshold could have separated them.
+
+**Why our tests missed this.** Every one of the 16 grading photos *contains* a pad. So
+"false alarms per picture" only ever counted extra boxes drawn *next to* a real pad. The
+failure that matters — claiming a pad in a room where there is none — could not show up,
+because there was no such picture to show it in.
+
+**Why the model did it.** Not one of the 175 training pictures was empty. "There is
+nothing here" was an answer it had literally never seen, so it always pointed at
+whatever looked most pad-like.
+
+**The fix:** the 76 empty pictures from [Dataset](dataset.md#the-pictures-with-nothing-in-them).
+Measured on 91 pad-free pictures the model had never seen:
+
+| | False alarms per picture | Still finds real pads | Still finds *distant* pads |
 |---|---|---|---|
-| D | 0.75 | 0.62 | 0.732 |
-| **F** | **0.94** | **0.69** | **0.810** |
+| A (old settings) | 0.02 | yes, all | 0.81 |
+| D | **0.33** | yes, all | 0.94 |
+| **F** = D + 76 empty pictures | **0.02** | yes, all | **0.94** |
 
-!!! success "The general lesson"
-    A detector trained almost entirely on images that contain the target learns
-    that **the target is always present**. Measure on images that contain
-    nothing.
+Run F has the old settings' false-alarm rate *and* the new settings' range. It also got
+better at rotated and distant pads at the same time.
 
-**Run F is the deployed model, at conf 0.4** (0.5 on the quantised `.rpk`, for
-reasons that only showed up on the sensor — see
-[Evaluation](evaluation.md#choosing-the-threshold)).
+!!! success "The lesson in one sentence"
+    A model trained only on pictures that contain the thing learns that the thing is
+    always there. Test it on pictures containing nothing.
 
-## The cost: box precision
+## What it cost: box accuracy
 
-Heavy augmentation trades localisation accuracy for detection range. Mean IoU on
-close-up pads — the last metre before touchdown:
+Training on heavily varied pictures buys detection range and costs precision in where
+exactly the box sits. On close-up pads — the last metre before touchdown:
 
-| Run | Cut-out scene | Hall | Office |
+| Run | Black background | **Hall** | Office |
 |---|---|---|---|
-| A (old) | 0.97 | 0.93 | 0.96 |
-| D | 0.76 | 0.91 | 0.85 |
+| A (old) | 0.97 | **0.93** | 0.96 |
+| D | 0.76 | **0.91** | 0.85 |
 
-Read the **Hall** column first: it is the only one of the three that shows the
-environment the drone operates in ([Dataset](dataset.md#where-the-data-comes-from)).
-It is also the column that degrades least — 0.93 → 0.91, against 0.97 → 0.76 on the
-cut-outs.
+Read the **Hall** column first — it is the only one showing the place the drone actually
+works. It is also the one that barely moves: 0.93 → 0.91, against 0.97 → 0.76 on the
+black-background pictures.
 
-The regression comes from `scale=0.8` rarely showing the network a pad that fills the
-frame. If the landing controller needs a precise pad centre in the last metre, it is
-worth measuring in flight.
+If the landing needs a very precise centre in the final metre, this is worth measuring
+in flight.
 
 ## One model or two?
 
-The Pi CPU path runs **two** detectors per frame: run F for the pad, stock
-YOLO11n for people (a person on the pad means the landing zone is blocked). The
-AI Camera cannot do that — the IMX500 holds **one** network on the sensor, and
-swapping costs a camera restart. So a single two-class detector was built.
+The drone would also like to know whether a **person** is standing on the pad. There are
+two ways to do that, and the hardware decides.
 
-`build_2class.py` merges the pad labels (class 0) with **2784 person instances**
-recovered from a truncated `People-Detection-8` export (class 1), plus persons
-pseudo-labelled by YOLO11n on the pad photographs. Without the recovered set the
-person class was untrainable — 66 instances, and **zero in the test split**, so
-it could not even have been measured.
+- **On the Raspberry Pi's own processor** you can run two separate models per picture:
+  ours for the pad, a standard off-the-shelf one for people.
+- **On the camera chip you cannot.** It holds exactly one model, and swapping means
+  restarting the camera. So it would have to be a single model that recognises both.
 
-| Run | Rotation aug | Pad mAP50 | Person mAP50 |
+We built that single model to see what it costs. Two attempts:
+
+| Run | What changed | Finds pads | Finds people |
 |---|---|---|---|
-| G | `degrees=180`, `flipud=0.5` | 0.993 | 0.511 |
-| **H** | `degrees=30`, `flipud=0` | **0.995** | **0.644** |
+| G | pad rotated through a full circle during training | 0.993 | 0.511 |
+| **H** | only slight rotation | **0.995** | **0.644** |
 
-Run G's aggressive rotation halved person detection, which was predictable:
-`degrees=180` had already been measured to buy the pad *nothing*, while people
-in ordinary photos are upright.
+Run G's heavy rotation halved its ability to spot people — predictable, since people in
+photos are upright and the pad does not benefit from rotation anyway.
 
-H is still a trade, and standard mAP hides it entirely — H scores 0.995 on pads,
-the same as F:
+But even H is a trade, and the standard grade hides it completely: H scores 0.995 on
+pads, exactly like F. Only the stress tests show the difference:
 
-| | Pad, yaw 135° ×0.2 all | Pad, yaw 90° ×0.12 all | Person recall @ 0.4 |
+| | Pad: rotated and far away | Pad: worst case | People |
 |---|---|---|---|
-| F + stock YOLO11n (two nets) | **0.75** | **0.62** | **0.59** |
-| H (one net) | 0.38 | 0.12 | 0.51 |
+| Two separate models | **0.75** | **0.62** | **0.59** |
+| One combined model (H) | 0.38 | 0.12 | 0.51 |
 
-!!! note "The recommendation depends on the target"
-    - **Pi Zero CPU: keep the two networks.** Both jobs are done better.
-    - **AI Camera: H is the only option** if the person class is needed at all.
-      The per-frame loss may not be the whole story — the IMX500 runs on-sensor
-      at up to 30 fps while the CPU path needs `SKIP_FRAMES = 2` to keep up, and
-      more frames at lower per-frame recall can beat fewer frames at higher
-      recall over a trajectory. That is a hypothesis worth testing in flight, not
-      a proven claim.
-    - **What is deployed today is the single-class pad model** (`labels.txt`
-      contains exactly `landingPad`), because the pad is what the mission needs.
+!!! note "Which one to use"
+    - **On the Pi's processor: two models.** Both jobs get done better.
+    - **On the camera chip: H, if people need detecting at all.** The per-picture loss
+      may not be the full story — the camera runs at up to 30 pictures per second while
+      the Pi's processor manages roughly one in three, and more attempts at lower
+      accuracy can beat fewer attempts at higher accuracy. That is a reasonable guess,
+      not something we measured.
+    - **What is on the drone today is the pad-only model**, because the pad is what the
+      mission needs.
 
-If H has to improve, two levers in order: re-download the person dataset (the
-zip was truncated — `train/labels` and `valid/` never arrived), and oversample
-the pad images, which are 172 of 2601 instances.
+??? note "If the combined model has to get better"
+    Two things, in order. Re-download the person pictures — the archive we used was
+    truncated and part of it never arrived. Then show the pad pictures more often during
+    training: they are only 172 of 2601 marked objects, which is the likely reason the
+    hard cases got worse.
 
-## Reproducing
+## Doing it again yourself
 
 ```bash
-python3 build_dataset.py                     # leak-free split
-python3 negatives.py                         # hard negatives
-python3 train_neg.py                         # run F  (the deployed model)
+python3 build_dataset.py     # re-sort the piles
+python3 negatives.py         # cut out the empty pictures
+python3 train_neg.py         # run F, the model we use
 python3 compare.py    runs/*/weights/best.pt
 python3 robustness.py runs/*/weights/best.pt
 python3 fp_bench.py   runs/*/weights/best.pt
 ```
 
-Training used Ultralytics 8.4.50 on Apple MPS: about **4 s/epoch** at 320 px on
-175 images, ~13 minutes for the full run. Set `device="cpu"` if MPS is
-unavailable.
+Training takes about **13 minutes** on an Apple laptop with a graphics chip — roughly 4
+seconds per pass over the pictures. Set `device="cpu"` if there is no graphics chip
+available; it just takes longer.
 
-!!! bug "Run G/H needs a newer Ultralytics"
-    On Ultralytics 8.4.50 with torch 2.11, training the two-class set dies in the
-    task-aligned assigner:
+??? bug "The combined model needs a newer version of the training tool"
+    On Ultralytics 8.4.50 with torch 2.11, training the two-class set crashes:
 
     ```
     RuntimeError: shape mismatch: value tensor of shape [31926]
     cannot be broadcast to indexing result of shape [39347]   (utils/tal.py)
     ```
 
-    It is an MPS bug in boolean-mask assignment that only fires once images carry
-    many objects — runs A–F had about one pad per image, the person images have
-    up to 48. Ultralytics 8.4.90 with torch 2.12.1 runs it fine.
+    It is a bug in Apple's graphics support that only appears once pictures contain many
+    objects — our pad pictures have about one each, the person pictures up to 48.
+    Ultralytics 8.4.90 with torch 2.12.1 runs it fine.

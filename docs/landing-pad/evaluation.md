@@ -4,209 +4,209 @@ tags:
   - landing-pad
 ---
 
-# Evaluation
+# How we tested it
 
 !!! abstract "In short"
-    The standard way of scoring an object detector gave every one of our six attempts
-    almost the same result — 0.995 out of 1. That told us nothing about which one was
-    better.
+    The usual way of grading a detector gave all six of our attempts almost the same
+    result — about 0.995 out of 1. That told us nothing about which was better.
 
-    So we tested differently: we deliberately ruined the test photos the way real flying
-    ruins them — turned them sideways, shrank the pad down to a few pixels, added
-    motion blur — and asked which model still coped. That immediately separated them.
+    So we tested differently: we deliberately ruined the test photos the way real
+    flying ruins them — turned sideways, pad shrunk to a few pixels, motion blur — and
+    asked which model still coped. That separated them immediately.
 
-    We also checked what happens when the model runs on the camera chip instead of a
-    laptop, and found something no laptop test could have shown: the camera reports its
-    confidence only in fixed steps, and the lowest step is where the nonsense lives.
+    Later, running on the actual camera, we found something no laptop test could have
+    shown.
 
-## Why mAP was the wrong target
+## Why the usual grade was useless
 
-After the [leak-free re-split](dataset.md#why-we-rebuilt-the-traintest-split) we
-retrained the **old** recipe as a baseline. It scored:
+After re-sorting the pictures we trained the **old** settings again as a baseline. It
+scored **0.995**. The new settings scored **0.995**. So did the other four attempts.
 
-```
-run                imgsz | val mAP50  val 50-95 | test mAP50  test 50-95 | FP/img
-A_baseline           320 |     0.995      0.925 |      0.995      0.937 |   0.00
-A_baseline           416 |     0.995      0.982 |      0.995      0.957 |   0.00
-```
+The grade had run out of room. Our grading pile is 16 photos of one high-contrast pad
+on a clean floor — too easy for the difference between two models to show up at all.
 
-100 % recall in every size bucket and every scene, zero false positives. The new
-recipe scored 0.995 as well.
+So we made our own tests, based on what actually happens in flight:
 
-The metric had **saturated**: 16 test photos of one high-contrast pad on a clean
-floor is simply too easy, and no recipe change can show up in it. So
-`robustness.py` measures the axes the drone actually moves in instead, using the
-**polygon** labels so ground truth stays exact under rotation.
+=== "Turning"
 
-=== "Yaw"
+    A drone does not hold a fixed heading, so the pad arrives at the camera rotated.
+    We rotate the photos, and rotate the marked outlines with them so the correct
+    answer stays exact.
 
-    A multirotor holds no particular heading, so the pad arrives at the camera
-    rotated. Images are rotated about their centre, and the polygon labels are
-    rotated with them.
+=== "Height"
 
-=== "Altitude"
+    Higher up means fewer pixels on the pad. We shrink the photo onto a floor-coloured
+    background, which makes the pad small in exactly the way climbing does.
 
-    Higher means fewer pixels on the pad. The frame is scaled down onto a
-    floor-coloured canvas, shrinking the pad exactly as climbing would.
+=== "A moving camera"
 
-=== "Capture path"
+    Motion blur from the propellers, sensor noise, and compression — applied at the
+    size the model actually sees.
 
-    Motion blur from the props, sensor noise and JPEG compression — applied at
-    the resolution the network actually sees.
+## Height: where the old settings broke
 
-## Altitude — where the baseline broke
+How often the model finds the pad as it gets smaller in the picture. `1.00` means it
+found every one.
 
-Recall on the 16 test images at 320 px, frame zoomed out, pad shrinking:
-
-| | ×1.0 | ×0.5 | ×0.3 | ×0.2 | ×0.12 | ×0.08 |
+| Pad size in the picture | 296 px | 148 px | 89 px | 59 px | 35 px | 24 px |
 |---|---|---|---|---|---|---|
-| Median pad size (px) | 296 | 148 | 89 | 59 | 35 | 24 |
-| A (old recipe) | 1.00 | 1.00 | 0.81 | 0.69 | **0.50** | **0.25** |
-| B | 1.00 | 1.00 | **1.00** | **0.94** | 0.69 | 0.56 |
-| C @416 | 1.00 | 1.00 | 0.94 | 0.81 | 0.38 | 0.00 |
-| **D** | 1.00 | 1.00 | 0.94 | 0.81 | **0.75** | **0.62** |
-| E | 1.00 | 1.00 | 0.88 | 0.62 | 0.69 | 0.62 |
+| A (old settings) | 1.00 | 1.00 | 0.81 | 0.69 | **0.50** | **0.25** |
+| **D** (new settings) | 1.00 | 1.00 | 0.94 | 0.81 | **0.75** | **0.62** |
 
-The baseline's recall **halves** by the time the pad is 35 px across — which is
-exactly the approach phase, when the detector is needed most. The cause is in the
-data: the median training pad covers
-[47 % of the image side](dataset.md#the-bias-we-could-measure-in-the-data).
+The old settings **lose half their detections** by the time the pad is 35 pixels
+across. That is exactly the approach — the moment the detector matters most.
 
-## Combined — an actual approach
+The cause is in the pictures, not the training: the typical pad in the collection fills
+[47 % of the image width](dataset.md#what-the-collection-is-biased-towards), because
+every photo was taken standing next to it.
 
-Yaw, altitude and capture degradation together:
+??? note "All five attempts, at every size"
+    | | ×1.0 | ×0.5 | ×0.3 | ×0.2 | ×0.12 | ×0.08 |
+    |---|---|---|---|---|---|---|
+    | Median pad size (px) | 296 | 148 | 89 | 59 | 35 | 24 |
+    | A (old) | 1.00 | 1.00 | 0.81 | 0.69 | 0.50 | 0.25 |
+    | B | 1.00 | 1.00 | 1.00 | 0.94 | 0.69 | 0.56 |
+    | C @416 px | 1.00 | 1.00 | 0.94 | 0.81 | 0.38 | 0.00 |
+    | **D** | 1.00 | 1.00 | 0.94 | 0.81 | **0.75** | **0.62** |
+    | E | 1.00 | 1.00 | 0.88 | 0.62 | 0.69 | 0.62 |
 
-| | yaw45 ×0.3 | yaw45 ×0.3 blur | yaw135 ×0.2 all | yaw90 ×0.12 all |
+## Everything at once: a real approach
+
+Rotated *and* far away *and* blurred — which is what the camera sees coming in.
+
+| | rotated 45°, distant | + blur | rotated 135°, further, everything | rotated 90°, furthest, everything |
 |---|---|---|---|---|
-| A (old) | 0.44 | 0.44 | 0.06 | 0.00 |
-| B | 0.94 | 0.81 | 0.00 | 0.12 |
-| C @416 | 0.94 | 0.88 | 0.12 | 0.00 |
+| A (old) | 0.44 | 0.44 | 0.06 | **0.00** |
 | **D** | **0.94** | **0.94** | **0.50** | **0.69** |
-| E | 0.94 | 0.94 | 0.38 | 0.31 |
 
-The old recipe reaches **0.00** on the hardest case. This is the table that
-picked the recipe; mAP could not have.
+The old settings reach **zero** on the hardest case — it finds nothing at all. This is
+the table that chose the settings. The usual grade could not have.
 
-## False positives on empty scenes
+## False alarms on empty pictures
 
-The probe that changed the deployed model. Detections on 91 **pad-free** crops
-from the held-out splits, against recall on real pads — full discussion in
-[Training](training.md#the-false-positive-lesson):
+The test that changed which model we ship. 91 pictures with no pad in them, none of
+which the model had seen:
 
-| At conf 0.4 | False pos. / img | Recall | Recall at ×0.3 | Max conf. on empty image |
+| | False alarms per picture | Finds real pads | Finds distant pads | Worst confidence on an empty picture |
 |---|---|---|---|---|
-| A (old recipe) | 0.02 | 1.00 | 0.81 | 0.54 |
-| D | 0.33 | 1.00 | 0.94 | 0.87 |
-| **F** (deployed) | **0.02** | 1.00 | **0.94** | 0.66 |
+| A (old settings) | 0.02 | all | 0.81 | 0.54 |
+| D | 0.33 | all | 0.94 | **0.87** |
+| **F** (what we use) | **0.02** | all | **0.94** | 0.66 |
 
-## What quantisation costs
+The full story is on the [Training](training.md#the-false-alarm-lesson) page. The short
+version: D was confidently wrong about empty rooms, and no threshold could have caught
+it.
 
-Measured rather than assumed, on the same held-out test set:
+## What shrinking the model costs
 
-| | mAP50 | mAP50-95 | Recall |
-|---|---|---|---|
-| PyTorch FP32 | 0.9950 | 0.8098 | 1.000 |
-| TFLite INT8 | 0.9950 | 0.6764 | 1.000 |
-| IMX-quantised (ONNX) | 0.9950 | 0.6737 | 1.000 |
+The model has to be shrunk to run on the camera chip. We measured the cost rather than
+assuming it:
 
-Detection is unaffected; only box tightness drops. Under the stress probes, the
-quantised `.rpk` matches the float model to within one or two images out of
-sixteen:
-
-!!! note "These are simulated, not measured on the sensor"
-    The quantised column is `model_imx.onnx` — the MCT-quantised network run in ONNX
-    on a laptop. It is the right proxy for *what quantisation does to the weights*,
-    and the section below shows where it stops being a proxy for the sensor.
-
-| Probe | PyTorch | IMX-quantised (ONNX) |
+| | Finds the pad | Draws a tight box |
 |---|---|---|
-| Yaw, worst case | 0.94 | 0.94 |
-| Altitude, worst case (24 px pad) | 0.69 | 0.69 |
-| Blur / noise / JPEG | 1.00 | 1.00 |
-| Combined: yaw 90°, ×0.12, all degradations | 0.62 | 0.69 |
-| mAP50 | 0.995 | 0.995 |
+| Full size, on a laptop | every time | 0.81 |
+| Shrunk for the Pi's processor | every time | 0.68 |
+| Shrunk for the camera chip | every time | 0.67 |
 
-### Choosing the threshold
+**Shrinking costs nothing in finding the pad.** It only makes the box a little looser.
 
-`fp_imx.txt`, on the quantised model, against 91 pad-free crops and the 16 test
-images:
+!!! note "Careful: this was simulated, not measured on the camera"
+    These numbers come from running the shrunk model *on a laptop*. It is a good stand-
+    in for what shrinking does to the model — and the next section is where it stops
+    being a good stand-in for the real camera.
 
-| conf | 0.25 | 0.40 | **0.50** | 0.60 | 0.70 | 0.80 |
-|---|---|---|---|---|---|---|
-| False pos. / img | 0.03 | 0.03 | **0.02** | 0.00 | 0.00 | 0.00 |
-| Recall | 1.00 | 1.00 | **1.00** | 0.94 | 0.81 | 0.44 |
-| Recall at ×0.3 zoom | 0.94 | 0.88 | **0.88** | 0.75 | 0.56 | 0.00 |
+??? note "The stress tests, full model vs shrunk"
+    | Test | Full size | Shrunk |
+    |---|---|---|
+    | Rotation, worst case | 0.94 | 0.94 |
+    | Height, worst case (24 px pad) | 0.69 | 0.69 |
+    | Blur / noise / compression | 1.00 | 1.00 |
+    | Everything at once, worst case | 0.62 | 0.69 |
+    | mAP50 | 0.995 | 0.995 |
 
-**0.50 is nearly free.** Full recall on the test set, and distant-pad recall costs one
-image in sixteen against 0.25 (0.94 → 0.88). The cliff is at **0.60**, where recall
-itself starts to go.
+## Choosing how sure the model has to be
 
-## What the sensor does that the simulation does not
+The model reports a confidence with each detection. Below a chosen threshold we throw
+the detection away. Where to put the threshold:
 
-The ONNX proxy above is faithful about *detections*. It is not faithful about
-*scores*. On the real IMX500 the confidence output arrives in **discrete steps of
-roughly 0.06**:
+| Threshold | 0.25 | 0.40 | **0.50** | 0.60 | 0.70 |
+|---|---|---|---|---|---|
+| False alarms per picture | 0.03 | 0.03 | **0.02** | 0.00 | 0.00 |
+| Finds real pads | all | all | **all** | 0.94 | 0.81 |
+| Finds distant pads | 0.94 | 0.88 | **0.88** | 0.75 | 0.56 |
+
+**0.50 is nearly free.** It still finds every pad in the grading pile, and costs one
+distant pad in sixteen compared with a much lower threshold. Going to 0.60 is where it
+starts genuinely missing things.
+
+## What the real camera does differently
+
+The laptop simulation is honest about *whether* the model finds the pad. It is not
+honest about *how sure* the model says it is.
+
+On the actual camera chip, confidence only ever comes back in fixed steps of about 0.06:
 
 ```
 0.32   0.38   0.44   0.50   0.56   0.62   0.68   0.73   0.78
 ```
 
-Two consequences that no offline measurement showed:
+Two things follow, and no laptop test could have shown either:
 
-- **The threshold has about nine usable positions.** Setting 0.30 and setting 0.35
-  are the same threshold — both admit the 0.32 step and nothing between.
-- **The lowest admitted step is where the junk lives.** In a live bench run at
-  conf 0.3, every implausible detection sat at exactly **0.32**: boxes glued to the
-  frame edge, aspect ratios of 1:2.5 and worse, present for a single frame. The real
-  pad tracked at **0.50–0.78** and held for dozens of consecutive frames.
+**The threshold only has about nine usable settings.** Choosing 0.30 and choosing 0.35
+are the same choice — both let the 0.32 step through and there is nothing in between.
 
-So the sensor and the table agree on the same answer for a different reason: **run the
-`.rpk` at conf 0.50**. Below it, the first quantisation step contributes almost no
-real recall and all of the noise.
+**The lowest step is where the rubbish is.** In a live test at threshold 0.3, every
+nonsense detection sat at exactly **0.32**: boxes stuck to the edge of the frame, long
+thin shapes no pad could make, each lasting a single frame. The real pad sat at **0.50
+to 0.78** and stayed there for dozens of frames in a row.
 
-!!! tip "Persistence separates them better than confidence does"
-    The false detections appeared **singly**; the true ones persisted. A consumer that
-    requires the pad in 3 of 4 consecutive frames at roughly the same place removes
-    this noise entirely — and a landing controller should never act on a single frame
-    anyway. Rejecting geometrically impossible boxes (aspect ratio beyond ~1:3, or
-    touching the frame edge) removes the rest. Both are cheaper than giving up
-    detection range.
+So the table above and the real camera agree, for different reasons: **use 0.50**.
 
-## Pattern recognition
+!!! tip "Time separates them better than confidence does"
+    The false detections came **one at a time**. The real ones persisted. If you require
+    the pad to appear in 3 out of 4 consecutive frames in roughly the same place, the
+    noise disappears completely — and a landing controller should never react to a
+    single frame anyway.
 
-Two ideas were tried, with opposite results.
+    Throwing away impossible shapes helps too: anything longer than about 1:3, or
+    touching the edge of the frame, cannot be a pad seen from above.
 
-=== "Verifying the red X — does not work here"
+## Two ideas about the red cross
 
-    The idea: reject a detection unless the box contains a red cross.
-    `pattern_check.py` measures it — at a threshold that keeps 88 % of real pads,
-    **21 of 41 false detections survive**.
+=== "Checking for it — does not work"
 
-    The reason is the environment: the sports hall floor is painted with red
-    lines that cross each other, so "red cross" is not a rare feature in the one
-    place where the filter would need to work.
+    The idea: only accept a detection if there is a red cross inside the box.
 
-=== "Measuring the pad once found — works"
+    We measured it. At a setting that keeps 88 % of the real pads, **21 of 41 false
+    detections survive anyway**.
 
-    Inside a *confirmed* box the red mask is clean. `pad_pose.py` fits a rotated
-    rectangle to it and returns contour, centre and yaw.
+    The reason is the room. A sports hall floor is painted with red lines that cross
+    each other, so "there is a red cross here" is not unusual in the one place the
+    filter would have to work. The same fact turned up independently while
+    [checking the pictures](dataset.md#we-checked-every-single-picture).
 
-    The pad is square with a symmetric X, so **yaw is only determined modulo
-    90°**. An asymmetric marking would resolve it.
+=== "Measuring it afterwards — works"
 
-!!! tip "The cheapest real upgrade needs no new annotation"
-    The Roboflow labels are already **polygons**, so `yolo11n-seg` can be trained
-    on exactly this data and return the pad outline instead of a box. Contour →
-    4 corners → homography → true distance and attitude, which is what an
-    autonomous approach actually wants.
+    Once a detection is *confirmed*, the red inside the box is clean and easy to trace.
+    `pad_pose.py` fits a rectangle to it and returns the pad's outline, its centre and
+    its angle.
 
-## Files
+    Because the pad is square with a symmetrical cross, the angle can only be worked out
+    to within a quarter turn. A pad with one corner marked differently would fix that.
 
-| File | Purpose |
+!!! tip "A worthwhile upgrade that needs no new marking-up"
+    Our pictures are already marked with outlines rather than plain rectangles, so a
+    model that returns the pad's *outline* can be trained on exactly the same data.
+    From an outline you get the four corners, and from four corners you get the real
+    distance and tilt — which is what an automatic approach actually wants.
+
+## The scripts
+
+| File | What it does |
 |---|---|
-| `compare.py` | mAP and recall broken down by pad size and by scene |
-| `robustness.py` | yaw / altitude / capture-path stress probes |
-| `fp_bench.py` | false positives on pad-free images vs recall |
-| `person_bench.py` | two-class person recall vs stock YOLO11n |
-| `pattern_check.py` | red-X verification (measured: does not work here) |
-| `pad_pose.py` | contour, centre and yaw from a confirmed detection |
+| `compare.py` | grades, broken down by pad size and by room |
+| `robustness.py` | the rotation / height / moving-camera tests |
+| `fp_bench.py` | false alarms on pictures with no pad |
+| `person_bench.py` | how well the combined model spots people |
+| `pattern_check.py` | the red-cross check (measured: does not work here) |
+| `pad_pose.py` | outline, centre and angle from a confirmed detection |

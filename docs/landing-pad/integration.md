@@ -4,173 +4,154 @@ tags:
   - landing-pad
 ---
 
-# Integration with the flight code
+# Talking to the flight software
 
 !!! abstract "In short"
     The detector does not fly the drone. Once per picture it hands the flight software
     one answer: *"the pad is 1.2 m to your right and 0.4 m ahead"* — or *"no pad"*.
 
-    This page is the agreement between the two halves: what exactly gets handed over, in
-    what units, and how to check on the ground that the numbers mean what everyone
-    thinks they mean.
+    This page is the agreement between the two halves: what gets handed over, in what
+    units, and how to check on the ground that both sides mean the same thing.
 
-    **Two things are still wrong and one is missing.** They are listed below, each with
-    the single test that catches it. None of them is difficult; all of them are the kind
+    **One setting is still wrong and one safeguard is missing.** Both are listed below
+    with the single test that catches each. Neither is difficult — but both are the kind
     of mistake that looks fine in the log and flies the drone the wrong way.
 
-The detector does not fly the aircraft. It hands the mission state machine one
-answer per frame, and the mission's `SEARCH` and `APPROACH` stages act on it.
-This page is the **contract** between the two, and the list of things to verify
-before the detector is trusted in flight.
+## What gets handed over
 
-## The contract
+Once per picture, the detector produces four values:
 
-The flight code (`Pi-Code/camera.py`) expects each frame to produce:
+| Value | Meaning |
+|---|---|
+| found | was a pad seen at all |
+| **left / right** | how far the pad is to the drone's right, **in metres** |
+| **forward / back** | how far the pad is ahead of the drone, **in metres** |
+| height | the height used to work those out |
 
-```python
-{"detected": bool, "dx": float, "dy": float, "distance": float}
-```
+!!! info "Why metres, and not "30 % of the picture""
+    A camera naturally reports *"the pad is 30 % of the frame to the right"*. But the
+    mission logic is written in metres — how close counts as centred, how big a
+    correction to make — and all of it was tested in the simulator against a camera that
+    reported metres.
 
-| Field | Meaning | Unit |
-|---|---|---|
-| `detected` | was a pad found above the confidence threshold | — |
-| `dx` | ground offset, positive = pad is to the drone's **right** | **metres** |
-| `dy` | ground offset, positive = pad is **ahead** of the drone | **metres** |
-| `distance` | height above ground used for the conversion | metres |
+    If the real camera reported percentages instead, every one of those settings would
+    quietly mean something different, and none of the simulator testing would carry over.
 
-!!! info "Why metres and not image fractions"
-    A camera natively reports *"the pad is 30 % of the frame to the right"*. The
-    mission's tuning (`centre_tolerance`, `approach_gain`, `max_nudge_m`) is
-    calibrated in **ground metres**, and the whole state machine was validated
-    against SITL with a simulated camera that reports metres. Returning image
-    fractions instead would silently change the meaning of every one of those
-    numbers.
-
-The conversion is the pinhole relation:
+The conversion needs the drone's height. The further up it is, the more ground a
+percentage of the picture covers:
 
 ```
-ground_offset = tan(image_fraction × half_FOV) × height_above_ground
+distance on the ground = tan( fraction of the picture × half the camera's angle ) × height
 ```
 
-with the height taken from the rangefinder / relative altitude, and the lens
-values from the config (`cam_hfov_deg = 66.0`, `cam_vfov_deg = 52.3` for the
-stock AI Camera lens over the full sensor area).
+The camera's viewing angle is 66° across and 52.3° top to bottom.
 
-!!! warning "The FOV values assume a nadir mount and the full sensor area"
-    Every correction scales with them. If the camera is tilted, cropped, or
-    switched to a different sensor mode, these values are wrong and the whole
-    approach loop is mis-scaled. A tilted camera additionally needs the tilt
-    angle folded into the conversion, which is not currently modelled.
+!!! warning "That assumes the camera points straight down and uses the full sensor"
+    Every correction is scaled by these numbers. If the camera is tilted, or cropped, or
+    switched to a different mode, they are wrong and every correction is wrong with them.
+    A tilted camera would need its tilt taken into account, which nothing currently does.
 
-## Calibrating the mounting
+## Checking which way round it is
 
-The image→body axis mapping depends on how the camera is physically rotated in
-its mount, so it **must be verified on the real airframe**. It is configuration,
-not code, so calibration is a parameter change between test flights rather than
-a source edit:
+Which way the camera is mounted decides whether "right in the picture" means right for
+the drone. That cannot be guessed — it has to be checked on the real aircraft. It is a
+setting rather than code, so checking it does not mean editing anything mid-test:
 
 | Setting | Meaning |
 |---|---|
-| `cam_swap_axes` | camera rotated 90° in its mount |
-| `cam_invert_x` | positive `dx` must mean "pad is to the right" |
-| `cam_invert_y` | positive `dy` must mean "pad is ahead" |
+| `cam_swap_axes` | camera mounted rotated a quarter turn |
+| `cam_invert_x` | "positive" must mean the pad is to the **right** |
+| `cam_invert_y` | "positive" must mean the pad is **ahead** |
 
-**Procedure:** hover, place the pad clearly to the drone's **right**, and check
-that the logged `dx` is **positive**. Repeat with the pad **ahead** for `dy`.
-This is bring-up milestone 2 (`python main.py --milestone 2`), which runs the
-detector in logging-only mode with no drop.
+**How to check.** Hover. Put the pad clearly to the drone's **right** and confirm the
+logged sideways number is **positive**. Then put it **ahead** and check the other one.
 
-!!! danger "A wrong sign is worse than no detection"
-    With the sign inverted the aircraft corrects *away* from the pad, smoothly
-    and confidently, and nothing in the log looks wrong.
+That is bring-up step 2 (`python main.py --milestone 2`), which flies the detector in
+watch-only mode — it logs what it sees and drops nothing.
 
-## Settings that have to change before the detector flies
+!!! danger "A wrong sign is worse than no detection at all"
+    With the sign inverted, the drone corrects *away* from the pad — smoothly,
+    confidently, and with nothing in the log looking wrong.
 
-The flight code ships with defaults chosen for *safety in the absence of a
-detector*, not for this model. Five values have to be set:
+## The settings that still have to change
 
-| Setting | Default in `Pi-Code/config.py` | Set to | Why |
+The flight software ships with values chosen to be safe when there is no detector at
+all. Three need changing before the detector may fly:
+
+| Setting | Currently | Change to | Why |
 |---|---|---|---|
-| `camera_source` | `"timed"` | `"real"` | `"timed"` is the honest camera-less mode — it declares "found" after a fixed delay and detects nothing |
-| `cam_box_order` | `"yxyx"` | **`"xyxy"`** | `"yxyx"` is the picamera2 sample convention. Ultralytics `format=imx` — which produced our `.rpk` — emits `(x0, y0, x1, y1)`. The order cannot be inferred from the numbers |
-| `camera_confidence` | `0.5` | **keep `0.5`** | confirmed correct on the sensor. Everything implausible in the live bench run sat at 0.32, the lowest quantisation step; the real pad tracked at 0.50–0.78. 0.5 costs one distant-pad image in sixteen ([Evaluation](evaluation.md#choosing-the-threshold)) |
-| `camera_model_path` | `/home/drone/models/pad/network.rpk` | keep — and copy the `.rpk` there | the team convention from [AI Software](../software/ai-software.md) is `imx500-package -o ~/models/pad`; the on-Pi reader scripts still point one directory higher, so make them agree |
-| `camera_target_class` | `None` (accept any class) | keep `None` | correct for the deployed **single-class** model. If the two-class model H is ever loaded this **must** be set to the pad's class id — chasing a person instead of the pad is worse than not detecting at all |
+| `camera_source` | `"timed"` | `"real"` | `"timed"` is the honest no-camera mode: it just claims to have found the pad after a fixed delay |
+| `cam_box_order` | `"yxyx"` | **`"xyxy"`** | our camera reports the box the other way round, so the default reads it sideways |
+| `camera_model_path` | `/home/drone/models/pad/network.rpk` | leave, and put the file there | the on-Pi scripts currently point one folder higher — make them agree |
 
-## Open items to verify on the bench
+`camera_confidence` is already correct at `0.5`
+([why](evaluation.md#what-the-real-camera-does-differently)).
 
-`RealCamera` logs the first raw box next to its decoded form, exactly so these can
-be checked before flying:
+## What is still open
 
-```
-[CAM] First raw box [...] (cam_box_order=xyxy) -> normalised (x0=…, y0=…, x1=…, y1=…)
-```
+Two things were checked against the real camera and turned out fine. Two are not fine
+yet.
 
-!!! success "Closed: pixel-valued boxes"
-    The decoder once assumed boxes normalised to 0…1, while the sensor returns
-    **pixels in the model's input window**. `_decode_box()` now detects this
-    (`max(box) > 1.5`) and normalises by the model's input size.
+!!! success "Fixed: the box numbers are read correctly"
+    The camera reports its boxes in pixels rather than fractions, which used to be
+    misread. The flight software now detects that and converts automatically.
 
-!!! success "Closed: the input-size fallback"
-    `_input_size()` falls back to 640 × 640 if `IMX500.get_input_size()` raises, which
-    would have halved every correction for our 320 px model. On the aircraft's own
-    hardware the call **works and returns `(320, 320)`**, so the fallback never fires.
-    Pinning it to 320 anyway costs nothing and removes the trap.
+    It falls back to assuming a 640-pixel model if it cannot ask the camera — which
+    would halve every correction, since ours is 320. On the drone's own hardware the
+    question is answered correctly, so the fallback never happens. Setting it to 320
+    anyway costs nothing and removes the trap.
 
-!!! warning "1. `cam_box_order` must be flipped to `xyxy`"
-    **Confirmed on the sensor.** The raw tensor is `(x0, y0, x1, y1)` in 320 px units;
-    the working on-Pi decoder divides by the input height and then reorders to
-    `(y0, x0, y1, x1)` for `convert_inference_coords()`.
+!!! warning "1. `cam_box_order` is on the wrong setting"
+    **Confirmed on the camera.** It reports the box as left-top-right-bottom; the flight
+    software's default expects top-left-bottom-right, so it reads the two axes swapped.
 
-    Pi-Code's default is `"yxyx"`, which reads that raw tensor transposed. A wrong
-    order shows up as **swapped `dx`/`dy`** — easy to "fix" with `cam_swap_axes` in a
-    way that hides the real cause. This is the one setting that is still wrong.
+    The symptom is that left/right and forward/back come out **exchanged** — which is
+    easy to "fix" by flipping `cam_swap_axes`, hiding the real cause. Set
+    `cam_box_order` to `"xyxy"`.
 
-!!! warning "2. The height that scales every offset is barometric near the ground"
-    `_height_above_ground()` takes the EKF vertical estimate
-    (`get_local_position()["down"]`). After the [2026-08-21
-    incident](../problems/incident-analysis-2026-08-21.md) the EKF height source is
-    `EK3_SRC1_POSZ = 1`, i.e. **baro primary** — and the team's own logs show
-    barometric altitude spiking to
-    [4.05–6.73 m in propeller downwash](../results/limitations.md#sensors) while the
-    aircraft is centimetres off the floor.
+!!! warning "2. Nothing rejects a single bad frame"
+    The detector returns its best guess for **every** picture, and the approach logic
+    acts on it. In the bench test, occasional impossible boxes appeared — stuck to the
+    edge of the frame, far too long and thin — each lasting one frame, while the real
+    pad held steady for dozens.
 
-    `ground_offset` scales **linearly** with that height. A height that reads 4 m
-    while the drone is at 1 m makes every commanded nudge roughly four times too
-    large, precisely during the final approach. Worth checking whether the
-    rangefinder should feed this conversion directly instead of the EKF estimate.
+    Something has to sit between the two. Either require the pad in **3 of 4
+    consecutive pictures** in roughly the same place, or throw away impossible shapes,
+    or both. A landing controller should never react to a single picture anyway.
 
-!!! note "3. Tensor count"
-    Confirmed on hardware: the sensor returns **four** tensors — boxes `(300, 4)`,
-    scores `(300,)`, classes `(300,)` and the number of valid detections `(1,)`.
-    Pi-Code's guard accepts *at least three* and ignores the fourth, scanning all 300
-    rows and filtering by score. Workable; using the count tensor is cheaper.
+!!! warning "3. The height used for the conversion is unreliable near the floor"
+    Every distance is scaled by the drone's height, and that height comes from the
+    flight controller's own estimate — which since the
+    [August crash](../problems/incident-analysis-2026-08-21.md) is based mainly on the
+    **air-pressure sensor**.
 
-!!! warning "4. Nothing rejects a single-frame outlier"
-    Not a Pi-Code defect — a missing layer. `RealCamera` returns the
-    highest-confidence detection **per frame**, and `APPROACH` acts on it. The bench
-    run produced occasional impossible boxes (frame edge, 1:2.5 aspect) that a
-    single-frame consumer cannot tell from a real pad.
+    The team's own logs show that sensor reading **4 to 6.7 metres** while the drone is
+    centimetres off the floor, because the propellers push air down onto it.
 
-    Before the detector drives the aircraft, the mission side needs either a
-    persistence requirement (pad present in 3 of 4 consecutive frames at roughly the
-    same place) or a plausibility filter (reject aspect ratios beyond ~1:3 and boxes
-    touching the frame edge). See
-    [Evaluation](evaluation.md#what-the-sensor-does-that-the-simulation-does-not).
+    Since distance scales directly with height, a height that reads 4 m when the drone
+    is at 1 m makes every correction about four times too big — exactly during the final
+    approach. Worth checking whether the downward-facing distance sensor should feed
+    this calculation directly instead.
 
-!!! tip "How to check items 1 and 2 in one hover"
-    Milestone 2 (`python main.py --milestone 2`) runs the detector in logging-only
-    mode with no drop. Put the pad at a **measured** offset — say 1.0 m to the
-    drone's right, 0 m ahead, at a known height — and compare the logged metres
-    against the tape measure.
+!!! note "For the record: four blocks of data, not three"
+    The camera returns boxes, confidences, categories **and** a count of valid
+    detections. The flight software checks for at least three and ignores the fourth,
+    scanning all 300 slots and filtering by confidence instead. That works; using the
+    count would be cheaper.
 
-    - `dx` and `dy` swapped → item 1, `cam_box_order`
-    - factor ≈ 4 too large near the floor → item 2, the barometric height
+!!! tip "One hover checks all of it"
+    Bring-up step 2 flies the detector in watch-only mode. Put the pad at a **measured**
+    distance — say exactly 1 metre to the drone's right, level with it, at a known
+    height — and compare the logged metres against a tape measure.
+
+    - left/right and forward/back swapped → problem 1
+    - roughly four times too large near the floor → problem 3
+    - occasional wild readings between good ones → problem 2
 
 ## Related pages
 
-- [Deployment](deployment.md) — how the `.rpk` is built and which script loads it
-- [Evaluation](evaluation.md) — where the confidence-threshold recommendation comes from
-- [AI Camera Module](../hardware/ai-camera.md) — connecting the camera and installing the IMX500 firmware
-- [AI Software](../software/ai-software.md) — why the network runs on the sensor at all
+- [Deployment](deployment.md) — how the model gets onto the camera, and which script reads it
+- [Evaluation](evaluation.md) — where the confidence threshold comes from
+- [AI Camera Module](../hardware/ai-camera.md) — connecting the camera and installing its firmware
+- [AI Software](../software/ai-software.md) — why the model runs inside the camera at all
 - [Limitations](../results/limitations.md) — the sensor and firmware limits this page depends on

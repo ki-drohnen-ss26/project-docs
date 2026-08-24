@@ -4,185 +4,177 @@ tags:
   - landing-pad
 ---
 
-# Deployment
+# Getting it onto the drone
 
 !!! abstract "In short"
-    A trained model is a laptop file. To get it onto the drone it has to be repackaged,
-    and there are two possible destinations: the Raspberry Pi's own processor, or the
-    small AI processor inside the camera. **The camera is the right one**, because the
-    Pi is already busy flying the drone.
+    A trained model is a file on a laptop. To use it on the drone it has to be
+    repackaged, and there are two possible destinations: the Raspberry Pi's own
+    processor, or the small AI chip built into the camera.
 
-    The repackaging takes three steps and they cannot all run on the same machine — the
-    last one only works on ARM Linux, which means a Raspberry Pi or a free ARM build
-    server on GitHub.
+    **The camera is the right one**, because the Pi is already busy flying the drone.
 
-    The rest of this page is the traps we hit, so nobody has to find them twice.
+    Repackaging for the camera takes three steps, and they cannot all run on the same
+    machine — the last one only works on ARM Linux, which means a Raspberry Pi or a free
+    ARM build server on GitHub.
 
-The trained model is a PyTorch checkpoint. It has to be converted for the
-aircraft, and there are **two targets** with different trade-offs.
+    The rest of this page is the traps, so nobody has to find them twice.
 
-| | Raspberry Pi CPU | Raspberry Pi AI Camera (IMX500) |
+## The two destinations
+
+| | The Pi's own processor | The camera chip |
 |---|---|---|
-| Format | `.tflite` (INT8) | `.rpk` (Sony package) |
-| Where inference runs | Pi Zero 2 W CPU | **on the sensor's NPU** |
-| Frame rate | needs `SKIP_FRAMES = 2` to keep up | up to 30 fps, CPU free |
-| Models per frame | two (pad + person) | **one** — the sensor holds one network |
-| Confidence threshold | 0.4 | **0.5** ([why](evaluation.md#choosing-the-threshold)) |
+| File format | `.tflite` | `.rpk` |
+| Where the model runs | on the Raspberry Pi | **inside the camera** |
+| Speed | can only manage about one picture in three | up to 30 pictures per second |
+| How many models at once | two (pad *and* people) | **one** |
+| Confidence threshold | 0.4 | **0.5** ([why](evaluation.md#choosing-how-sure-the-model-has-to-be)) |
 
-!!! tip "Why the AI Camera is the better target"
-    The Pi Zero 2 W has four cores that are already busy with MAVLink and the
-    mission state machine. Moving inference onto the sensor removes the detector
-    from the flight-critical CPU budget entirely — which was the original reason
-    for choosing this camera.
+!!! tip "Why the camera chip is the better choice"
+    The Raspberry Pi Zero 2 W has four small processor cores, and they are already
+    fully occupied talking to the flight controller, watching the failsafes and running
+    the mission. Moving the model into the camera takes the whole job off the Pi.
 
-## Raspberry Pi CPU (TFLite)
+    That was the reason for buying this camera in the first place.
+
+## Route 1: the Pi's own processor
 
 ```bash
 python3 export.py runs/F_neg_fpv_320/weights/best.pt
 ```
 
-Produces `pad_320_int8.tflite` (3.0 MB). Copy it, `yolo11n_int8.tflite` and
-`drone_pi.py` into the same directory on the Pi and run:
+That produces `pad_320_int8.tflite`, 3 MB. Copy it, the people model and `drone_pi.py`
+into the same folder on the Pi and run:
 
 ```bash
-python3 drone_pi.py --stream      # MJPEG on http://<pi-ip>:8080
+python3 drone_pi.py --stream     # live picture at http://<pi-ip>:8080
 ```
 
-!!! bug "Three defects that were fixed in the inference path"
-    These silently produced wrong boxes rather than errors, so they are worth
-    naming:
+??? bug "Three faults we had to fix in the old inference script"
+    All three produced wrong boxes silently, rather than an error message.
 
-    - **Aspect ratio.** `cv2.resize(frame, (S, S))` squashed 640×480 into a
-      square. Training and validation *letterbox*, so the network was shown a pad
-      25 % narrower than anything it had been trained on. Letterboxing raised
-      mean IoU from 0.834 to 0.851.
-    - **Shared input tensor.** The person model was fed the *pad* model's tensor.
-      It works only while both exports happen to share a shape and dtype, and
-      misfeeds silently as soon as one is re-exported.
-    - **Hard-coded `IMG_SIZE`.** 320 was hard-coded while the input size was read
-      from the model, so box coordinates were wrong for any other export size.
+    **Squashed pictures.** The camera picture was squeezed into a square instead of
+    being padded to shape. Training pads the picture, so the model was being shown a pad
+    25 % narrower than anything it had learned from. Fixing it improved box accuracy.
 
-    `test_pi_inference.py` checks the corrected path against the dataset labels.
+    **The wrong input.** The people model was being fed the *pad* model's prepared data.
+    That happens to work while both models expect the same shape, and breaks silently as
+    soon as one of them is exported differently.
 
-## AI Camera (IMX500, `.rpk`)
+    **A hard-coded size.** The picture size was written into the script as 320 while
+    being read from the model everywhere else, so any other export produced boxes in the
+    wrong place.
 
-Three steps, and they **cannot all happen in one place**:
+    `test_pi_inference.py` checks the corrected version against the marked-up pictures.
 
-| Step | Where | Tool | Output |
-|---|---|---|---|
-| 1. Quantise (MCT) | any x86 Linux — Colab works; macOS also works | `model-compression-toolkit` | quantised model |
-| 2. Convert | same | `imx500-converter[pt]` | `packerOut.zip` |
-| 3. Package | **aarch64 Linux only** | `imx500-tools` | `network.rpk` |
+## Route 2: the camera chip
+
+Three steps, and they cannot all happen in one place:
+
+| Step | Where it runs | What comes out |
+|---|---|---|
+| 1. Shrink the model | any Linux machine — and macOS works too | a shrunk model |
+| 2. Convert it | same | `packerOut.zip` |
+| 3. Package it | **only on ARM Linux** | `network.rpk` |
 
 ```bash
-./run_imx_local.sh                                   # steps 1-2, ~3.5 min on an M-series Mac
+./run_imx_local.sh                                   # steps 1-2, about 3.5 minutes
 imx500-package -i packerOut.zip -o ~/models/pad      # step 3, on the Pi
 ```
 
-`~/models/pad` is the path the flight code expects (`config.camera_model_path`) and
-the one used in [AI Software](../software/ai-software.md).
+`~/models/pad` is where the flight code expects to find it.
 
-### Why step 3 is ARM-only
+### Why step 3 only runs on ARM
 
-The Raspberry Pi documentation states that this step must run on a Raspberry Pi.
-That is verifiable rather than a matter of trust: `imx500-tools` ships **no
-`amd64` and no `all` package**, and its `rpk_packager` and `fpk2rpk` are
-aarch64 ELF binaries. No x86 machine runs them — not Colab, not a cloud VM.
+Sony's documentation says this step must run on a Raspberry Pi. That is checkable rather
+than something to take on trust: the software package contains **no version for normal
+PCs**, and the program inside it is compiled for ARM processors only. No ordinary
+computer can run it — not a Mac, not a cloud machine, not Google Colab.
 
-Any *aarch64* Linux does, which gives three options:
+Any ARM Linux machine works, which leaves three options:
 
-- the **Raspberry Pi** itself — simplest, the hardware is already there;
-- a **GitHub Actions `ubuntu-24.04-arm` runner** — free, and the package's
-  dependencies (`libarchive13`, `bc`, `default-jre-headless`, `jq`, `zip`) are
-  all stock Ubuntu, so the Raspberry Pi `.deb` installs there unchanged. The
-  workflow takes `packerOut.zip` and uploads `network.rpk` as an artifact, so no
-  Pi has to be powered on;
-- an **arm64 container on an Apple Silicon Mac**, which runs them without
-  emulation.
+- **the Raspberry Pi itself** — simplest, the hardware is already there;
+- **a free ARM build server on GitHub** — our setup does exactly this: you upload
+  `packerOut.zip`, and two minutes later `network.rpk` is ready to download. No Pi
+  needs to be switched on;
+- **an ARM container on an Apple Silicon Mac.**
 
-### Steps 1–2 run on macOS after all
+??? note "Steps 1 and 2 do run on macOS, despite the tool refusing"
+    The training tool blocks the export on anything but Linux. That block turns out to
+    be over-cautious rather than necessary — none of the software involved contains
+    anything Linux-specific:
 
-Ultralytics guards the IMX export with `assert LINUX`, but that assertion is
-conservative rather than necessary — the toolchain carries no Linux-specific
-code:
+    | Component | What it actually is |
+    |---|---|
+    | `imx500-converter` | plain Python, only passes work along |
+    | `sdspconv` | plain Java, no platform-specific parts |
+    | `model-compression-toolkit` | plain Python |
+    | `ortools` | ships a macOS version |
 
-| Package | What it actually is |
-|---|---|
-| `imx500-converter` | pure Python, only dispatches |
-| `sdspconv` | pure Java — Scala/Kotlin JARs, no `.so` / `.dylib` / `.dll` |
-| `model-compression-toolkit`, `edge-mdt-*` | pure Python |
-| `ortools` | ships `macosx_11_0_arm64` wheels |
+    `export_imx_local.py` lifts the block and runs steps 1 and 2 on a Mac in about
+    three and a half minutes.
 
-`imxconv-pt --version` runs on macOS, so `export_imx_local.py` lifts the guard
-(`exporter.LINUX = True`) and does steps 1–2 locally.
+### Two traps in the shrinking step
 
-### Pitfalls we hit
+!!! danger "TensorFlow must not be installed"
+    Sony's converter needs an older version of a shared library than TensorFlow does.
+    The shrinking tool loads TensorFlow simply *because it is installed*, and the export
+    then dies with a confusing import error.
 
-!!! danger "No TensorFlow in the export environment"
-    Sony's converter pins `protobuf==4.25.5`; TensorFlow needs 5.x.
-    `model_compression_toolkit` imports TF merely *because it is installed*, and
-    the export then dies with `cannot import name 'runtime_version'`. Use a
-    separate virtualenv with no TensorFlow in it.
+    Use a separate Python environment with no TensorFlow in it.
 
-!!! danger "No pad-free images in the calibration set"
-    MCT's mixed-precision search compares float and quantised outputs and
-    normalises by their norm. On an image with no pad the confidence output is
-    ~0, the normalisation divides by ~0, and the solver aborts with
-    `PulpError: Cannot multiply variables with NaN/inf values`.
+!!! danger "Do not include the empty pictures when shrinking"
+    Shrinking works by comparing the original model's answers with the shrunk one's on a
+    set of sample pictures. On a picture with no pad, both answers are near zero, the
+    comparison divides by roughly zero, and the whole process aborts with an error that
+    never mentions pictures at all.
 
-    The 76 hard negatives are **essential for training and harmful for
-    calibration**, so `export_imx_local.py` filters them out — 197 calibration
-    images remain.
-
-!!! note "Quantisation here is not the same as INT8 conversion"
-    The IMX path uses gradient-based post-training quantisation over a
-    representative dataset, which is why it takes a `data` argument and several
-    minutes, unlike the plain INT8 TFLite conversion.
+    So the [76 empty pictures](dataset.md#the-pictures-with-nothing-in-them) are
+    essential for *training* and harmful for *shrinking*. `export_imx_local.py` filters
+    them out; 197 sample pictures remain.
 
 ## Running it on the Pi
 
-Two scripts, because there are two ways into the sensor:
+Two scripts, because there are two ways into the camera.
 
-=== "`detect_pad.py` — picamera2 + `IMX500`"
+=== "`detect_pad.py`"
 
-    Loads `network.rpk` directly through the `picamera2` device API.
+    Loads `network.rpk` directly.
 
     ```bash
-    python3 detect_pad.py                # conf 0.5
+    python3 detect_pad.py                # threshold 0.5
     python3 detect_pad.py --conf 0.4
-    python3 detect_pad.py --preview      # needs a monitor
+    python3 detect_pad.py --preview      # needs a monitor attached
     ```
 
-    The sensor returns **four** tensors — boxes `(300,4)`, confidences `(300,)`,
-    classes `(300,)` and the number of valid detections `(1,)`. NMS has already
-    run on the sensor.
+    The camera hands back four blocks of data: the boxes, how confident it is, which
+    category, and how many detections are valid. The overlapping-box cleanup has already
+    happened inside the camera, so the Pi only has to read and convert.
 
-    !!! warning "Two details that silently produce wrong boxes"
-        - **Normalisation.** The boxes arrive as **pixels in the 320 px input
-          window, not as 0…1**. They must be divided by the input height before
-          use.
-        - **Coordinate order.** YOLO emits `(x0, y0, x1, y1)`, but
-          `convert_inference_coords()` expects `(y0, x0, y1, x1)`. The values
-          have to be reordered.
+    !!! warning "Two details that silently produce boxes in the wrong place"
+        - **The numbers are pixels, not fractions.** The boxes come back measured in
+          pixels of the 320-pixel window, not as values between 0 and 1. They have to be
+          divided by the window size first.
+        - **The order is different.** The model gives left-top-right-bottom; the helper
+          that maps them onto the real picture expects top-left-bottom-right. They have
+          to be swapped.
 
-        Both are taken from `picamera2`'s own example. Getting either wrong
-        produces plausible-looking boxes in the wrong place. The flight code now
-        normalises the pixel case automatically and selects the order via
-        `cam_box_order` — which still has to be set to `xyxy` for this export, see
-        [Integration](integration.md#open-items-to-verify-on-the-bench).
+        Both are taken from the camera manufacturer's own example. Getting either wrong
+        gives you plausible-looking boxes in entirely the wrong place — see
+        [Integration](integration.md).
 
-=== "`pi_aicam.py` — Sony `modlib`"
+=== "`pi_aicam.py`"
+
+    Uses Sony's own library instead.
 
     ```bash
     python3 pi_aicam.py
     python3 pi_aicam.py --conf 0.4 --no-display
     ```
 
-    `modlib` takes **`packerOut.zip`, not `network.rpk`** — it packages
-    internally. The `.rpk` is only needed for the `picamera2`/`rpicam-apps`
-    route.
+    This one wants `packerOut.zip` rather than `network.rpk` — it does the packaging
+    step internally.
 
-    Prerequisites on the Pi:
+    First-time setup on the Pi:
 
     ```bash
     sudo apt update && sudo apt full-upgrade
@@ -191,82 +183,68 @@ Two scripts, because there are two ways into the sensor:
     pip install git+https://github.com/SonySemiconductorSolutions/aitrios-rpi-application-module-library.git
     ```
 
-!!! warning "`rpicam-apps` post-processing does not fit this model"
-    The bundled `imx500_object_detection` stage parses the output formats Sony
-    ships models in. It does **not** match Ultralytics' YOLO output layout, so
-    the built-in demo will not display our detections correctly. Use one of the
-    two scripts above.
+!!! warning "The camera's built-in demo will not show our detections"
+    The demo software that ships with the camera can only read the output formats Sony's
+    own models use. Ours is laid out differently, so the demo appears to run and shows
+    nothing useful. Use one of the two scripts above.
 
-### What a working bench run looks like
+!!! note "Do not change the picture size"
+    The model expects 320 pixels. Run it at a different size and false alarms rise
+    sharply — measured at none per picture at 320, and more than one per picture at 416.
 
-Confirmed on the aircraft's own Pi: the firmware uploads in a few seconds, the model
-reports `(320, 320)`, and the sensor returns four tensors.
+## What a working test looks like
+
+Confirmed on the drone's own Pi. The model uploads into the camera in a few seconds and
+reports its size:
 
 ```
 model input size: (320, 320)
 number of tensor outputs: 4
-Output 0: shape=(300, 4)     boxes
-Output 1: shape=(300,)       confidences
-Output 2: shape=(300,)       classes
-Output 3: shape=(1,)         number of valid detections
 ```
 
-NMS has already run on the sensor, so the Pi only reads and converts. A tracked pad
-looks like this — note how smoothly the centre moves between frames:
+Then, with the pad in front of the camera:
 
 ```
-landingPad  Mitte 0.637,0.131  Groesse 0.189x0.175  conf 0.50  px=(347, 21, 121, 84)
-landingPad  Mitte 0.637,0.132  Groesse 0.189x0.177  conf 0.50  px=(347, 21, 121, 85)
-landingPad  Mitte 0.638,0.133  Groesse 0.189x0.175  conf 0.56  px=(348, 22, 121, 84)
+landingPad  centre 0.637,0.131  size 0.189x0.175  conf 0.50
+landingPad  centre 0.637,0.132  size 0.189x0.177  conf 0.50
+landingPad  centre 0.638,0.133  size 0.189x0.175  conf 0.56
 ```
 
-!!! note "Confidences arrive in steps"
-    The sensor's score output is discrete — roughly 0.06 apart
-    (0.32, 0.38, 0.44, 0.50, 0.56, 0.62, 0.68, 0.73, 0.78). Thresholds between two
-    steps are identical in effect, and the lowest admitted step is where the
-    implausible boxes live. This is why the `.rpk` runs at **0.5** rather than 0.3 —
-    see [Evaluation](evaluation.md#what-the-sensor-does-that-the-simulation-does-not).
+The centre is where the pad sits in the picture — `0.5, 0.5` would be dead centre. Watch
+how little it moves between frames: that smoothness is what a working detector looks
+like.
 
-### Three things that look like failures and are not
+!!! note "Confidence comes back in steps"
+    You will only ever see certain values — 0.32, 0.38, 0.44, 0.50, 0.56 and so on,
+    about 0.06 apart. That is normal, and it is why the threshold is 0.5 rather than 0.3
+    ([the reasoning](evaluation.md#what-the-real-camera-does-differently)).
 
-!!! warning "The first run after switching models processes almost no frames"
-    Selecting a *new* model uploads ~3 MB of firmware to the sensor, which takes about
-    **45 seconds**. A run with a 15-second duration timer that starts before the upload
-    finishes will process a single frame and look broken. Start the timer *after* the
-    upload progress bar completes, and add a short warm-up so auto-exposure settles —
-    the first frames after start are dark or washed out and produce spurious
-    (non-)detections.
+## Three things that look broken and are not
 
-!!! warning "`Failed to reserve DRM plane` — the demo wants a display"
-    `picamera2`'s bundled `imx500_object_detection_demo.py` starts a DRM preview
-    window, which needs a screen. Over SSH on a headless Pi it aborts with
-    `RuntimeError: Failed to reserve DRM plane`. Both scripts above use
-    `show_preview=False` and log to the terminal instead.
+!!! warning "The first run after changing models seems to do nothing"
+    Loading a new model into the camera uploads about 3 MB and takes roughly **45
+    seconds**. A test with a 15-second timer that starts before the upload finishes will
+    process one picture and look broken. Start the timer after the upload finishes.
 
-    The same applies to `rpicam-hello --nopreview`: the post-processing stage emits its
-    results as *image overlay* metadata, so with no preview there is nowhere for them
-    to land and the output is silently empty. Use `rpicam-still` to save an annotated
-    frame if you want to see them.
+!!! warning "`Failed to reserve DRM plane`"
+    The camera's example script wants to open a preview window, which needs a monitor.
+    Over a remote connection there is none, so it aborts. Both scripts above run without
+    a window and print to the terminal instead.
 
-!!! warning "A flood of `V4L2 ... Failed to queue buffer` needs a reboot"
-    After an aborted run the IMX500 / V4L2 pipeline can be left partially configured;
-    the next run then floods the terminal with queue-buffer errors and the camera stays
-    unresponsive. `sudo reboot` on the Pi clears it — no reinstall required.
+!!! warning "A flood of `Failed to queue buffer` messages"
+    After an aborted run the camera can be left half-configured, and the next run fills
+    the screen with errors. `sudo reboot` on the Pi clears it. Nothing needs
+    reinstalling.
 
-!!! note "Do not change the input size"
-    The model expects a **320 px** input. Run outside its training resolution and
-    false positives rise sharply — measured at 0.00 → 1.12 per image going from
-    320 to 416.
+## The scripts
 
-## Files
-
-| File | Purpose |
+| File | What it does |
 |---|---|
-| `export.py` | TFLite INT8 export, with quantisation loss measured |
-| `export_imx.py` | IMX500 export, steps 1–2 (Linux) |
-| `export_imx_local.py` / `run_imx_local.sh` | the same steps on macOS |
-| `make_imx_bundle.py` / `imx_colab.ipynb` | bundle + ready-to-run Colab cell |
-| `.github/workflows/imx500-rpk.yml` | arm64 CI job: `packerOut.zip` → `network.rpk` |
-| `drone_pi.py` | on-drone inference, Pi CPU path |
-| `detect_pad.py` / `pi_aicam.py` | on-drone inference, AI Camera path |
-| `live.py` | webcam / video / image demo on a PC |
+| `export.py` | makes the file for the Pi's processor, and measures what shrinking costs |
+| `export_imx.py` | steps 1–2 for the camera chip, on Linux |
+| `export_imx_local.py`, `run_imx_local.sh` | the same steps on a Mac |
+| `make_imx_bundle.py`, `imx_colab.ipynb` | the same steps in the cloud instead |
+| `.github/workflows/imx500-rpk.yml` | step 3 on GitHub's free ARM server |
+| `drone_pi.py` | runs the model on the Pi's processor |
+| `detect_pad.py`, `pi_aicam.py` | run the model on the camera chip |
+| `live.py` | try it on a webcam, a video or a single picture on a PC |
