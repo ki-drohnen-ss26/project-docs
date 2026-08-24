@@ -17,7 +17,7 @@ The drone we used has the following components:
 The wiring can be seen here:
 
 ![Architecture](../../Images/InitialSetup/Architecture.png)
-<img width="3168" height="1944" alt="image" src="../../Images/InitialSetup/Architecture.png" />
+
 
 ## Installaltion of Ardupilot
 ### Download correct firmware
@@ -26,27 +26,26 @@ For our installation, we first need our firmware to flash the flight controller,
 This approach works generally to be able to just fly a drone, but as our goal is to create an autopilot using a lidar and optical flow combination, as well as an onboard computer, we need a custom version of ardupilot, which we can create under 
 https://custom.ardupilot.org/. On the upper right we can see the option to create a new build:
 
-<img width="513" height="91" alt="image" src="../../Images/InitialSetup/customBuild_1.png" />
+![customBuild_1.png](../../Images/InitialSetup/customBuild_1.png)
 
 This leads to a page where we can choose our drone type, the version we want to use (use latest for most recent version) and the flight controller we are using
 
-<img width="889" height="134" alt="image" src="../../Images/InitialSetup/customBuild_addNewBuild.png" />
+![customBuild_addNewBuild.png](../../Images/InitialSetup/customBuild_addNewBuild.png)
 
 and below are all options listed, that ardupilot can have. Most basic options shoud already be in the default version, but especially if extra sensors and functionality that goes above manually piloting the drone are needed, we will need to change our settings. For our personal use case we will add a mavlink optical flow sensor, enable OpticalFlow fusion for EKF3
 and to use our onboard computer we will also need the `Enable Mode Guided NoGPS` option:
 
-<img width="207" height="595" alt="image" src="../../Images/InitialSetup/customBuild_Sensors.png" />
-<img width="208" height="489" alt="image" src="../../Images/InitialSetup/customBuild_AHRS.png" />
-<img width="199" height="585" alt="image" src="../../Images/InitialSetup/customBuild_GuidedNoGPS.png" />
+![customBuild_Sensors.png](../../Images/InitialSetup/customBuild_Sensors.png)
+![customBuild_AHRS.png](../../Images/InitialSetup/customBuild_AHRS.png)
+![customBuild_GuidedNoGPS.png](../../Images/InitialSetup/customBuild_GuidedNoGPS.png)
 
 
 After we made our selection of needed options, we can generate our build using the button on the lower right
 
-<img width="372" height="57" alt="image" src="../../Images/InitialSetup/customBuild_generate.png" />
+![customBuild_generate.png](../../Images/InitialSetup/customBuild_generate.png)
 
 The build will then be shown on https://custom.ardupilot.org/, where, after the build finished, we can download it
-
-<img width="924" height="164" alt="image" src="../../Images/InitialSetup/customBuild_finishedBuild.png" />
+![customBuild_finishedBuild.png](../../Images/InitialSetup/customBuild_finishedBuild.png)
 
 And we are once again interested in the file ending with `bl.hex`, as this file contains the bootloader.
 
@@ -56,18 +55,18 @@ We can download the STM32 cube programmer through the website of STMicroelectron
 To install the Firmware onto our drone, we first have to start the Device Firmware Update(DFU) mode of the drone, which can be achieved by pressing the Boot button, or by manually bridging the boot pads, depending on the flight controller and connecting the drone to our computer through a USB cable while keeping the button pressed.
 For the flight controller we are using we see the boot button as seen here:
 
-<img width="300"  alt="FlightControllerFront_BootButton" src="../../Images/InitialSetup/FlightControllerFront_BootButton.png" />
+![FlightControllerFront_BootButton.png](../../Images/InitialSetup/FlightControllerFront_BootButton.png)
 
 In case there is already a firmware installed, there is often an option to use software to set the flight controller into DFU mode.
 
 Once we have set the drone into DFU mode, we can use the STM32 cube programmer to erase and reprogram our flight controller.
 On the upper right we need to use the correct settings to connect to our drone. As we are connecting our drone using USB, we choose the corresponding setting and set the used port. Pressing connect then connects our drone to the program 
 
-<img width="400" alt="image" src="../../Images/InitialSetup/STM32CubeProgrammer_connect.png" />
+![STM32CubeProgrammer_connect.png](../../Images/InitialSetup/STM32CubeProgrammer_connect.png)
 
 After we succesfully connected, we can use the option tab on the upper left to navigate to the erase and programming page.
 
-<img width="1920" height="1080" alt="STME32CubeProgrammer_EraseAndProgramming_edit" src="../../Images/InitialSetup/STME32CubeProgrammer_EraseAndProgramming_edit.png" />
+![STME32CubeProgrammer_EraseAndProgramming_edit.png](../../Images/InitialSetup/STME32CubeProgrammer_EraseAndProgramming_edit.png)
 
 First we have to erase our chip. We can manually erase the chip using the  middle window called Erase flash memory, and choose the Full chip erase function. We can also check the Full chip erase option under automatic mode, that will erase the chip before programming. 
 
@@ -78,23 +77,23 @@ After the chip is erased, we can choose the `bl.hex` file we downloaded in the e
 To setup our drone we are using the Mission planner available under https://ardupilot.org/planner/docs/mission-planner-installation.html. 
 After downloading and starting the apllication, we connect our drone using USB (the drone does not have to be in DFU mode) and click the connect button on the upper right of the mission planner.
 
-<img width="503" height="71" alt="image" src="../../Images/InitialSetup/InitialDroneSetup.png" />
+![InitialDroneSetup.png](../../Images/InitialSetup/InitialDroneSetup.png)
 
 If the drone is already connected through USB, the mission planner will generally set the right port automatically, if this is not the case, we might need to manually choose the correct port using the drop down menu.
 
 Our first steps will be to set the mandatory hardware parameters, that can be found under the setup menu in the upper left:
 
-<img width="414" height="563" alt="image" src="../../Images/InitialSetup/MissionPlanner_MandatoryHardware.png" />
+![MissionPlanner_MandatoryHardware.png](../../Images/InitialSetup/MissionPlanner_MandatoryHardware.png)
 
 ### Frame Type
 First we look at the Frame Type. Ardupilot supports a lot of different frame types, from different copters to planes and even land and water vehicles, but as we have the copter firmware installed, we will only get approptiate options. In our case we have a quadcopter, that we can choose first though the upper image and then specify using the corresponding options. In our case, the frame is in X form.
 
-<img width="833" height="591" alt="image" src="../../Images/InitialSetup/MissionPlanner_FrameType.png" />
+![MissionPlanner_FrameType.png](../../Images/InitialSetup/MissionPlanner_FrameType.png)
 
 ### Initial tuning parameters and linear thrust
 The next mandatory configuration we will look at are the initial tuning parameters. They comprise of information about the propellers we are using, in our case the size is 3.5 inch, and information about the used batteries. We are using 4 LiIon cells, with fully charged voltage set at 4.1 and fully discharged voltage set to 2.8. Further, as we are using a current version of Ardupilot, we can check the 'Add suggested settings for 4.0 and up' checkbox. These settings are used by the mission planner to calculate initial settings for our PID(Proportional Integral Derivative) controllers, and sets some security functions like battery failsafes, that will trigger warnings and return to launch on low cell voltage, or geofence limits for altitude and distance to prevent flyaways.
 
-<img width="771" height="565" alt="MissionPlanner_InitialTuning" src="../../Images/InitialSetup/MissionPlanner_InitialTuning.png" />
+![MissionPlanner_InitialTuning.png](../../Images/InitialSetup/MissionPlanner_InitialTuning.png)
 
 The goal of the our initial settings is to have a thrust curve of the motors that is as linearly as possible.
 There are three main reasons that cause non-linear thrust:
@@ -107,6 +106,7 @@ We will look at the most important options that will be set and might have to be
 
 #### Voltage Settings
 For setting the voltage, we have these main parameters:
+
 - **MOT_BAT_VOLT_MAX**:
   Sets the maximum voltage of the battery(4.1V in our case)
 - **MOT_BAT_VOLT_MIN**:
@@ -117,17 +117,18 @@ For setting the voltage, we have these main parameters:
 - **MOT_THST_EXPO**:
   This controls the motor thrust curve exponent, that is used to correct the non-linear relationship betweem the controllers throttle stick and the actual thrust that is produced by the motors. A linear relationship would mean we get the exact thrust that is indicated by the thrust stick position. 10% increase in thrust stick position would mean 10% increase in throttle. This would be the relation when ´MOT_THST_EXPO` is set to 0. Sadly this is not the case in most situations and the thrust increases exponentially relative to the motor RPM, because of aerodynamics. For professional use, we would have to use a thrust stand to measure the true thrust given our combination of motor, ESC and propeller. But for general use , it is often suffcient to use the following graph:
 
-<img width="486" height="412" alt="image" src="../../Images/InitialSetup/relationship_Mot_THST_EXPO_and_props_size.png" />
+![relationship_Mot_THST_EXPO_and_props_size.png](../../Images/InitialSetup/relationship_Mot_THST_EXPO_and_props_size.png)
 
 #### PID controller initial setup
 We will first introduce the PID controller that is used by ardupilot. PID stands for Proportional, Integral and Derivative.
 
-<img width="1201" height="525" alt="image" src="../../Images/InitialSetup/PID_Controller.png" />
+![PID_Controller.png](../../Images/InitialSetup/PID_Controller.png)
 
 As we can see in the image of the PID-Controller flow diagram, we have two more terms associated with the ardupilot PID-controller. These are the Feedforward(FF) and derivative Feedforward (dFF) terms. 
 The basic idea is the following. When we are controlling the drone and want to move along one of the pitch or roll axes, we will have the actual angle of the drone that is measured in the moment, and we will have a target angle, where we would like our drone to be. The difference between those two angles is called the angle error.
 
 In our image we see multiple blocks that influence our angle error:
+
 - **Rad to rad/s** $\dfrac{1}{\\_ TCONST}$: Here the angle error is converted into an angular rate that is based on the time constant `_TCONST`.
 - **Limit target rate _RMAX**: Ardupilot allows us to set maximum angles the controller will not exceed. This term limits the possible angle to that maximum.
 - **Speed scaling**: Aerodynamic properties change based on the speed of the vehicle, thus the control gains have to be scaled on the current airspeed to maintain stability. We see in our image that multiple green blocks are dependent on the current spped of the drone.
@@ -152,17 +153,18 @@ On the ardupilot copter, we have generally 3 rate controllers, one for roll, pit
 - **INS_ACCEL_FILTER:** This parameter defines the cutoff frequency for accelerometers and can be set to lower values in case there are very high vibration levels in the aircraft. The default values is 10hz.
 - **INS_GYRO_FILTER:** This parameter defines the cutoff frequency for gyroscopes. Once again, if there are very high vibration levels in the aircraft, it can be set to a lower value. The default value depends on the size of the propellers and can be approximated using the following graph:
 
-  <img width="1280" height="960" alt="image" src="../../Images/InitialSetup/relationship_Gyro_props.png" />
+![relationship_Gyro_props.png](../../Images/InitialSetup/relationship_Gyro_props.png)
 
 - **ATC_ACC_P_MAX and ATC_ACC_R_MAX:** Both those parameters set the maximum acceleration for pitch and roll and the unit is degrees per square second. It is once again dependend on the propeller size and will be automatically set using the initial tuning parameters. once again a graph is used to approximate the max values:
 
-<img width="1280" height="960" alt="image" src="../../Images/InitialSetup/relationship_Accel_props.png" />
+![relationship_Accel_props.png](../../Images/InitialSetup/relationship_Accel_props.png)
 
 - **ATC_ACC_Y_MAX:** This parameter sets the maximum acceleration for the yaw axis. It is also dependend on the propeller size and approximated by the initial tuning parameters. The graph that shows propeller size in inches to the maximum yaw acceleration is given here:
 
-<img width="1280" height="960" alt="image" src="../../Images/InitialSetup/relationship_AccelY_props.png" />
+![relationship_AccelY_props.png](../../Images/InitialSetup/relationship_AccelY_props.png)
 
 The Following parameters should look familiar, as they define the low-pass filters used in our PID controller for each axis. They are by default all set to half the gyro filter frequence. Only the filter for the yaw rate error differs.
+
 - **ATC_RAT_PIT_FLTD:** INS_GYRO_FILTER / 2
 - **ATC_RAT_PIT_FLTT:** INS_GYRO_FILTER / 2
 - **ATC_RAT_RLL_FLTD:** INS_GYRO_FILTER / 2
@@ -173,7 +175,7 @@ The Following parameters should look familiar, as they define the low-pass filte
 ### Accel Calibration and Orientation
 Before we can calibrate the acceleration, we first need to make sure the board alignment is how it is supposed to be. We can change the alignment going to the Config tab, then to the Full Parameter List, where we want to look for the AHRS_ORIENTATION parameter.
 
-<img width="1178" height="431" alt="MissionPlanner_AHRS_Small_edited" src="../../Images/InitialSetup/MissionPlanner_AHRS_Small_edited.png" />
+![MissionPlanner_AHRS_Small_edited.png](../../Images/InitialSetup/MissionPlanner_AHRS_Small_edited.png)
 
 On the right of the image we see some of the most important options used in the Full Parameter List. FIrst we see the options to load from and save to file. The later option saves the full parameter list to a text file, which can then be loaded through the load from file option. It is highly recommended to save the parameters before major changes, so it is easily possible to revert to an earlier parameter selection.
 
@@ -182,53 +184,54 @@ Another important function is the Compare Params option. This allows us to compa
 
 On the bottom on the right we can also see the search bar, that allows us to look for certain strings in the name of the parameters. As there are lots of parameters, the search function is incredibly useful. Here we are searching for the AHRS_ORIENTATION parameter. This parameter allows us to change the orientation of the flight controller. we can give different values for yaw, roll and pitch values, that rotate a given degree around the axes seen in the following image:
 
-<img width="600" alt="yaw_roll_pitch" src="../../Images/InitialSetup/yaw_roll_pitch.png" />
+![yaw_roll_pitch.png](../../Images/InitialSetup/yaw_roll_pitch.png)
 
 We can see that our drone has the AHRS_ORIENTATION value 13, that gives us a 225 degree yaw rotation and a 180 degree roll rotation, but this depends on the flight controller used and how it is built into the drone. To check that the given AHRS_ORIENTATION is correct, we can go to the data tab of our mission planner. On the upper left we can see a Heads up Display, that mirrors the Primary Flight Display of traditional aircrafts, that gives us real-time telemetry data of our drone, given it is connected to Mission Planner.
 
-<img width="782" height="586" alt="HUD" src="../../Images/InitialSetup/HUD.png" />
+![HUD.png](../../Images/InitialSetup/HUD.png)
 
 We see the artificial horizon, where the blue part signifies the sky and the green part the ground. Moving our drone while it is connected will result in the HUD moving, and we can use that to verify that our pitch, roll and yaw move in the intended directions. Pitch and roll can be directly seen in the HUD, while we will look at the compass at the top to check our yaw direction.
 
 After we have set the correct orientation for our flight controller, we can go to the Accel Calibration tab.
 
-<img width="686" height="529" alt="MissionPlanner_AccelCalibration" src="../../Images/InitialSetup/MissionPlanner_AccelCalibration.png" />
+![MissionPlanner_AccelCalibration.png](../../Images/InitialSetup/MissionPlanner_AccelCalibration.png)
 
 To calibrate the accelerometer, we press the Calibrate Accel button and follow the instructions that will be shown right above the button. This will set the Min and Max values of our accelerometer in all 3 axes by setting our drone on each edge. After calibrating, it is advised to reboot the drone. After we calibrated the Min/Max values, we use the button right underneath and calibrate the level, which will set the default accelerometer offsets. Here and in the first step of Calibrating the acceleration, the drone should be fully level. If it is not, it might lead to the drone drifting, as the level position will be off.
 
 ### Compass Calibration
 Next we will go to the Compass tab to calibrate the magnetometer
 
-<img width="897" height="625" alt="MissionPlanner_Compass" src="../../Images/InitialSetup/MissionPlanner_Compass.png" />
+![MissionPlanner_Compass.png](../../Images/InitialSetup/MissionPlanner_Compass.png)
 
 Pressing start will start the calibration, where we will have to rotate the drone around all axes. This will adjust the compass, so that it can read the earth magnetic field more accurately. The process might have to be repeated numerous times, and if it still does not work, it is recommended to go outside, as indoors there might be metal or electric devices that can corrupt the reading  of the magnetic field. After a succesful calibration, the values can be saved and the drone will have to be rebooted to finalize it.
 
 ### Radio Calibration
 Radio Calibration is the following mandatory setting. 
 
-<img width="813" height="547" alt="MissionPlanner_RadioCalibration_Connected" src="../../Images/InitialSetup/MissionPlanner_RadioCalibration_Connected.png" />
+![MissionPlanner_RadioCalibration_Connected.png](../../Images/InitialSetup/MissionPlanner_RadioCalibration_Connected.png)
 
 The calibration starts by pressing the button `Calibrate Radio`, while the receiver has to be connected to the drone. Most important are the roll, pitch and yaw channels, that are controlled using the sticks of the receiver. Normally the centres of the sticks should be exactly at 1500. That is here the case, but it might not always be the case. If the numbers are off, the parameters `HS1_TRIM` value for the roll and the HS2_TRIM for the pitch value will have to be changed to the value at the center position of the stick. Another important point is that the lower position of the sticks should be below 1000 
 
 ### Servo output, motor test and ESC calibration
 This is one of the most important steps. First we define some important terms we will use int the following:
+
 - **Electronic speed controllers (ESC)**: They are controllers that take a high voltage DC power from a battery and low-voltage signal from the flight controller and converts them into complex electrical pulses that make a brushless motor spin.
 - **Pulse Width Modulation (PWM)**: This is a technique used to control the amount of power delivered to electronic devices. Instead of reducing continuous voltage , PWM turns the digital signal on and off very fast. The ratio of on and off time simulates a lower average voltage without wasting much energy. In drones the flight controller sends PWM signals to the ESC to tell it how fast to spin the motors. The pulses are for drones mostly between 1000 and 2000 seconds. PWM is replaced by Dshot on newer drone models, but many of the parameter names still contain the PWM notation.
 - **Digital shot(Dshot)**: Dshot is a digital communication protocol between flight controller and Electronic speed controllers. Instead of electrical pulses it sends specific digital packets that contain a 16-bit digiral word for every command. 11 Bits are used for the throttle, 1 Bit is used for telemtry requests and 4 Bits are used for a cyclic redundancy check to see if data was corrupted. It has multiple advantages to PWM, it does not need extra calibrations, it is immune to noise created by the motors, and in case of Bi directional Dshot, it can send telemetry data back to the flight controller, allowing the flight controller to use dynamic Notch filters to remove motor vibrations. Generally Dshot is followed by a number that denotes the bitrate in kilobits per second. For example Dshot600 can send 600000 bits per second.
 
 The first thing we will be doing is make sure that our motors are setup correctly. To do that we need to go to the tabs Optional Hardware and the subsection Motor test:
 
-<img width="724" height="831" alt="MissionPlanner_MotorTest" src="../../Images/InitialSetup/MissionPlanner_MotorTest.png" />
+![MissionPlanner_MotorTest.png](../../Images/InitialSetup/MissionPlanner_MotorTest.png)
 
 The motor numbering is given for our quadcopter as:
 
-<img width="531" height="561" alt="MotorNumbersQuadX" src="../../Images/InitialSetup/MotorNumbersQuadX.png" />
+![MotorNumbersQuadX.png](../../Images/InitialSetup/MotorNumbersQuadX.png)
 
 If we have a different Frame type, we will have to look up the correct order under https://ardupilot.org/copter/docs/connect-escs-and-motors.html#motor-order-diagrams
 
 Most ESCs will not directly have the correct motor position using default options. This means we have to look how our motors spin and if they spin in the correct direction. Each motor from A to D should work in clockwise rotation, meaning when we press `Test motor A, the upper right motor should spin counter clockwise, as depicted int he motor numbering image. By pressing Test motor B the lower right motor should spin, and so on. If another motor spins, we have to change the servo output under the mandatory hardware tab:
 
-<img width="708" height="547" alt="MissionPlanner_ServoOutput" src="../../Images/InitialSetup/MissionPlanner_ServoOutput.png" />
+![MissionPlanner_ServoOutput.png](../../Images/InitialSetup/MissionPlanner_ServoOutput.png)
 
 Here we see each motor, the left number shows the position as given in the motor numbering, the Motors in the function column are the actual motors, which we will have to change so they match the correct order we see using the motor test. If the motor spins in the correct place, but spins in the incorrect direction, we can set the checkmark in the reverse column. 
 
@@ -237,6 +240,7 @@ In this image we see the correct motor setup for our drone, but do keep in mind,
 Double check that the correct motor spins and that they spin in the right direction according to the diagram for the motor numbers, as the drone will crash if that is not the case.
 
 Now there are some more parameters we will have to change for our initial motor setup that define the PWM output range that is sent to the ESC and ensures that the entire range of throttle values used in flight is in linear range of the propulsion system.
+
 - **MOT_PWM_TYPE**: This parameter is used to select the output PWM type. For DShot600, which we are using, the value should be 6.
 - **MOT_PWM_MAX**: Sets the maximum PWM output in microseconds, and depends on the used ESC.
 - **MOT_PWM_MIN**: Sets the minimum PWM output in microseconds, and depends on the used ESC.
@@ -247,22 +251,23 @@ Now there are some more parameters we will have to change for our initial motor 
 
 All the parameters but MOT_THST_HOVER can also be set using the Mandatory Hardware subsection called ESC calibration.
 
-<img width="804" height="543" alt="MissionPlanner_ESCCalibration" src="../../Images/InitialSetup/MissionPlanner_ESCCalibration.png" />
+![MissionPlanner_ESCCalibration.png](../../Images/InitialSetup/MissionPlanner_ESCCalibration.png)
 
 ### Serial ports
 The serial ports in this section are set according to the wiring. In the image at the very top we see the wiring for our drone and set the corresponding ports in this setting:
 
-<img width="981" height="532" alt="MissionPlanner_SerialPorts2" src="../../Images/InitialSetup/MissionPlanner_SerialPorts2.png" />
+![MissionPlanner_SerialPorts2.png](../../Images/InitialSetup/MissionPlanner_SerialPorts2.png)
 
 We will go through each serial port that we will have to set based on the wiring of our drone:
+
 - **UART 1**: Telemetry (DJI VTX), responsible for sending the telemetry data and uses the Mavlink protocol. The baud rate by MAVLink is entirely dependent on the physical hardware, the default value for the industry is 57600 baud. as it is more stable over long distances.
 - **UART 2**: The second serial port is used by the receiver. We set the protocol to RCIN, standing for radio control input. It is a hardware input and can accept and autodecode a variety of digital and analog receiver protocols. The baud rate will be automaitcally set by the firmware, meaning it does not matter to what it is set here. As our receiver is using ExpressLRS, we will also want to change the `RSSI_TYPE`, the radio receiver type, to 3 and set the RC_OPTIONS Bitmask to 'use 420K baud for LRS(Bit 13)', as well as the 'Suppress CRSF mode/rate message for ELRS systems' (Bit9) option. To set the bitmask we go to the Full Parameter List under the config tab and look for RC_OPTIONS.
 
-<img width="464" height="99" alt="image" src="../../Images/InitialSetup/EK3.png" />
+![EK3.png](../../Images/InitialSetup/EK3.png)
 
-  While we could manually set the correct value of the bitmask, we can just click the Set Bitmask button and that will show us all options:
+While we could manually set the correct value of the bitmask, we can just click the Set Bitmask button and that will show us all options:
 
-<img width="685" height="185" alt="image" src="../../Images/InitialSetup/RC_options.png" />
+![RC_options.png](../../Images/InitialSetup/RC_options.png)
 
 - **UART 3**: Serial port 3 is connected to our video transmitter that uses the IRC Tramp communication protocol developed by ImmersionRC (IRC) to let the flight controller communicate to our analog video transmitter. The baud rate seems to be at 9600, but the firmware seems to also set this rate automatically, as no baud rate is mentioned at https://ardupilot.org/copter/docs/common-vtx.html
 - **UART 4**: Serial port 4 is set to be used for a onboard computer, namely a Raspberry Pi zero. The flight controller and the computer will use the MAVLink protocol to communicate. The baud rate here can be very high, as we want to share state data back and forth instantly. It is often recommended to set a baud rate of 921600. Higher rates might also be possible.
@@ -272,20 +277,20 @@ We will go through each serial port that we will have to set based on the wiring
 
 ### Flight Modes
 
-<img width="748" height="538" alt="image" src="../../Images/InitialSetup/MissionPlanner_FlightModes.png" />
+![MissionPlanner_FlightModes.png](../../Images/InitialSetup/MissionPlanner_FlightModes.png)
 
 Under the flight modes tab we can set different flight modes that can be changed through a set channel, that is defined through the `FLTMODE_CH` parameter. Here we see quite a few possible options, but depending on the channel used only some of the modes can realistcally be chosen. For example, most switches on our receiver have only three positions, one beneath 1000 PWM, one at 1500 PWM and one above 2000 PWM, which is also the reason we only have three different flight modes set.
 
 ### Failsafe
 
-<img width="870" height="528" alt="image" src="../../Images/InitialSetup/MissionPlanner_FailSafe.png" />
+![MissionPlanner_FailSafe.png](../../Images/InitialSetup/MissionPlanner_FailSafe.png)
 
 The failsafe tab allows us to set the behaviour of our drone in case the battery is low, or the connection to the receiver is lost. In most cases RTL, return to home and land, is recommended. The problem is, that RTL needs GPS. As we are mainly using the drone to achieve indoor autonomous flight, we generally will not have a GPS signal. This can result in unwanted behavior for RTL, and it is recommended to either just set Land as failsafe, or just give out a warning.
 
 ### Compass interference
 It is possible that the motors influence the compass, this can be checked using Compass/Motor calibration under optional Hardware:
 
-<img width="621" height="512" alt="image" src="../../Images/InitialSetup/MissionPlanner_CompassCalibration.png" />
+![MissionPlanner_CompassCalibration.png](../../Images/InitialSetup/MissionPlanner_CompassCalibration.png)
 
 To do the calibration, we flip propellers over, so that the drone is pulling down into the ground. Then we run up to 50% to 75% throttle for 5 to 10 seconds to see how this affects the compass reading. Interference less then 30% is good, less than 60% might be okay, but it could be beneficial to relocate the compass further away from motor wires and battery cables. By readings above 60% the compass should certainly be relocated. 
 
@@ -298,11 +303,11 @@ IMU1 is generally the primary IMU the drone is using, and because of that it is 
 
 The log bitmask should be set as seen in the following image. This setting captures everything that is needed for further tuning the drone.
 
-<img width="882" height="802" alt="image" src="../../Images/InitialSetup/MissionPlanner_Logging.png" />
+![MissionPlanner_Logging.png](../../Images/InitialSetup/MissionPlanner_Logging.png)
 
 We will also set the options for the BatchSampler `INS_LOG_BAT_OPT` to log the sensor rate and the sample pre- and post-filter.
 
-<img width="952" height="485" alt="MissionPlanner_INS_LOG_BAT_OPT" src="../../Images/InitialSetup/MissionPlanner_INS_LOG_BAT_OPT.png" />
+![MissionPlanner_INS_LOG_BAT_OPT.png](../../Images/InitialSetup/MissionPlanner_INS_LOG_BAT_OPT.png)
 
 The BatchSampler captures the raw physical noise of the drone. The flight controller is not able to capture every single data point on an SD card, as the card is not fast enough. The BatchSampler triggers a batch sample where ardupilot allocates a small block of RAM memory and pushes every raw IMU reading into the RAM buffer. Once the RAM is full, ardupilot stops collecting data and streams the cached chunk of data onto our storage device as a single ISBH package. This process is repeated multiple times, and the data is needed to tune the harmonic notch filters.
 
@@ -372,6 +377,7 @@ Not all parameters are shown when some parameters are not set. The rangefinder p
 We will also have to make some changes to our Extended Kalman filter, that uses some sensors to estimate vehicle position, velocity and angular orientation, which we base on the article found at https://ardupilot.org/copter/docs/common-optical-flow-sensor-setup.html. The default parameters use the GPS for estimating the position and velocity, a barometer for the altitude and a compass for yaw orientation. We will specify both the default and new options. It is also possible to use multiple source configurations for our extended kalman filter, that can be switched in flight.
 
 The default parameters that are set for the extended Kalman filter:
+
 - `EK3_SRC1_POSXY` = 3 (GPS)
 - `EK3_SRC1_POSZ` = 1 (Baro)
 - `EK3_SRC1_VELXY` = 3 (GPS)
@@ -380,6 +386,7 @@ The default parameters that are set for the extended Kalman filter:
 - `EK3_SRC_OPTIONS` = 0 (Disable FuseAllVelocities)
 
 The parameters we are using for indoor flight are:
+
 - `EK3_SRC1_POSXY` = 0 (None)
 - `EK3_SRC1_POSZ` = 2 (Range Finder)
 - `EK3_SRC1_VELXY` = 5 (Optical Flow)
@@ -396,9 +403,10 @@ If we need to be able to access both settings for the extended Kalman filter, we
 
 The initial setup is completed, and we can start our first flight of the drone. For the first flight we will start in stabilize mode. After arming the drone we slowly increase the throttle until the drone leaves the ground. 
 There will be many possible problems in the first flight, and we will address some of the most common.
-- **The drone does not arm**: Ardupilot has a lot of different checks it makes before arming, that are saved in the `ARMING_CHECK` parameter.
 
-<img width="1130" height="409" alt="image" src="../../Images/InitialSetup/Hover.png" />
+- **The drone does not arm**: Ardupilot has a lot of different checks it makes before arming, that are saved in the `ARMING_CHECK` parameter.
+- 
+![Hover.png](../../Images/InitialSetup/Hover.png)
 	As we are trying to use our drone indoors, it will generally be a problem to get a GPS lock, which might stop the drone from arming, so we certainly do not want that option. If we do not care too much about the different checks, it is also possible to just set the bitmask to 0, as to disable all checks.
 
 - **The drone tries to flip upon increasing throttle**:
@@ -432,19 +440,21 @@ Alsot the frames balance might be off center, make sure the battery is centered 
 - **The drone yaws when pitching or rolling**: If this is the case, there might be a problem regarding the compass, which needs calibrating.
 
 # Sources
+
+- Drone Handbook: https://github.com/christianbaun/aidrones
 - A list of all ardupilot parameters can be found at: https://ardupilot.org/copter/docs/parameters.html
 - Initail tuning parameters: https://ardupilot.org/copter/docs/setting-up-for-tuning.html
 - PID-controllers and tuning:
-  - https://ardupilot.org/plane/docs/new-roll-and-pitch-tuning.html
-  - https://ardupilot.org/dev/docs/apmcopter-programming-attitude-control-2.html
-  - https://www.youtube.com/watch?v=9laDDE3tv-g
+    - https://ardupilot.org/plane/docs/new-roll-and-pitch-tuning.html
+    - https://ardupilot.org/dev/docs/apmcopter-programming-attitude-control-2.html
+    - https://www.youtube.com/watch?v=9laDDE3tv-g
 - CRSF Receivers: https://ardupilot.org/copter/docs/common-tbs-rc.html#common-tbs-rc
 - Common problems: https://ardupilot.org/copter/docs/troubleshooting.html
 - Handbooks
-  - Frame: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/SpeedyBee-Bee35-Manual-EN.pdf
-  - Flight controller: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/F745-V3.pdf
-  - Video sender: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/TX800-manual_EN.pdf
-  - Motors: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/10787-1080.jpg
-  - GPS: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/HGLRC_M100_5883_GPS.pdf
-  - Receiver: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/HGLRC_M100_5883_GPS.pdf
+    - Frame: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/SpeedyBee-Bee35-Manual-EN.pdf
+    - Flight controller: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/F745-V3.pdf
+    - Video sender: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/TX800-manual_EN.pdf
+    - Motors: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/10787-1080.jpg
+    - GPS: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/HGLRC_M100_5883_GPS.pdf
+    - Receiver: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/HGLRC_M100_5883_GPS.pdf
   - 
