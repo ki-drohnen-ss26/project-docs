@@ -6,28 +6,66 @@ tags:
 
 # Dataset
 
-## What we photographed
+## Where the data comes from
 
-The pad was labelled in [Roboflow](https://roboflow.com) and exported in YOLO
-format with polygon annotations. The export contains **295 images** — but those
-come from only **123 source photos**, taken as three near-continuous bursts:
+The dataset has **two sources**, and knowing which is which explains most of the
+model's behaviour further down.
 
-| Burst | Photos | Content |
-|---|---|---|
-| `1739 … 1778` | 38 | pad alone on a dark background (cut-out) |
-| `IMG_1659 … IMG_1705` | 46 | sports hall floor, pad small and oblique |
-| `IMG_1739 … IMG_1778` | 39 | office, close-ups |
+| Source | Images | Content | Origin |
+|---|---|---|---|
+| `1739 … 1778` | 38 | the pad alone on a black background, freed from any scene | **public dataset** — [`cgomolak/landing-pad-zvclx`](https://universe.roboflow.com/cgomolak/landing-pad-zvclx) on Roboflow Universe |
+| `IMG_1659 … IMG_1705` | 46 | sports hall floor, pad small and oblique | **our own photos** |
+| `IMG_1739 … IMG_1778` | 39 | office, close-ups | **our own photos** |
 
-Within a burst, consecutive frames are near-identical: the camera moved a few
-centimetres between shots.
+Our own images were shot by hand in the sports hall the drone flies in, and in an
+office. The whole set was merged and re-labelled with **polygon** annotations in a
+[Roboflow](https://roboflow.com) fork of the public project, and exported in YOLO
+format.
+
+!!! info "Attribution"
+    The `1739 … 1778` images originate from **[`cgomolak/landing-pad-zvclx`](https://universe.roboflow.com/cgomolak/landing-pad-zvclx)**,
+    licensed **CC BY 4.0**. Our merged fork is
+    [`amir-ebrahimi/landing-pad-zvclx-gs3dc`](https://universe.roboflow.com/amir-ebrahimi/landing-pad-zvclx-gs3dc).
+
+### Why our pad is built the way it is
+
+This is the reason the [physical pad](index.md#the-pad) looks like it does — a dark
+square with a red border and a red cross. **We built it to match the pad in the public
+dataset**, so that its 38 already-labelled images could be reused instead of
+photographing and annotating everything from scratch.
+
+That was the right call for a semester project: it gave the model a second scene for
+free and cut the annotation work substantially. It also has two consequences that are
+worth stating rather than discovering later:
+
+- **31 % of the source material is a view the drone will never have.** A pad freed
+  from its background on black is not a floor.
+- **"Does it generalise to a different pad?" is untested by construction.** The pad was
+  chosen to match the data, so the data cannot answer the question.
+
+### 123 photos became 295 images
+
+The export contains **295 images** from only **123 source photos**. Roboflow generated
+**three augmented versions of each source image** — 50 % horizontal flip, brightness
+±20 %, Gaussian blur 0–2.5 px, box rotation ±15° — on top of the fact that our own
+photos were already shot as near-continuous bursts, a few centimetres apart.
+
+So the same underlying photograph appears in the export several times over, twice for
+different reasons. That matters immediately below.
 
 ## Why we rebuilt the train/test split
 
 !!! warning "The original 0.94 mAP was never a generalisation score"
-    Roboflow splits images **at random**. Because consecutive frames of a burst
-    are almost the same picture, frame *N* landed in training and frame *N+1* in
-    validation. The validation score was measuring **memorisation**, not
-    learning.
+    Roboflow splits images **at random**, and two things made that fatal here:
+
+    1. **Augmented copies.** Three versions of the same photograph exist. A random
+       split puts version 1 in training and version 2 in validation — the *same
+       picture*, flipped and slightly blurred.
+    2. **Burst frames.** Our own photos were taken a few centimetres apart, so frame
+       *N* landed in training and frame *N+1* in validation.
+
+    Either alone would inflate the score. Together, the validation set was measuring
+    **memorisation**, not learning.
 
 `build_dataset.py` re-splits by **contiguous blocks** instead: whole stretches
 of each burst go to validation or test, and the frames immediately adjacent to
@@ -50,18 +88,18 @@ python3 build_dataset.py      # 175 train / 25 val / 16 test, leak-free
 | Property | Value | Consequence |
 |---|---|---|
 | Median pad size | **47 % of the image side** | the model had essentially never seen a distant pad |
-| Camera height | handheld, standing height | no nadir view |
+| Camera height (our photos) | handheld, standing height | no nadir view |
 | Pad-free images | **3 of 175** | "there is no pad here" was never a supported answer |
-| Cut-out burst | 31 % of source photos | a view the drone will never have |
+| Cut-out images (public set) | 31 % of source photos | a view the drone will never have |
 
 The first row explains the altitude weakness in [Evaluation](evaluation.md), and
 the third explains the false positives in [Training](training.md#the-false-positive-lesson).
 
 ## Hard negatives
 
-`negatives.py` harvests **pad-free crops from our own photos** — any region
-overlapping a labelled pad is excluded, so a "negative" cannot accidentally
-contain the target:
+`negatives.py` harvests **pad-free crops from our own hall and office photos** — the
+black-background images have no floor to crop — and excludes any region overlapping a
+labelled pad, so a "negative" cannot accidentally contain the target:
 
 ```bash
 python3 negatives.py          # 76 negatives -> 30 % background images

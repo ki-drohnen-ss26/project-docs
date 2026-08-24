@@ -21,11 +21,19 @@ Raspberry Pi AI Camera.
 
 <figure markdown>
   ![The landing pad on the sports hall floor](../Images/LandingPad/landing-pad-hall.jpg){ width="480" }
-  <figcaption>The pad in the sports hall — the environment most of the dataset was shot in.</figcaption>
+  <figcaption>Our pad in the sports hall — built to match the pad in the public dataset.</figcaption>
 </figure>
 
 A dark square mat with a red border and a red cross from corner to corner.
-Two properties of that design matter for everything below:
+
+**We did not invent that design — we copied it.** A public Roboflow dataset,
+[`cgomolak/landing-pad-zvclx`](https://universe.roboflow.com/cgomolak/landing-pad-zvclx),
+already contained 38 labelled images of a pad with exactly this marking. Building our
+physical pad to match meant those images could be merged straight into our training
+set instead of being photographed and annotated from scratch — see
+[Dataset](dataset.md#why-our-pad-is-built-the-way-it-is).
+
+Three properties of the design matter for everything below:
 
 - **It is 90°-symmetric.** Rotating it by a quarter turn produces the same
   image. That is convenient for detection — the model needs no rotation
@@ -36,6 +44,11 @@ Two properties of that design matter for everything below:
   green, blue and black lines that cross each other. Verifying "is there a red
   X inside this box?" therefore does **not** filter false positives here — we
   measured it, see [Evaluation](evaluation.md#pattern-recognition).
+- **It was chosen for data availability, not for detectability.** Both points above
+  are inherited, not designed. Fixing either — an asymmetric corner to resolve yaw, a
+  marking that is not red to survive a hall floor — means the 38 public images no
+  longer match our pad and the dataset shrinks by a third. That trade is worth
+  re-opening if the pad is ever rebuilt.
 
 ## The model at a glance
 
@@ -93,8 +106,8 @@ the inference script:
 
     ---
 
-    123 photos, three bursts, and why the original 0.94 mAP was not a
-    generalisation score.
+    Where the images come from, why our pad copies a public one, and why the
+    original 0.94 mAP was not a generalisation score.
 
 -   :material-school: **[Training](training.md)**
 
@@ -129,16 +142,21 @@ the inference script:
 ## Limitations
 
 !!! danger "The ceiling is the data, not the training recipe"
-    Every training photo was taken **by hand, from standing height**, of **one
-    physical pad**, in **three indoor rooms**. 31 % of the source photos show
-    the pad floating on a black background — a view the drone will never have.
+    The training set is 123 source photographs of **one pad design**. Ours were taken
+    **by hand, from standing height**, in a sports hall and an office; the remaining
+    31 % come from a public dataset and show the pad **freed onto a black background**
+    — a view the drone will never have. No image in the set is a nadir view from
+    flight altitude.
 
 - **No aerial images.** The model has never seen a true nadir view from several
   metres up, which is what the camera sees for most of the approach.
 - **Indoor only.** Grass, asphalt, gravel, wet ground and low sun are untested.
-- **One pad.** Generalisation to a differently built pad is unknown.
-- **Negatives from the same three rooms.** False positives outdoors are
-  untested.
+- **One pad design, and it was chosen to fit the data.** The physical pad was built
+  to match the public dataset's pad, so the dataset cannot answer whether the model
+  generalises to a differently built pad. If the pad is ever redesigned, this has to
+  be re-measured from scratch.
+- **Negatives from the same two rooms.** They are crops of the hall and the office,
+  so corridor and outdoor clutter is untested.
 - **Nothing has been measured in the air.** The `.rpk` is on the Pi and the
   quantised model measures as well as the float one on the test set — but every
   number on these pages comes from photographs, not from a flight. Detection range,
@@ -147,15 +165,17 @@ the inference script:
 
 ## What would move the needle next
 
-Recipe tuning is close to exhausted on 123 photographs of one pad in three indoor
-rooms. In rough order of expected return:
+Recipe tuning is close to exhausted on 123 photographs of one pad design, two of them
+our own rooms and one a black background. In rough order of expected return:
 
 1. **Photograph the pad from the air.** Every training image is handheld from standing
    height; none is a nadir view from the height the drone actually searches at. A few
    hundred frames pulled from an actual FPV recording would be worth more than any
    further augmentation — and the aircraft already records.
 2. **More than one pad, and outdoors.** Grass, asphalt, gravel, wet ground, low sun.
-   The model currently knows one pad on three indoor floors.
+   The model currently knows one pad design on two indoor floors — and since the pad
+   was built to match the dataset, a second pad is the only way to find out whether it
+   learned "landing pad" or "this exact marking".
 3. **More negatives, from other places.** Run F's negatives are crops of the same three
    rooms, so corridor and outdoor clutter is untested. This was the highest-value
    change made so far, and it is not exhausted.
