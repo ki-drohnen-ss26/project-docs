@@ -9,9 +9,6 @@ repo_name: ki-drohnen-ss26/project-docs
 repo_url: https://github.com/ki-drohnen-ss26/project-docs
 edit_uri: edit/main/docs/
 
-not_in_nav: |
-  history/_template.md
-
 # Copyright
 copyright: Copyright &copy; 2026 Team Drone
 
@@ -19,8 +16,6 @@ copyright: Copyright &copy; 2026 Team Drone
 theme:
   name: material
   language: en
-  logo: assets/images/logo.png       # optional
-  favicon: assets/images/favicon.png # optional
 
   palette:
     # Light mode
@@ -122,6 +117,8 @@ nav:
   - Hardware:
       - hardware/index.md
       - Drone (Frame & FC): hardware/drone.md
+      - Drone Initial Setup: hardware/drone/InitialSetup.md
+      - Drone Tuning: hardware/drone/Tuning.md
       - Raspberry Pi Zero 2: hardware/raspberry-pi.md
       - AI Camera Module: hardware/ai-camera.md
       - MTF-01P Sensor: hardware/mtf-01p.md
@@ -130,6 +127,7 @@ nav:
       - software/index.md
       - Flight Controller Firmware: software/flight-controller.md
       - Raspberry Pi OS: software/raspberry-pi-os.md
+      - SITL Simulation: software/SetupSimulation.md
       - Ground Control Station: software/gcs.md
       - AI Software: software/ai-software.md
   - Autopilot:
@@ -155,11 +153,10 @@ nav:
       - tutorials/index.md
       - Quick Start: tutorials/quickstart.md
       - Build Guide: tutorials/build-guide.md
-  - Project Journal:
-      - history/index.md
-      - Week 1: history/week-01.md
-      - Week 2: history/week-02.md
-      - Week 3: history/week-03.md
+  - Problems:
+      - problems/index.md
+      - Crash & barometer recovery: problems/crash-2026-08-21.md
+      - Full incident analysis: problems/incident-analysis-2026-08-21.md
   - Results:
       - results/index.md
       - Live Demo: results/demo.md

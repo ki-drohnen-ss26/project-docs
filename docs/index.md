@@ -14,6 +14,20 @@ In this project we develop, implement, and evaluate a practical drone-AI applica
 !!! info "Audience"
     This documentation is aimed at students, researchers, and lecturers who want to reproduce these AI drone scenarios or use them as a basis for their own modules and research projects.
 
+!!! note "Project status (2026-08-24)"
+    The full autonomous delivery pipeline runs **end-to-end in the ArduCopter 4.6.3
+    simulator**; the MTF-01P sensor and the Raspberry Pi companion link are verified
+    on the real aircraft. On 2026-08-21 a manual test flight ended in a crash whose
+    cause is now **fully understood and fixed in software and parameters**. The flight
+    controller hardware is **recovered**: the "destroyed" barometer was only unreachable
+    behind a hung I2C bus — bent GPS-connector pins were straightened and, on
+    2026-08-24, stock 4.6.3 detected the barometer again. Real-flight milestones are
+    **unblocked**, pending a parameter reload after the firmware flash. The
+    [crash & barometer recovery](problems/crash-2026-08-21.md) story and the
+    [full incident analysis](problems/incident-analysis-2026-08-21.md) are required
+    reading and among the most instructive artefacts of this project (see also all
+    documented [Problems](problems/index.md)).
+
 ## Quick start
 
 <div class="grid cards" markdown>

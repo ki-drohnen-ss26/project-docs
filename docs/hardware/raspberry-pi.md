@@ -27,7 +27,7 @@ While we already set the needed options in the setup section of our drone, we wi
 We need to set the following parameters, do note that for our setup we need to set the options for serial port 4, this might be different for other configurations:
 - `SERIAL4_PROTOCOL` = 2  to enable MAVLink 2 on the serial port.
 - `SERIAL4_BAUD` = 921 to set the 921600 baud rate.
-- `LOG_BACKEND_TYPE` = 3 We only need this option if we want to save logs onto our Raspberry Pi.
+- `LOG_BACKEND_TYPE` = 6 only if we also want to stream logs to the Raspberry Pi: 6 = the FC's own dataflash memory (4) **plus** MAVLink streaming (2). The default 4 (dataflash only) is fine otherwise. Do not use 1 or 3 — the "File" backend needs an SD card slot, which the Flywoo GOKU GN745 does not have (it logs to a 16 MB SPI flash chip).
 
 ## Connect the flight controller with the board computer
 To connect the flight controller and the board computer, we have to connect the Raspberry Pi's TX pin (GPIO 14/Pin 8) to the RX pin of the flight controllers, the RX pin (GPIO 15/Pin 10) of the Pi to the TX pin of the flight controller and make sure they have common ground by plugging setting the ground of the flight controller to the ground of the Pi. Make sure that you are only ever power the Pi using either the drones battery, or the usb-c port, as using both might damage the board. The GPIO serial port is called `/dev/serial0` on our Pi.
@@ -53,7 +53,7 @@ meson setup build .
 and compile and install the files:
 ```
 sudo ninja -C build
-sudo ninja -C build instal
+sudo ninja -C build install
 ```
 After we installed everything, we will create the config file we will need.
 ```

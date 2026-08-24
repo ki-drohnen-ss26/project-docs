@@ -1,5 +1,15 @@
 # Drone Setup
+
 This readme contains the setup of a drone to be used with ardupilot and ultimately allow for autonomous flight to a target.
+
+!!! warning "Firmware version is pinned: ArduCopter 4.6.3"
+    Everything below was written for and verified against **ArduCopter 4.6.3**. Parameter
+    names move between releases (e.g. `RNGFND1_MIN_CM`/`RNGFND1_MAX_CM` in 4.6 became
+    `RNGFND1_MIN`/`RNGFND1_MAX` in 4.7, `RTL_ALT` became `RTL_ALT_M`), and ArduPilot
+    **silently ignores parameter names it does not know** — a setup that "loaded fine"
+    can leave a sensor unusable with no error shown. Do not install "latest"; install
+    4.6.3 and check the version banner in Mission Planner before changing anything.
+
 The drone we used has the following components:
 - **Frame**: SpeedyBee BEE35 Pro 3.5 CineWhoop Frame Kit
 - **Flightcontroller**: Flywoo GOKU GN745 (STM32F745, 216MHz, 1MB Flash) 45A AIO 2-6S AM32
@@ -12,21 +22,21 @@ The drone we used has the following components:
 - **GPS**: HGLRC M100 with integrated compass
 - **additional Hardware**
   - MicroAir MTF-01P
-  - Raspberry Pi Zero
+  - Raspberry Pi Zero 2 WH
 The wiring can be seen here:
 
 <img width="3168" height="1944" alt="image" src="https://github.com/user-attachments/assets/c553a4ef-77b7-494d-ac45-a5ba56f4558c" />
 
 ## Installaltion of Ardupilot
 ### Download correct firmware
-For our installation, we first need our firmware to flash the flight controller, in this case we are using the Flywoo Goku GN745 flight controller, that is using a STM32F745 controller. For the default version, we can download our firmware from https://firmware.ardupilot.org/, where we can find firmware for a multitude of different drone types. As we are using the copter and want the latest version, we could download the default version under https://firmware.ardupilot.org/Copter/latest/FlywooF745/, where we want to download the file ending with `bl.hex`.
+For our installation, we first need our firmware to flash the flight controller, in this case we are using the Flywoo Goku GN745 flight controller, that is using a STM32F745 controller. For the default version, we can download our firmware from https://firmware.ardupilot.org/, where we can find firmware for a multitude of different drone types. We are using the copter firmware **pinned to the stable release 4.6.3** (see the warning at the top — do *not* take "latest"): https://firmware.ardupilot.org/Copter/stable-4.6.3/FlywooF745/, where we want to download the file ending with `bl.hex` (it includes the bootloader).
 
 This approach works generally to be able to just fly a drone, but as our goal is to create an autopilot using a lidar and optical flow combination, as well as an onboard computer, we need a custom version of ardupilot, which we can create under 
 https://custom.ardupilot.org/. On the upper right we can see the option to create a new build:
 
 <img width="513" height="91" alt="image" src="https://github.com/user-attachments/assets/fa740ed2-9039-4651-b22c-3cdf89437e50" />
 
-This leads to a page where we can choose our drone type, the version we want to use (use latest for most recent version) and the flight controller we are using
+This leads to a page where we can choose our drone type, the version we want to use (**choose the 4.6.3 stable tag**, matching the pinned project version — not "latest") and the flight controller we are using
 
 <img width="889" height="134" alt="image" src="https://github.com/user-attachments/assets/e5cba9e1-607a-416f-a0e4-22f8b6007408" />
 
@@ -205,7 +215,7 @@ Radio Calibration is the following mandatory setting.
 
 <img width="813" height="547" alt="MissionPlanner_RadioCalibration_Connected" src="https://github.com/user-attachments/assets/7ba877d2-2f06-4f28-96a4-793e8c0cbcb1" />
 
-The calibration starts by pressing the button `Calibrate Radio`, while the receiver has to be connected to the drone. Most important are the roll, pitch and yaw channels, that are controlled using the sticks of the receiver. Normally the centres of the sticks should be exactly at 1500. That is here the case, but it might not always be the case. If the numbers are off, the parameters `HS1_TRIM` value for the roll and the HS2_TRIM for the pitch value will have to be changed to the value at the center position of the stick. Another important point is that the lower position of the sticks should be below 1000 
+The calibration starts by pressing the button `Calibrate Radio`, while the receiver has to be connected to the drone. Most important are the roll, pitch and yaw channels, that are controlled using the sticks of the receiver. Normally the centres of the sticks should be exactly at 1500. That is here the case, but it might not always be the case. If the numbers are off, set `RC1_TRIM` (roll) and `RC2_TRIM` (pitch) to the PWM value the calibration shows at the stick's centre position. (`HS1_TRIM`/`HS2_TRIM`, which older guides mention, are traditional-helicopter parameters and do not exist on the multicopter firmware.) Another important point is that the lower position of the sticks should be below 1000 
 
 ### Servo output, motor test and ESC calibration
 This is one of the most important steps. First we define some important terms we will use int the following:
@@ -343,13 +353,28 @@ Ardupilot is very reliant on the GPS, which is problematic if we are trying to f
 
 Some important settings we have to set are the failsafe actions. While for outdoor activity, generally the RTL option, that returns to the starting point, is recommended, in indoor environment this can lead to problems, as the drone will try to reach RTL altitude, which generally is higher than the ceiling.
 
-We already set the failsafes in the Failsafes section. We can just use the same mandatory settings to set either Land, Warning, or no failsafes.
+We already set the failsafes in the Failsafes section. Indoors the goal is **"never RTL"**, *not* "no failsafes": RTL climbs to `RTL_ALT` first (into the ceiling), but a drone with all failsafes off keeps flying with a dying battery or a dead RC link, which is strictly worse.
 
 We can also look at the Full parameter list. each parameter that is associated with the Failsafe settings starts with FS
 
 <img width="1380" height="425" alt="image" src="https://github.com/user-attachments/assets/82ba380d-7817-474b-9496-595a3c08d088" />
 
-Here we want to set `FS_EKF_ACTION`, `FS_GCS_ENABLE`, `FS_THR_ENABLE` and `FS_DR_ENABLE` to 0 so they do not trigger RTL.
+The indoor-safe values are:
+
+| Parameter | Value | Meaning |
+|---|---|---|
+| `FS_THR_ENABLE` | `3` | Radio (throttle) failsafe → **Land** where it is, instead of the default RTL |
+| `FS_EKF_ACTION` | `1` | EKF failsafe → **Land**. Do not disable this: a diverged position estimate flying on is the textbook indoor flyaway |
+| `FS_GCS_ENABLE` | `5` (Land) or `0` | Reaction when the ground station / companion falls silent. `0` is defensible in a hall, but then a dead companion has no automatic rescue |
+| `FS_DR_ENABLE` | `0` | Dead-reckoning failsafe needs GPS — meaningless indoors |
+| `BATT_FS_LOW_ACT` | `1` | Low battery → **Land**, not RTL |
+
+!!! danger "Do not set the failsafes to 0 across the board"
+    An earlier version of this guide recommended disabling all of these. Combined with
+    `ARMING_CHECK = 0` (below) that removes every layer that could catch a bad
+    position estimate — our 2026-08-21 crash flight armed with an EKF vertical error
+    of over 1000 m that an enabled check would have refused. See the
+    [incident analysis](../../problems/incident-analysis-2026-08-21.md).
 
 To allow for position hold and autonomous flight we will also need a optical flow sensor and rangefinder. The rangefinder can tell the drone its correct altitude and the optical flow sensor can track the movement of the ground using a small camera.
 
@@ -362,9 +387,14 @@ First we setup our optical flow sensor. On the flight controller side, all param
 
 Not all parameters are shown when some parameters are not set. The rangefinder parameters are only shown after we set a value for `RNGFND1_TYPE`, which means we need to reboot our drone for the following parameters to show up.
 
-- **`RNGFND1_MAX` = 8:**  This parameter sets the range finder’s maximum range in meters.
-- **`RNGFND1_MIN` = 0.01:** sets the minimum range in meters.
--**`RNGFND1_ORIENT` = 25**: sets the orientation of the rangefinder, in our case we want it to be downwards.
+- **`RNGFND1_MAX_CM` = 800:** This parameter sets the range finder’s maximum range, **in centimetres** on ArduCopter 4.6.
+- **`RNGFND1_MIN_CM` = 1:** sets the minimum range in centimetres. **Not the 20 cm default:** the MTF-01P sits only a few cm above the floor; with a higher minimum the driver reports "out of range low" on the ground, the EKF gets no terrain height, optical flow cannot be scaled and arming fails with *"Need Position Estimate"*.
+- **`RNGFND1_ORIENT` = 25**: sets the orientation of the rangefinder, in our case we want it to be downwards.
+
+!!! warning "`RNGFND1_MIN`/`RNGFND1_MAX` (in metres) are the **4.7** names"
+    On our pinned 4.6.3 they do not exist, and ArduPilot silently ignores unknown
+    parameter names — setting them "works" and changes nothing. Use the `_CM` names
+    above and verify by reading the values back.
 
 We will also have to make some changes to our Extended Kalman filter, that uses some sensors to estimate vehicle position, velocity and angular orientation, which we base on the article found at https://ardupilot.org/copter/docs/common-optical-flow-sensor-setup.html. The default parameters use the GPS for estimating the position and velocity, a barometer for the altitude and a compass for yaw orientation. We will specify both the default and new options. It is also possible to use multiple source configurations for our extended kalman filter, that can be switched in flight.
 
@@ -378,11 +408,23 @@ The default parameters that are set for the extended Kalman filter:
 
 The parameters we are using for indoor flight are:
 - `EK3_SRC1_POSXY` = 0 (None)
-- `EK3_SRC1_POSZ` = 2 (Range Finder)
+- `EK3_SRC1_POSZ` = **1 (Baro)** — see the warning below; this project flew with `2` (Range Finder) and crashed
 - `EK3_SRC1_VELXY` = 5 (Optical Flow)
 - `EK3_SRC1_VELZ` = 0 (None)
 - `EK3_SRC1_YAW` = 1 (Compass)
 - `EK3_SRC_OPTIONS` = 0 (Disable FuseAllVelocities)
+
+!!! danger "`EK3_SRC1_POSZ = 2` (Range Finder) caused our crash — use 1 (Baro)"
+    An earlier version of this guide set the rangefinder as the EKF's *only* height
+    source. In practice EKF3 never fused a single height measurement from it: the
+    vertical estimate diverged quadratically **while the drone stood on the floor**
+    (−268 m after 90 s, −1070 m after three minutes, "climb rate" −12.6 m/s while
+    stationary), and the first altitude-controlled mode — a fence-forced LAND — went
+    to full throttle and flew the aircraft into the hall ceiling on 2026-08-21.
+    Keep the **barometer as the primary height source** (`EK3_SRC1_POSZ = 1`); the
+    rangefinder still improves low-altitude flight via ArduPilot's terrain-following
+    (`EK3_RNG_USE_HGT`) without ever being the only reference. Full analysis:
+    [incident report](../../problems/incident-analysis-2026-08-21.md).
 
 We set the parameter `EK3_SRC_OPTIONS` to zero, to avoid that the drone fuses all velocities, as fusing velocities of GPS and optical flow will lead to problems, especially if the GPS coverage is spotty at best.
 Further we have to set the actual position in XY axis `EK3_SRC1_POSXY` and the velocity along the z-axis `EK3_SRC1_VELZ` to none, as we do not have the necessary sensors to accomplish such calculations and keeping the GPS would lead to complications.
@@ -396,7 +438,16 @@ There will be many possible problems in the first flight, and we will address so
 - **The drone does not arm**: Ardupilot has a lot of different checks it makes before arming, that are saved in the `ARMING_CHECK` parameter.
 
 <img width="1130" height="409" alt="image" src="https://github.com/user-attachments/assets/339f7168-4c41-46ec-870b-c0dce6d6b77b" />
-	As we are trying to use our drone indoors, it will generally be a problem to get a GPS lock, which might stop the drone from arming, so we certainly do not want that option. If we do not care too much about the different checks, it is also possible to just set the bitmask to 0, as to disable all checks.
+	As we are trying to use our drone indoors, it will generally be a problem to get a GPS lock, which might stop the drone from arming. **Disable only the GPS check, never all of them:** set `ARMING_CHECK = 786390`, which is every check *except* the GPS lock.
+
+    !!! danger "`ARMING_CHECK = 0` is not a troubleshooting shortcut"
+        Our aircraft flew with `ARMING_CHECK = 0`, and on 2026-08-21 it armed with an
+        EKF vertical position error of more than **1000 m** — a state the EKF pre-arm
+        check exists to refuse. The flight ended in the hall ceiling
+        ([incident report](../../problems/incident-analysis-2026-08-21.md)). The pre-arm checks
+        are the last automated layer between a bad estimate and a flying aircraft; if
+        one blocks you, read *which* check it is (Mission Planner messages tab, or
+        `preflight.py` from Pi-Code) and address that check specifically.
 
 - **The drone tries to flip upon increasing throttle**:
 There are mutilple reasons that might happen:
@@ -421,7 +472,7 @@ There are mutilple reasons that might happen:
  
 - **The drone flies normally but drifts away**:
 	- The center of Gravity might be off. Make sure the center of gravity is dead center of the drone and run the level command on a fully flat surface. Another possibility is to run in auto-trim mode in a windless environment. It is important that there is no wind, as the trim will take that into account and the problem might worsen in another environment.
-	- The PWM value at the center positions of the sticks is not exactly 1500. When the drone thinks the center position is off, the drone will drift. Make sure the parameters `HS1_TRIM` for roll and `HS2_TRIM` for pitch match the PWM registered for the center position.
+	- The PWM value at the center positions of the sticks is not exactly 1500. When the drone thinks the center position is off, the drone will drift. Make sure the parameters `RC1_TRIM` for roll and `RC2_TRIM` for pitch match the PWM registered for the center position.
 
 -  **The drone yaws to the right or left on takeoff**: This generally happens when the airframe is out of tune and one of the motors is slightly tilted or the weight balance is not centered. In most cases the drone will yaw around 30 to 45 degrees on takeoff and then the PID controller kicks in to stabilize the rotation. It is possible to adjust the PID terms to mitigate the problem to some extent, but as it does not solve the root problem, it is advised to look at each motor and see if any of the arms is slightly tilted and bend it back to vertical in case it is.
 Alsot the frames balance might be off center, make sure the battery is centered and redo the acceleration calibration if needed.
@@ -443,5 +494,4 @@ Alsot the frames balance might be off center, make sure the battery is centered 
   - Video sender: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/TX800-manual_EN.pdf
   - Motors: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/10787-1080.jpg
   - GPS: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/HGLRC_M100_5883_GPS.pdf
-  - Receiver: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/HGLRC_M100_5883_GPS.pdf
-  - 
+  - Receiver: Radiomaster XR4 (ExpressLRS) — see https://www.radiomasterrc.com/ and https://www.expresslrs.org/ (an earlier revision of this list linked the GPS handbook here by mistake)
