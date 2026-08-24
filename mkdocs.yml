@@ -121,7 +121,7 @@ nav:
   - Home: index.md
   - Hardware:
       - hardware/index.md
-      - Drone (Frame & FC): hardware/drone.md
+      - Drone (Frame & FC): hardware/drone/InitialSetup.md
       - Raspberry Pi Zero 2: hardware/raspberry-pi.md
       - AI Camera Module: hardware/ai-camera.md
       - MTF-01P Sensor: hardware/mtf-01p.md

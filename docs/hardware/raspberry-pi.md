@@ -2,36 +2,228 @@
 
 This section looks at how we are able to connect our board computer, in our case a Raspberry Pi Zero 2 WH, to our flight controller. First off, there are multiple possibilities to set up a board computer to work with a flight controller. For example there are prebuild operating systems we could install, like [BlueOS](https://blueos.cloud/docs/latest/usage/installation/), [Rpanion-Server](https://www.docs.rpanion.com/software/rpanion-server) or [APSync](https://firmware.ardupilot.org/Companion/apsync/) and multiple programms that allow us to use the MAVLink protocol, such as [MAVProxy](https://ardupilot.org/mavproxy/docs/getting_started/download_and_installation.html#mavproxy-downloadinstalllinux), [DroneKit](https://github.com/dronekit/dronekit-python/), [MAVSDK](https://github.com/ArduPilot/ardupilot-mavsdk) or [mavlink-router](https://github.com/mavlink-router/mavlink-router). As we are constrained in using a Raspberry Pi Zero, we will use the lightweight mavlink-router for our project. An overview about the most common ways to use a Raspberry Pi with ardupilot can be found under https://ardupilot.org/dev/docs/raspberry-pi-via-mavlink.html.
 
+## Install OS & Enable SSH
+Use the [Raspberry Pi Imager](https://www.raspberrypi.com/software/) to flash Raspberry Pi OS onto your primary server storage. Ensure SSH is enabled during the customization step.
+
+If SSH needs to be enabled manually later via terminal, use:
+```bash
+sudo raspi-config
+# Navigate to: Interfacing Options -> SSH -> Choose "Yes"
+```
+Accessing the Pi through SSH can be done through the following commands
+
+```bash
+ssh [username]@[IP address]
+# or
+ssh [username]@[hostname].local
+```
+
+## Enable persistent logging
+By default, the Raspberry Pi will save all logs into RAM under `/run/log/journal`, which is not retained upon reboot. As we will need to look into error messages in case something goes wrong, we will first change our setup, so the log messages will be saved on our persistent storage. To do that we will have to change our journal.conf file. Normally the file would be saved in  `/etc/systemd/journald.conf`, but for some reason the Raspberry Pi OS stores the needed file in `/usr/lib/systemd/journald.conf.d/40-rpi-volatile-storage.conf`, that overrides the journald.conf file. Inside that file we change the Storage option to persistent and if needed, add a maximum file size. It should look something like
+```
+[Journal]
+Storage=persistent
+SystemMaxUse=200M
+```
+If we want to keep using the /etc/systemd/ file path, we can add a file to a folder `/etc/systemd/journald.conf.d/` that has a prefix higher than the 40 that in 40-rpi-volatile-storage.conf. The new file will then be loaded last and overwrites the other file.
+```
+sudo mkdir -p /etc/systemd/journald.conf.d/
+sudo touch /etc/systemd/journald.conf.d/99-persistent-journal.conf
+```
+The file contents are the same as earlier.
+
+After our updates we can restart the journald process
+```
+sudo systemctl restart systemd-journald
+```
+and if we want to write the logs already written onto RAM into our persistent log, we can use:
+```
+sudo journalctl --flush
+```
+
+To see if everything worked, we can use
+```
+sudo systemctl status systemd-journald --no-pager | grep -I 'Journal ('
+```
+and we will see something like:
+![Journal.png](../Images/RaspberryPi/Journal.png)
+
+The directory `/var/log/journal/` should have been created and the logs will be saved on the persistent storage.
+
+We will go over the most important functions of the `journalctl` command:
+```
+journalctl [options] [unit]
+```
+
+- Just using `journalctl` will display the recent log messages from all units starting from the most recent entries
+- **-r**: Reverses the log order.
+- **-n**: Specify a specific number of log entries to be shown.
+- **-f**: Continuously print new entries when they are appended to the journal.
+- **-u**: Display logs for a specific systemd unit or service.
+- **-p**: Filters the output by message priorities.
+	- "emerg" (0)
+	- "alert" (1)
+  	- "crit" (2)
+  	- "err" (3)
+  	- "warning" (4)
+  	- "notice" (5)
+  	- "info" (6)
+  	- "debug" (7)
+- **--list-boots**: View information about system boots.
+- **-b**: Show messages from a specific boot, for the last boot use `journalctl -b -1`.
+- **-g**: Filter Message field that matches specified regular expression.
+- **-o verbose**: shows the full-structured entry items with all fields.
+
+
+See all options under https://man7.org/linux/man-pages/man1/journalctl.1.html
+
+## Setup USB 
+It is possible to access the Raspberry Pi using ssh through the USB port. This is called the USB Gadget Mode, where the Pi is emulating an USB Ethernet adapter. 
+It is important to note, that we have to use the middle USB connection of our Pi zero 2, as this port allows or data transfer.
+
+In our Bootfiles we have to change the `config.txt` and `cmdline.txt`.
+
+In `config.txt` we have to add the line 
+```dtoverlay=dwc2,dr_mode=peripheral```
+at the very bottom, and in `cmdline.txt`, we add
+```
+modules-load=dwc2,g_ether
+```
+right after `rootwait` in the first line of the file. Do note, that there should not be any newlines in the file, everything has to be on the first line.
+
+After those two changes, Linux and Mac computers should already be able to access the Raspberry Pi using the USB connection, but for Windows we might need to install the [Pi RNDIS Driver](https://github.com/raspberrypi/rpi-usb-gadget/releases), before we can access the raspberry Pi, as it might be shown as normal port.
+
+## Setup Tailscale
+Tailscale is a mesh Virtual Private Network(VPN) service, that allows us to connect computers, like our Raspberry Pi, severs, cloud instances and other devices to another, no matter in which Network they are, as long as they have Internet access, by building a private and encrypted peer to peer network that is called tailnet.
+
+To use Tailscale we need need a Tailscale account we can create under https://tailscale.com/, and after adding our first device, we can install Tailscale on our Raspberry Pi using the command:
+```
+curl -fsSL https://tailscale.com/install.sh | sh
+```
+Running tailscale up, will show a link, which we can use to register the device under our Tailscale account, that allows us to access the Raspberry Pi using the Tailnet, even when the devices are in different Networks.
+We just have to run the ssh command using the IP provided by Tailscale.
 ## Configure serial port on pi
 We have to set up our Pi to allow the use of the serial ports we need, as the Raspberry Pi Linux uses the hardware serial pins GPIO 14 and GPIO 15 for a Linux console login shell, which blocks mavlink-router from reading the pins. To do that we use the command
 ```
 sudo raspi-config
 ```
 This will open the following window, where we will navigate to Interface Options 
-<img width="1102" height="615" alt="image" src="https://github.com/user-attachments/assets/d1fe3319-5315-4ec0-86a4-ace3cb44eaa8" />
+
+![Pi_SerialPort_1.png](../Images/RaspberryPi/Pi_SerialPort_1.png)
 
 and then to Serial Port.
-<img width="1106" height="615" alt="image" src="https://github.com/user-attachments/assets/3c0d0a54-bfd4-4ecb-abff-71fe94361b73" />
+
+![Pi_SerialPort_2.png](../Images/RaspberryPi/Pi_SerialPort_2.png)
 
 It will ask: "Would you like a login shell to be accessible over serial?", where we will select No
-<img width="543" height="383" alt="image" src="https://github.com/user-attachments/assets/eeca7140-e8c5-43c1-8bf7-e7c3b3e460b0" />
+
+![Pi_SerialPort_3.png](../Images/RaspberryPi/Pi_SerialPort_3.png)
 
 and it ask: "Would you like the serial port hardware to be enabled?" directly after, where we will have to select Yes.
 
-<img width="543" height="386" alt="image" src="https://github.com/user-attachments/assets/5bca581f-7987-42b1-8e14-43bbebd87ba2" />
+![Pi_SerialPort_4.png](../Images/RaspberryPi/Pi_SerialPort_4.png)
 
 We save our changes, exit and reboot the Pi, which allows us to use the hardware serial pins for our MAVLink protocol.
 
+## Setup Hotspot
+It is possible, that we do not always have access to WiFi, and we might not be able to access the board computer using a wireless Network, and while flying, accessing the Pi using a USB cable might not be ideal.
+
+For that Reason we will let the Raspberry Pi create a hotspot we can access using our laptop, in case it does not have access to another WiFi Network.
+
+To do that we first use the Netork Managers command line interface(nmcli) to create a new Hotspot connection:
+```
+sudo nmcli connection add type wifi ifname wlan0 mode ap con-name Hotspot ssid MyPiHotspot autoconnect no wifi-sec.key-mgmt wpa-psk wifi-sec.psk "Password123"
+```
+
+- `connection add` instructs the Network Manager to create and save a new network profile
+- `type` specifies what type of connection we want to use, in our case `wifi`
+- `ifname` specifies the interface name, which is a physical or virtual network device. We want to bind our connection to our built-in Wi-Fi adapter, which is named `wlan0`.
+- `mode` is an alias for the property `802-11-wireless.mode`, and the option `ap` sets this mode to Access Point, making the wireless card act like a Wi-Fi router that is broadcasting a network, and allows us to connect to it.
+- `con-name` specifies the internal name of this network profile.
+- `ssid` sets the broadcastname that is visible to other devices
+- `autoconnect no` This prevents the Pi from automatically starting the Hotspot. As we generally want to access a known WiFi connection instead.
+- `wifi-sec.key-mgmt` is the property `802-11-wireless-security.key-mgmt`, that specifies the authentication framework that the network will use, in our case we are using `wpa-psk`, that sets the mechanism to WPA Pre-shared key, that is the password-based security standard, generally used for home usage.
+- `wifi-sec.psk` is a short form of the Property `802-11-wireless-security.psk` that specifies the Pre-shared key, the actual passphrase. The actual password then is the following String, here as Example given as "Password123". 
+
+After we set up the Conncetion Profile, we still want it to open the Hotspot, after it failed to set up another WiFi connection. To do that we will create a systemd service, that waits a little while, so it allows for automatic connection to known WiFi networks, and launches the Hotspot in case no connection has been found.
+
+A systemd service, or daemon, is a type of background process that systemd is responsible for starting, stopping, and monitoring.
+
+First we create a script that our service will use
+```
+sudo nano /usr/local/bin/autohotspot.sh
+```
+The contents of the script are
+```
+#!/bin/bash
+# Give Wi-Fi hardware a few seconds to initialize
+sleep 10
+
+# Force a Wi-Fi scan for visible SSIDs
+sudo nmcli dev wifi rescan
+
+# Check if currently connected to any Wi-Fi network
+ACTIVE_CON=$(nmcli -t -f TYPE,STATE dev | grep "wifi:connected")
+
+if [ -n "$ACTIVE_CON" ]; then
+    echo "Successfully connected to home Wi-Fi."
+    exit 0
+else
+    echo "No Wi-Fi connection found. Launching Hotspot..."
+    sudo nmcli connection up Hotspot
+fi
+```
+To make the file executable we use:
+```
+sudo chmod +x /usr/local/bin/autohotspot.sh
+```
+Now we create the service, first is the creation of another file:
+```
+sudo nano /etc/systemd/system/autohotspot.service
+```
+And write in the following content:
+```
+[Unit]
+Description=Automatic Wi-Fi Hotspot Fallback
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/autohotspot.sh
+
+[Install]
+WantedBy=multi-user.target
+```
+We can see that the service file is divided into three sections:
+
+- **The unit section**: 
+The unit section defines the metadata for services and tells systemd when in the boot sequence the process is started
+  - **Description**: Label(Name) for the service.
+  - **After=NetworkManager.service**: Defines which services have to run earlier, as we only want to create a Hotspot after we made sure there are no other WiFi connections, we let our service run after the Network Manager.
+- **The service section**: Defines how the script is executed and managed.
+  - **Type**: The Type defines how the startup process is managed and how systemd determines when the service is fully up and running. `oneshot`is gererally used for single-run tasks and systemd waits for the process to fully complete before marking the unit as started or moving to dependent sevices.
+  - **ExecStart**: Points to path of the bash script. Systemd will execute this command when starting the service.
+- **The install section**: Defines behaviour upon running `sudo systemctl enable`, for the service, meaning what happens after it is enabled.
+  - **WantedBy**: This directive specifies the relationship between this service and other services. `multi-user.target` is the state where the system can accept multiple non-graphical user sessions.
+
+Lastly we enable the service using the two commands
+```
+sudo systemctl daemon-reload
+sudo systemctl enable autohotspot.service
+```
 ## Setup the flight controller
 While we already set the needed options in the setup section of our drone, we will repeat the needed settings for our flight controller to be able to work with our board computer. 
 We need to set the following parameters, do note that for our setup we need to set the options for serial port 4, this might be different for other configurations:
+
 - `SERIAL4_PROTOCOL` = 2  to enable MAVLink 2 on the serial port.
 - `SERIAL4_BAUD` = 921 to set the 921600 baud rate.
 - `LOG_BACKEND_TYPE` = 3 We only need this option if we want to save logs onto our Raspberry Pi.
 
 ## Connect the flight controller with the board computer
-To connect the flight controller and the board computer, we have to connect the Raspberry Pi's TX pin (GPIO 14/Pin 8) to the RX pin of the flight controllers, the RX pin (GPIO 15/Pin 10) of the Pi to the TX pin of the flight controller and make sure they have common ground by plugging setting the ground of the flight controller to the ground of the Pi. Make sure that you are only ever power the Pi using either the drones battery, or the usb-c port, as using both might damage the board. The GPIO serial port is called `/dev/serial0` on our Pi.
-<img width="2064" height="1185" alt="image" src="https://github.com/user-attachments/assets/1521c14e-dfba-4fbf-9ba0-d6705322b6e0" />
+To connect the flight controller and the board computer, we have to connect the Raspberry Pi's TX pin (GPIO 14/Pin 8) to the RX pin of the flight controllers, the RX pin (GPIO 15/Pin 10) of the Pi to the TX pin of the flight controller and make sure they have common ground by plugging setting the ground of the flight controller to the ground of the Pi. Make sure that you only ever power the Pi using either the drones battery, or the usb-c port, as using both might damage the board. The GPIO serial port is called `/dev/serial0` on our Pi.
+
+![Pi_Pinouts.png](../Images/RaspberryPi/Pi_Pinouts.png)
 
 ## Install MAVLink-router
 MAVLink(Micro Air Vehicle Link) is the standard communication protocol used by autopilots to talk to ground control software and companion computers, like our Raspberry Pi.
@@ -39,7 +231,7 @@ We need a program that listens for MAVLink traffic on one port and forwards it t
 
 The packages that we need to install mavlink router are
 ```
-sudo apt install git meson ninja-build pkg-config gcc g++ systemd
+sudo apt install git meson ninja-build pkg-config gcc g++ systemd systemd-dev cmake
 ```
 If we have all packages installed we can download mavlink-router,
 ```
@@ -50,10 +242,10 @@ run the meson build inside our downloaded folder
 cd mavlink-router
 meson setup build .
 ```
-and compile and install the files:
+and compile and install the files, the -j option denotes the number of parallel jobs. We use only one, because multiple jobs on 4 cores of our pi zero can fill up the ram fast and coorupt the image.
 ```
-sudo ninja -C build
-sudo ninja -C build instal
+sudo ninja -C build -j 1
+sudo ninja -C build install
 ```
 After we installed everything, we will create the config file we will need.
 ```
@@ -121,7 +313,8 @@ sudo stty -F /dev/serial0 921600 raw
 sudo cat /dev/serial0
 ```
 We will see seemingly random characters scrolling on the screen, which tells us that the flight controller is actively broadcasting
-<img width="613" height="45" alt="image" src="https://github.com/user-attachments/assets/38171ba0-e6b7-4aa6-9833-1a37c8fbd11d" />
+
+![Pi_Broadcast.png](../Images/RaspberryPi/Pi_Broadcast.png)
 
 
 ## Pymavlink
@@ -129,11 +322,12 @@ We will see seemingly random characters scrolling on the screen, which tells us 
 First we need to install some packages:
 ```
 sudo apt-get install libxml2-dev libxslt-dev
-sudo python3 -m pip install --upgrade lxml
+sudo apt install python3-pip
+sudo python3 -m pip install --upgrade lxml --break-system-packages
 ```
 and we can install Pymavlink using:
 ```
-sudo python3 -m pip install --upgrade pymavlink
+sudo python3 -m pip install --upgrade pymavlink --break-system-packages
 ```
 Now we will have two example codes where we once receive data, namely the altitude, global position and airspeed, from the drone, that we will print in our console.
 ```
@@ -193,7 +387,8 @@ try:
 except KeyboardInterrupt:
     print("Script stopped by user.")
 ```
-<img width="496" height="174" alt="image" src="https://github.com/user-attachments/assets/813d08b1-e0c5-4610-9f9d-3fd475423cbe" />
+
+![Pi_Outputs.png](../Images/RaspberryPi/Pi_Outputs.png)
 
 The next example we send a MAVLink packet to the drone that will change the mode of the drone
 ```
