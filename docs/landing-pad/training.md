@@ -115,9 +115,14 @@ close-up pads — the last metre before touchdown:
 | A (old) | 0.97 | 0.93 | 0.96 |
 | D | 0.76 | 0.91 | 0.85 |
 
-It comes from `scale=0.8` rarely showing the network a pad that fills the frame.
-If the landing controller needs a precise pad centre in the last metre, this
-regression is worth measuring in flight.
+Read the **Hall** column first: it is the only one of the three that shows the
+environment the drone operates in ([Dataset](dataset.md#where-the-data-comes-from)).
+It is also the column that degrades least — 0.93 → 0.91, against 0.97 → 0.76 on the
+cut-outs.
+
+The regression comes from `scale=0.8` rarely showing the network a pad that fills the
+frame. If the landing controller needs a precise pad centre in the last metre, it is
+worth measuring in flight.
 
 ## One model or two?
 
@@ -128,7 +133,7 @@ swapping costs a camera restart. So a single two-class detector was built.
 
 `build_2class.py` merges the pad labels (class 0) with **2784 person instances**
 recovered from a truncated `People-Detection-8` export (class 1), plus persons
-pseudo-labelled by YOLO11n on our own photos. Without the recovered set the
+pseudo-labelled by YOLO11n on the pad photographs. Without the recovered set the
 person class was untrainable — 66 instances, and **zero in the test split**, so
 it could not even have been measured.
 

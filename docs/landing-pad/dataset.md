@@ -11,16 +11,31 @@ tags:
 The dataset has **two sources**, and knowing which is which explains most of the
 model's behaviour further down.
 
-| Source | Images | Content | Origin |
+| Source | Photos | Content | Origin |
 |---|---|---|---|
-| `1739 … 1778` | 38 | the pad alone on a black background, freed from any scene | **public dataset** — [`cgomolak/landing-pad-zvclx`](https://universe.roboflow.com/cgomolak/landing-pad-zvclx) on Roboflow Universe |
-| `IMG_1659 … IMG_1705` | 46 | sports hall floor, pad small and oblique | **our own photos** |
-| `IMG_1739 … IMG_1778` | 39 | office, close-ups | **our own photos** |
+| `1739 … 1778` | 38 | the pad alone on a black background, freed from any scene | **public dataset** |
+| `IMG_1739 … IMG_1778` | 39 | office carpet, close-ups | **public dataset** |
+| `IMG_1659 … IMG_1705` | 46 | **sports hall floor**, pad small and oblique | **ours** |
 
-Our own images were shot by hand in the sports hall the drone flies in, and in an
-office. The whole set was merged and re-labelled with **polygon** annotations in a
-[Roboflow](https://roboflow.com) fork of the public project, and exported in YOLO
+**77 of 123 source photos — 63 % — are third-party**, from
+[`cgomolak/landing-pad-zvclx`](https://universe.roboflow.com/cgomolak/landing-pad-zvclx)
+on Roboflow Universe. The pad in them is a dark foam mat with a red tape border and
+red tape diagonals, shot on a black background and on an office carpet.
+
+The 46 hall photos are ours, and they exist for one reason: **the public data contains
+no image of the place the drone actually flies.** A sports hall floor is grey, glossy,
+painted with coloured lines and lit from above — nothing like an office carpet. So we
+built a matching pad, put it on the hall floor and photographed it, to give the model
+at least one scene it would really encounter.
+
+The merged set was re-labelled with **polygon** annotations in a
+[Roboflow](https://roboflow.com) fork of the public project and exported in YOLO
 format.
+
+!!! warning "The only operational scene is the smallest part of the dataset"
+    The hall is the environment the drone flies in, and it is **37 %** of the source
+    material. The other 63 % is a room we have never flown in and a background that
+    does not exist. Every "it generalises" claim below rests on that split.
 
 !!! info "Attribution"
     The `1739 … 1778` images originate from **[`cgomolak/landing-pad-zvclx`](https://universe.roboflow.com/cgomolak/landing-pad-zvclx)**,
@@ -30,13 +45,13 @@ format.
 ### Why our pad is built the way it is
 
 This is the reason the [physical pad](index.md#the-pad) looks like it does — a dark
-square with a red border and a red cross. **We built it to match the pad in the public
-dataset**, so that its 38 already-labelled images could be reused instead of
+mat with a red border and a red cross. **We built it to match the pad in the public
+dataset**, so that its 77 already-labelled images could be reused instead of
 photographing and annotating everything from scratch.
 
-That was the right call for a semester project: it gave the model a second scene for
-free and cut the annotation work substantially. It also has two consequences that are
-worth stating rather than discovering later:
+That was the right call for a semester project: it turned 46 photographs of our own
+into a 123-photo dataset and cut the annotation work by roughly two thirds. It also
+has two consequences that are worth stating rather than discovering later:
 
 - **31 % of the source material is a view the drone will never have.** A pad freed
   from its background on black is not a floor.
@@ -88,7 +103,7 @@ python3 build_dataset.py      # 175 train / 25 val / 16 test, leak-free
 | Property | Value | Consequence |
 |---|---|---|
 | Median pad size | **47 % of the image side** | the model had essentially never seen a distant pad |
-| Camera height (our photos) | handheld, standing height | no nadir view |
+| Camera height (hall photos) | handheld, standing height | no nadir view |
 | Pad-free images | **3 of 175** | "there is no pad here" was never a supported answer |
 | Cut-out images (public set) | 31 % of source photos | a view the drone will never have |
 
@@ -97,7 +112,7 @@ the third explains the false positives in [Training](training.md#the-false-posit
 
 ## Hard negatives
 
-`negatives.py` harvests **pad-free crops from our own hall and office photos** — the
+`negatives.py` harvests **pad-free crops from the hall and office photographs** — the
 black-background images have no floor to crop — and excludes any region overlapping a
 labelled pad, so a "negative" cannot accidentally contain the target:
 
