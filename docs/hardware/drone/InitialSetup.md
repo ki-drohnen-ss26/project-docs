@@ -387,6 +387,7 @@ The indoor-safe values are:
     [incident analysis](../../problems/incident-analysis-2026-08-21.md).
 
 	To make sure the drone starts safely, we can use the following steps:
+	
     - **Ground-drift GO/NO-GO before every arming** (`preflight.py`): the divergence is
       quadratic, so seconds of EKF-altitude drift on the disarmed aircraft already print
       a DO-NOT-FLY verdict.
