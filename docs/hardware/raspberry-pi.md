@@ -46,7 +46,7 @@ To see if everything worked, we can use
 sudo systemctl status systemd-journald --no-pager | grep -I 'Journal ('
 ```
 and we will see something like:
-<img width="921" height="32" alt="image" src="../Images/RaspberryPi/Journal.png" />
+![Journal.png](../Images/RaspberryPi/Journal.png)
 
 The directory `/var/log/journal/` should have been created and the logs will be saved on the persistent storage.
 
@@ -54,6 +54,7 @@ We will go over the most important functions of the `journalctl` command:
 ```
 journalctl [options] [unit]
 ```
+
 - Just using `journalctl` will display the recent log messages from all units starting from the most recent entries
 - **-r**: Reverses the log order.
 - **-n**: Specify a specific number of log entries to be shown.
@@ -107,17 +108,20 @@ We have to set up our Pi to allow the use of the serial ports we need, as the Ra
 sudo raspi-config
 ```
 This will open the following window, where we will navigate to Interface Options 
-<img width="1102" height="615" alt="image" src="../Images/RaspberryPi/Pi_SerialPort_1.png" />
+
+![Pi_SerialPort_1.png](../Images/RaspberryPi/Pi_SerialPort_1.png)
 
 and then to Serial Port.
-<img width="1106" height="615" alt="image" src="../Images/RaspberryPi/Pi_SerialPort_2.png" />
+
+![Pi_SerialPort_2.png](../Images/RaspberryPi/Pi_SerialPort_2.png)
 
 It will ask: "Would you like a login shell to be accessible over serial?", where we will select No
-<img width="543" height="383" alt="image" src="../Images/RaspberryPi/Pi_SerialPort_3.png" />
+
+![Pi_SerialPort_3.png](../Images/RaspberryPi/Pi_SerialPort_3.png)
 
 and it ask: "Would you like the serial port hardware to be enabled?" directly after, where we will have to select Yes.
 
-<img width="543" height="386" alt="image" src="../Images/RaspberryPi/Pi_SerialPort_4.png" />
+![Pi_SerialPort_4.png](../Images/RaspberryPi/Pi_SerialPort_4.png)
 
 We save our changes, exit and reboot the Pi, which allows us to use the hardware serial pins for our MAVLink protocol.
 
@@ -130,6 +134,7 @@ To do that we first use the Netork Managers command line interface(nmcli) to cre
 ```
 sudo nmcli connection add type wifi ifname wlan0 mode ap con-name Hotspot ssid MyPiHotspot autoconnect no wifi-sec.key-mgmt wpa-psk wifi-sec.psk "Password123"
 ```
+
 - `connection add` instructs the Network Manager to create and save a new network profile
 - `type` specifies what type of connection we want to use, in our case `wifi`
 - `ifname` specifies the interface name, which is a physical or virtual network device. We want to bind our connection to our built-in Wi-Fi adapter, which is named `wlan0`.
@@ -191,6 +196,7 @@ ExecStart=/usr/local/bin/autohotspot.sh
 WantedBy=multi-user.target
 ```
 We can see that the service file is divided into three sections:
+
 - **The unit section**: 
 The unit section defines the metadata for services and tells systemd when in the boot sequence the process is started
   - **Description**: Label(Name) for the service.
@@ -209,13 +215,15 @@ sudo systemctl enable autohotspot.service
 ## Setup the flight controller
 While we already set the needed options in the setup section of our drone, we will repeat the needed settings for our flight controller to be able to work with our board computer. 
 We need to set the following parameters, do note that for our setup we need to set the options for serial port 4, this might be different for other configurations:
+
 - `SERIAL4_PROTOCOL` = 2  to enable MAVLink 2 on the serial port.
 - `SERIAL4_BAUD` = 921 to set the 921600 baud rate.
 - `LOG_BACKEND_TYPE` = 3 We only need this option if we want to save logs onto our Raspberry Pi.
 
 ## Connect the flight controller with the board computer
 To connect the flight controller and the board computer, we have to connect the Raspberry Pi's TX pin (GPIO 14/Pin 8) to the RX pin of the flight controllers, the RX pin (GPIO 15/Pin 10) of the Pi to the TX pin of the flight controller and make sure they have common ground by plugging setting the ground of the flight controller to the ground of the Pi. Make sure that you only ever power the Pi using either the drones battery, or the usb-c port, as using both might damage the board. The GPIO serial port is called `/dev/serial0` on our Pi.
-<img width="2064" height="1185" alt="image" src="../Images/RaspberryPi/Pi_Pinouts.png" />
+
+![Pi_Pinouts.png](../Images/RaspberryPi/Pi_Pinouts.png)
 
 ## Install MAVLink-router
 MAVLink(Micro Air Vehicle Link) is the standard communication protocol used by autopilots to talk to ground control software and companion computers, like our Raspberry Pi.
@@ -306,7 +314,7 @@ sudo cat /dev/serial0
 ```
 We will see seemingly random characters scrolling on the screen, which tells us that the flight controller is actively broadcasting
 
-<img width="613" height="45" alt="image" src="../Images/RaspberryPi/Pi_Broadcast.png" />
+![Pi_Broadcast.png](../Images/RaspberryPi/Pi_Broadcast.png)
 
 
 ## Pymavlink
@@ -379,7 +387,8 @@ try:
 except KeyboardInterrupt:
     print("Script stopped by user.")
 ```
-<img width="496" height="174" alt="image" src="../Images/RaspberryPi/Pi_Outputs.png" />
+
+![Pi_Outputs.png](../Images/RaspberryPi/Pi_Outputs.png)
 
 The next example we send a MAVLink packet to the drone that will change the mode of the drone
 ```
