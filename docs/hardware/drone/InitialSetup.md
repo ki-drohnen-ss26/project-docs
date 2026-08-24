@@ -97,6 +97,7 @@ The next mandatory configuration we will look at are the initial tuning paramete
 
 The goal of the our initial settings is to have a thrust curve of the motors that is as linearly as possible.
 There are three main reasons that cause non-linear thrust:
+
 - Voltage sags as throttle increases.
 - Incorrectly set endpoints in PWM range
 - Non.linearity in thrust produced by Propeller, ESC and Motor
@@ -141,6 +142,7 @@ After we have the target rate with which to change our angle, we basically see t
 
 The other component is based on the feedback paths that try to eliminate the rate error. To get the rate error, we calculate the difference between the smoothed target rate and the measured rate that has been scaled through a speed scaling block. After the calculation, the rate error is, similar to the target rate, filtered by a low-pass filter, to remove high frequency sensor noise.
 This error is then forwarded to our PID-components, that give the PID-controllers their name:
+
 -  **Proportional component (P)**: The proportional component directly responds to the current error value and produces output that is proportional to the magnitude of the error. In the image we see that the error is multiplied by a proportional gain, that then is passed through a slew rate limiter and the PD limiter. The slew rate is the speed of change of the proportional and derivative components, which is limited by the Dmod block, that ensures the computer does not request movements faster than the physical hardware is capable of moving. The PD limiter places a ceiling and floor on the combined Proportional and Derivative demands and ensures that the feedback loop cannot demand extreme movements.
 - **Derivative component(D)**: The derivative component predicts the future error by assessing the rate of change of the error and dampens the movements as to not overshoot the target angle. It looks at how fast the error is changing and if it moves toward the target rate too quickly, the `_D` block will slow down the momentum preventing the drone from overshooting and oscillating. Both the Dmod block and PD limiter still have the same function already explained earlier.
 - **Integral component (I)**: The integral component considers the cumulative sum of past errors to address residual steady state errors that persist over time. It basically adds up the error over time and pushes harder the longer the error persists. An example would be a constant wind that pushes the drone off course. The Integral component builds up pressure to counteract it. The anti-windup block limits the itegral to increase indefinetly, for example when an actuator hits its physical limits the integral component would theoretically keep building up, if there is no limit given.
@@ -355,7 +357,7 @@ We already set the failsafes in the Failsafes section. We can just use the same 
 
 We can also look at the Full parameter list. each parameter that is associated with the Failsafe settings starts with FS
 
-<img width="1380" height="425" alt="image" src="../../Images/InitialSetup/Indoor.png" />
+![Indoor.png](../../Images/InitialSetup/Indoor.png)
 
 Here we want to set `FS_EKF_ACTION`, `FS_GCS_ENABLE`, `FS_THR_ENABLE` and `FS_DR_ENABLE` to 0 so they do not trigger RTL.
 
@@ -462,4 +464,3 @@ Alsot the frames balance might be off center, make sure the battery is centered 
     - Motors: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/10787-1080.jpg
     - GPS: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/HGLRC_M100_5883_GPS.pdf
     - Receiver: https://www.christianbaun.de/Master_Projekt_SS2026/Dokumente/HGLRC_M100_5883_GPS.pdf
-  - 
