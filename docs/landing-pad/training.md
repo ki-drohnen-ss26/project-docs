@@ -6,6 +6,29 @@ tags:
 
 # Training
 
+## Before the retraining: the weakest of three checkpoints was the deployed one
+
+Three landing-pad checkpoints existed when this work started, and the inference
+script on the Pi loaded the **oldest and worst** of them. Measured in FP32 on the
+leak-free test split:
+
+| Checkpoint | Trained | mAP50 | mAP50-95 |
+|---|---|---|---|
+| `best.pt` — **the one the Pi and the live demo loaded** | May, 50 ep @ 320 | 0.734 | 0.643 |
+| `best-2.pt` | 27 May, 80 ep @ 416 | 0.799 | 0.647 |
+| `pad_v2/weights/best.pt` | 24 Jun, 80 ep @ 416 | 0.995 | 0.971 |
+
+After INT8 quantisation the deployed `best_int8.tflite` measured **mAP50 0.657**
+(confirmed independently by `yolo val` on the `.tflite` itself). Simply pointing the
+export at the June checkpoint was the single largest available improvement, and it
+cost nothing.
+
+That is also why the comparison below **retrains the old recipe from scratch** (run A)
+instead of reusing any of these weights: all three were trained on the leaky split, so
+none of them has uncontaminated data left to be measured on.
+
+## The six runs
+
 Six runs, all on the **same leak-free split**, so only the recipe differs.
 
 | Run | Recipe | Outcome |

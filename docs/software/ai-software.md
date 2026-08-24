@@ -98,11 +98,13 @@ inference off the Pi, which is why the *only* deployable model format for us is 
     Quantisation was measured rather than assumed: **mAP50 0.9950 and recall 1.000
     unchanged**, only mAP50-95 falls 0.8098 → 0.6737 (looser boxes, same detections).
 
-    **What is still outstanding** is deployment and bench verification, not the model:
-    copy the `.rpk` to the Pi, switch `camera_source` from `"timed"` to `"real"`, and
+    **`network.rpk` is on the Pi.** What is still outstanding is configuration and one
+    bench check, not model work: switch `camera_source` from `"timed"` to `"real"` and
     set the two values the measurements call for — `cam_box_order = "xyxy"` and
     `camera_confidence = 0.3`. Until milestone 2 has confirmed the decoded `dx`/`dy`
     against a tape measure, the companion should keep flying `"timed"`.
+
+    **Nothing has flown yet.** No detection has been produced in the air.
 
     Full write-up: **[Landing Pad Detection](../landing-pad/index.md)** —
     [deployment](../landing-pad/deployment.md) and

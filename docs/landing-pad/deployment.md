@@ -185,6 +185,32 @@ Two scripts, because there are two ways into the sensor:
     the built-in demo will not display our detections correctly. Use one of the
     two scripts above.
 
+### Three things that look like failures and are not
+
+!!! warning "The first run after switching models processes almost no frames"
+    Selecting a *new* model uploads ~3 MB of firmware to the sensor, which takes about
+    **45 seconds**. A run with a 15-second duration timer that starts before the upload
+    finishes will process a single frame and look broken. Start the timer *after* the
+    upload progress bar completes, and add a short warm-up so auto-exposure settles —
+    the first frames after start are dark or washed out and produce spurious
+    (non-)detections.
+
+!!! warning "`Failed to reserve DRM plane` — the demo wants a display"
+    `picamera2`'s bundled `imx500_object_detection_demo.py` starts a DRM preview
+    window, which needs a screen. Over SSH on a headless Pi it aborts with
+    `RuntimeError: Failed to reserve DRM plane`. Both scripts above use
+    `show_preview=False` and log to the terminal instead.
+
+    The same applies to `rpicam-hello --nopreview`: the post-processing stage emits its
+    results as *image overlay* metadata, so with no preview there is nowhere for them
+    to land and the output is silently empty. Use `rpicam-still` to save an annotated
+    frame if you want to see them.
+
+!!! warning "A flood of `V4L2 ... Failed to queue buffer` needs a reboot"
+    After an aborted run the IMX500 / V4L2 pipeline can be left partially configured;
+    the next run then floods the terminal with queue-buffer errors and the camera stays
+    unresponsive. `sudo reboot` on the Pi clears it — no reinstall required.
+
 !!! note "Do not change the input size"
     The model expects a **320 px** input. Run outside its training resolution and
     false positives rise sharply — measured at 0.00 → 1.12 per image going from

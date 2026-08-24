@@ -71,10 +71,12 @@ the inference script:
 | `best_int8.tflite` (previously deployed) | 0.625 | 0.919 | 0.31 |
 
 !!! info "Status (2026-08-24)"
-    The model is trained, exported and measured; the `.rpk` builds and its
-    quantisation loss is known. **It has not run on the sensor in flight yet.** The
-    remaining work is deployment and a bench check of the decoded offsets —
-    see [Flight-Code Integration](integration.md#settings-that-have-to-change-before-the-detector-flies).
+    The model is trained, exported and measured, and **`network.rpk` is deployed on
+    the Pi**. It has **not flown yet** — no detection has been produced in the air.
+
+    What stands between here and the first detecting flight is not model work: it is
+    three configuration values and one bench check, listed in
+    [Flight-Code Integration](integration.md#settings-that-have-to-change-before-the-detector-flies).
 
 !!! note "Where the pipeline lives"
     The scripts referenced throughout this section (`build_dataset.py`,
@@ -137,9 +139,31 @@ the inference script:
 - **One pad.** Generalisation to a differently built pad is unknown.
 - **Negatives from the same three rooms.** False positives outdoors are
   untested.
-- **The `.rpk` has not flown yet.** It builds, it loads onto the sensor, and the
-  quantised model measures as well as the float one — but it has not run on the
-  sensor in flight.
+- **Nothing has been measured in the air.** The `.rpk` is on the Pi and the
+  quantised model measures as well as the float one on the test set — but every
+  number on these pages comes from photographs, not from a flight. Detection range,
+  frame rate under vibration and the behaviour of the approach loop are all still
+  unknown.
 
-The most valuable next step is not another training run. It is **a few hundred
-frames pulled from an actual flight recording**.
+## What would move the needle next
+
+Recipe tuning is close to exhausted on 123 photographs of one pad in three indoor
+rooms. In rough order of expected return:
+
+1. **Photograph the pad from the air.** Every training image is handheld from standing
+   height; none is a nadir view from the height the drone actually searches at. A few
+   hundred frames pulled from an actual FPV recording would be worth more than any
+   further augmentation — and the aircraft already records.
+2. **More than one pad, and outdoors.** Grass, asphalt, gravel, wet ground, low sun.
+   The model currently knows one pad on three indoor floors.
+3. **More negatives, from other places.** Run F's negatives are crops of the same three
+   rooms, so corridor and outdoor clutter is untested. This was the highest-value
+   change made so far, and it is not exhausted.
+4. **Drop or re-shoot the cut-out burst.** 31 % of the source photos are the pad
+   floating on black, which is not a view the drone will ever have.
+5. **Train `yolo11n-seg` on the existing polygons.** No new annotation needed — the
+   Roboflow labels are already polygons. Contour → 4 corners → homography gives true
+   distance and attitude instead of a box.
+
+The first item is the one that matters. **The most valuable next step is not another
+training run — it is a few hundred frames pulled from an actual flight recording.**
