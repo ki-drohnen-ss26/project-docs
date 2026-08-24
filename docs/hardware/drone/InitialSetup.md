@@ -6,7 +6,7 @@ This readme contains the setup of a drone to be used with ardupilot and ultimate
     Everything below was written for and verified against **ArduCopter 4.6.3**. Parameter
     names move between releases (e.g. `RNGFND1_MIN_CM`/`RNGFND1_MAX_CM` in 4.6 became
     `RNGFND1_MIN`/`RNGFND1_MAX` in 4.7, `RTL_ALT` became `RTL_ALT_M`), and ArduPilot
-    **silently ignores parameter names it does not know** — a setup that "loaded fine"
+    **silently ignores parameter names it does not know**. A setup that "loaded fine"
     can leave a sensor unusable with no error shown. Do not install "latest"; install
     4.6.3 and check the version banner in Mission Planner before changing anything.
 
@@ -31,14 +31,14 @@ The wiring can be seen here:
 
 ## Installaltion of Ardupilot
 ### Download correct firmware
-For our installation, we first need our firmware to flash the flight controller, in this case we are using the Flywoo Goku GN745 flight controller, that is using a STM32F745 controller. For the default version, we can download our firmware from https://firmware.ardupilot.org/, where we can find firmware for a multitude of different drone types. We are using the copter firmware **pinned to the stable release 4.6.3** (see the warning at the top — do *not* take "latest"): https://firmware.ardupilot.org/Copter/stable-4.6.3/FlywooF745/, where we want to download the file ending with `bl.hex` (it includes the bootloader).
+For our installation, we first need our firmware to flash the flight controller, in this case we are using the Flywoo Goku GN745 flight controller, that is using a STM32F745 controller. For the default version, we can download our firmware from https://firmware.ardupilot.org/, where we can find firmware for a multitude of different drone types. We are using the copter firmware **pinned to the stable release 4.6.3** (see the warning at the top, do *not* take "latest"): https://firmware.ardupilot.org/Copter/stable-4.6.3/FlywooF745/, where we want to download the file ending with `bl.hex` (it includes the bootloader).
 
 This approach works generally to be able to just fly a drone, but as our goal is to create an autopilot using a lidar and optical flow combination, as well as an onboard computer, we need a custom version of ardupilot, which we can create under 
 https://custom.ardupilot.org/. On the upper right we can see the option to create a new build:
 
 ![customBuild_1.png](../../Images/InitialSetup/customBuild_1.png)
 
-This leads to a page where we can choose our drone type, the version we want to use (**choose the 4.6.3 stable tag**, matching the pinned project version — not "latest") and the flight controller we are using
+This leads to a page where we can choose our drone type, the version we want to use (**choose the 4.6.3 stable tag**, matching the pinned project version, not "latest") and the flight controller we are using
 
 ![customBuild_addNewBuild.png](../../Images/InitialSetup/customBuild_addNewBuild.png)
 
@@ -376,15 +376,33 @@ The indoor-safe values are:
 | `FS_THR_ENABLE` | `3` | Radio (throttle) failsafe → **Land** where it is, instead of the default RTL |
 | `FS_EKF_ACTION` | `1` | EKF failsafe → **Land**. Do not disable this: a diverged position estimate flying on is the textbook indoor flyaway |
 | `FS_GCS_ENABLE` | `5` (Land) or `0` | Reaction when the ground station / companion falls silent. `0` is defensible in a hall, but then a dead companion has no automatic rescue |
-| `FS_DR_ENABLE` | `0` | Dead-reckoning failsafe needs GPS — meaningless indoors |
+| `FS_DR_ENABLE` | `0` | Dead-reckoning failsafe needs GPS, meaningless indoors |
 | `BATT_FS_LOW_ACT` | `1` | Low battery → **Land**, not RTL |
 
 !!! danger "Do not set the failsafes to 0 across the board"
     An earlier version of this guide recommended disabling all of these. Combined with
     `ARMING_CHECK = 0` (below) that removes every layer that could catch a bad
-    position estimate — our 2026-08-21 crash flight armed with an EKF vertical error
+    position estimate. Our 2026-08-21 crash flight armed with an EKF vertical error
     of over 1000 m that an enabled check would have refused. See the
     [incident analysis](../../problems/incident-analysis-2026-08-21.md).
+
+	To make sure the drone starts safely, we can use the following steps:
+    - **Ground-drift GO/NO-GO before every arming** (`preflight.py`): the divergence is
+      quadratic, so seconds of EKF-altitude drift on the disarmed aircraft already print
+      a DO-NOT-FLY verdict.
+    - **Bench hand-lift test** proving the EKF altitude actually follows a real lift
+      before any flight.
+    - **`ARMING_CHECK = 786390`**: everything except the GPS lock that can never pass
+      indoors.
+    - **Geofence off**: no barometric fence inside the takeoff downwash noise band.
+    - **Rangefinder-gated pilot takeover** (`--takeover`): the handover trusts the raw
+      rangefinder, not the EKF altitude, and refuses when the two disagree.
+    - **Continuous in-flight EKF-vs-rangefinder cross-check** (`EKF_ALT_DIVERGED` →
+      LAND).
+    - **`RNGFND1_GNDCLEAR = 2`** aligned with the true mounting height (see the
+      rangefinder block above).
+
+    [incident report](../../problems/incident-analysis-2026-08-21.md).
 
 To allow for position hold and autonomous flight we will also need a optical flow sensor and rangefinder. The rangefinder can tell the drone its correct altitude and the optical flow sensor can track the movement of the ground using a small camera.
 
@@ -400,11 +418,11 @@ Not all parameters are shown when some parameters are not set. The rangefinder p
 - **`RNGFND1_MAX_CM` = 800:** This parameter sets the range finder’s maximum range, **in centimetres** on ArduCopter 4.6.
 - **`RNGFND1_MIN_CM` = 1:** sets the minimum range in centimetres. **Not the 20 cm default:** the MTF-01P sits only a few cm above the floor; with a higher minimum the driver reports "out of range low" on the ground, the EKF gets no terrain height, optical flow cannot be scaled and arming fails with *"Need Position Estimate"*.
 - **`RNGFND1_ORIENT` = 25**: sets the orientation of the rangefinder, in our case we want it to be downwards.
-- **`RNGFND1_GNDCLEAR` = 2:** ground clearance in **centimetres**, set to the sensor's real mounted height (~2 cm above the floor) instead of the 10 cm default. EKF3 treats `RNGFND1_GNDCLEAR` as the rangefinder reading it should expect when the aircraft is landed, so an over-large value biases the height the filter sees on the ground — aligning it with the true mounting height is one of the mitigations we are testing for the on-ground divergence (see the danger box below).
+- **`RNGFND1_GNDCLEAR` = 2:** ground clearance in **centimetres**, set to the sensor's real mounted height (~2 cm above the floor) instead of the 10 cm default. EKF3 treats `RNGFND1_GNDCLEAR` as the rangefinder reading it should expect when the aircraft is landed, so an over-large value biases the height the filter sees on the ground, aligning it with the true mounting height is one of the mitigations we are testing for the on-ground divergence (see the danger box below).
 
 !!! warning "`RNGFND1_MIN`/`RNGFND1_MAX` (in metres) are the **4.7** names"
     On our pinned 4.6.3 they do not exist, and ArduPilot silently ignores unknown
-    parameter names — setting them "works" and changes nothing. Use the `_CM` names
+    parameter names. Setting them "works" and changes nothing. Use the `_CM` names
     above and verify by reading the values back.
 
 We will also have to make some changes to our Extended Kalman filter, that uses some sensors to estimate vehicle position, velocity and angular orientation, which we base on the article found at https://ardupilot.org/copter/docs/common-optical-flow-sensor-setup.html. The default parameters use the GPS for estimating the position and velocity, a barometer for the altitude and a compass for yaw orientation. We will specify both the default and new options. It is also possible to use multiple source configurations for our extended kalman filter, that can be switched in flight.
@@ -421,45 +439,11 @@ The default parameters that are set for the extended Kalman filter:
 The parameters we are using for indoor flight are:
 
 - `EK3_SRC1_POSXY` = 0 (None)
-- `EK3_SRC1_POSZ` = **2 (Range Finder)** — **mandated by the assignment**: the rangefinder is the EKF height source, and the barometer as the EKF source (`= 1`) is not permitted. This is the exact configuration that crashed us on 2026-08-21 *without* a safety protocol, so we now fly it *only* with the protocol in the danger box below
+- `EK3_SRC1_POSZ` = 2 (Range Finder) 
 - `EK3_SRC1_VELXY` = 5 (Optical Flow)
 - `EK3_SRC1_VELZ` = 0 (None)
 - `EK3_SRC1_YAW` = 1 (Compass)
 - `EK3_SRC_OPTIONS` = 0 (Disable FuseAllVelocities)
-
-!!! danger "`EK3_SRC1_POSZ = 2` is mandated — and it is the configuration that crashed us; fly it only under the protocol"
-    The assignment requires the rangefinder to be the EKF height source
-    (`EK3_SRC1_POSZ = 2`); the barometer as the EKF source (`= 1`) is **not permitted**.
-    This is exactly the configuration our aircraft flew on 2026-08-21, **without any
-    safety protocol**, and it crashed: EKF3 fused no height on the ground, the vertical
-    estimate diverged quadratically **while the drone stood on the floor** (−268 m after
-    90 s, −1070 m after three minutes, "climb rate" −12.6 m/s while stationary), a
-    leftover fence forced LAND, and that first altitude-controlled mode went to full
-    throttle into the hall ceiling. We may **not** fix this by moving the EKF back to the
-    barometer — that is what the task forbids. We fly `POSZ = 2` deliberately and
-    mitigate it, only with the full protocol:
-
-    - **Ground-drift GO/NO-GO before every arming** (`preflight.py`): the divergence is
-      quadratic, so seconds of EKF-altitude drift on the disarmed aircraft already print
-      a DO-NOT-FLY verdict.
-    - **Bench hand-lift test** proving the EKF altitude actually follows a real lift
-      before any flight.
-    - **`ARMING_CHECK = 786390`** — everything except the GPS lock that can never pass
-      indoors.
-    - **Geofence off** — no barometric fence inside the takeoff downwash noise band.
-    - **Rangefinder-gated pilot takeover** (`--takeover`): the handover trusts the raw
-      rangefinder, not the EKF altitude, and refuses when the two disagree.
-    - **Continuous in-flight EKF-vs-rangefinder cross-check** (`EKF_ALT_DIVERGED` →
-      LAND).
-    - **`RNGFND1_GNDCLEAR = 2`** aligned with the true mounting height (see the
-      rangefinder block above).
-
-    Why fusion never engaged is **still under investigation**: a colleague team flies
-    the same sensor with `POSZ = 2` successfully, so the next step is a full parameter
-    diff against their aircraft (hot suspects: `RNGFND1_GNDCLEAR`, `RNGFND1_MIN_CM`,
-    `EK3_ALT_M_NSE`). The barometer stays wired as an independent witness in the logs —
-    a reference, never the EKF source. Full analysis:
-    [incident report](../../problems/incident-analysis-2026-08-21.md).
 
 We set the parameter `EK3_SRC_OPTIONS` to zero, to avoid that the drone fuses all velocities, as fusing velocities of GPS and optical flow will lead to problems, especially if the GPS coverage is spotty at best.
 Further we have to set the actual position in XY axis `EK3_SRC1_POSXY` and the velocity along the z-axis `EK3_SRC1_VELZ` to none, as we do not have the necessary sensors to accomplish such calculations and keeping the GPS would lead to complications.
@@ -478,7 +462,7 @@ There will be many possible problems in the first flight, and we will address so
 
     !!! danger "`ARMING_CHECK = 0` is not a troubleshooting shortcut"
         Our aircraft flew with `ARMING_CHECK = 0`, and on 2026-08-21 it armed with an
-        EKF vertical position error of more than **1000 m** — a state the EKF pre-arm
+        EKF vertical position error of more than **1000 m**, a state the EKF pre-arm
         check exists to refuse. The flight ended in the hall ceiling
         ([incident report](../../problems/incident-analysis-2026-08-21.md)). The pre-arm checks
         are the last automated layer between a bad estimate and a flying aircraft; if
@@ -491,11 +475,12 @@ There are mutilple reasons that might happen:
     -  The orientation is set up incorrectly and the drone believes to be on its head. In this case we will have to change the orientation like we did in the section about acceleration calibration and orientation.
     -  Propellers are not mounted correctly
 - **The drone leaves the ground but oscillates strongly**: If the drone oscillates strongly, there is generally a problem in the PID controllers. As a start for later tuning, it is recommended to reduce the following PID parameters of the roll and pitch PID controllers by 50% until we no longer see the oscillations:
+
  	- ATC_RAT_PIT_P
-	-	ATC_RAT_PIT_I
-	-	ATC_RAT_PIT_D
-	-	ATC_RAT_RLL_P
-	-	ATC_RAT_RLL_I
+	- ATC_RAT_PIT_I
+	- ATC_RAT_PIT_D
+	- ATC_RAT_RLL_P
+	- ATC_RAT_RLL_I
  	- ATC_RAT_RLL_D
   
 	If we no longer observe oscillations, we can increase the values by 10%, until we once again see oscillations, and back off to the last used values where no oscillations were observed.
