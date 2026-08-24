@@ -6,6 +6,21 @@ tags:
 
 # Training
 
+!!! abstract "In short"
+    We trained the model six times with different settings, to find out which settings
+    actually help.
+
+    **What helped most:** showing the model the pad at many different sizes. Without
+    that, it only recognised pads that were large in the picture — useless for a drone
+    that looks down from a height.
+
+    **The mistake worth remembering:** our best-scoring model reported landing pads on a
+    rucksack, a poster and a chair. It had almost never seen a photo *without* a pad, so
+    "there is nothing here" was an answer it had never learned. Adding 76 empty photos
+    fixed it.
+
+    **What we deployed:** the sixth attempt, called run F.
+
 ## Before the retraining: the weakest of three checkpoints was the deployed one
 
 Three landing-pad checkpoints existed when this work started, and the inference

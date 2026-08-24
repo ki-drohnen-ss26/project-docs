@@ -6,6 +6,18 @@ tags:
 
 # Integration with the flight code
 
+!!! abstract "In short"
+    The detector does not fly the drone. Once per picture it hands the flight software
+    one answer: *"the pad is 1.2 m to your right and 0.4 m ahead"* — or *"no pad"*.
+
+    This page is the agreement between the two halves: what exactly gets handed over, in
+    what units, and how to check on the ground that the numbers mean what everyone
+    thinks they mean.
+
+    **Two things are still wrong and one is missing.** They are listed below, each with
+    the single test that catches it. None of them is difficult; all of them are the kind
+    of mistake that looks fine in the log and flies the drone the wrong way.
+
 The detector does not fly the aircraft. It hands the mission state machine one
 answer per frame, and the mission's `SEARCH` and `APPROACH` stages act on it.
 This page is the **contract** between the two, and the list of things to verify

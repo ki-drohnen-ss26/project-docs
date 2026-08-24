@@ -6,6 +6,19 @@ tags:
 
 # Evaluation
 
+!!! abstract "In short"
+    The standard way of scoring an object detector gave every one of our six attempts
+    almost the same result — 0.995 out of 1. That told us nothing about which one was
+    better.
+
+    So we tested differently: we deliberately ruined the test photos the way real flying
+    ruins them — turned them sideways, shrank the pad down to a few pixels, added
+    motion blur — and asked which model still coped. That immediately separated them.
+
+    We also checked what happens when the model runs on the camera chip instead of a
+    laptop, and found something no laptop test could have shown: the camera reports its
+    confidence only in fixed steps, and the lowest step is where the nonsense lives.
+
 ## Why mAP was the wrong target
 
 After the [leak-free re-split](dataset.md#why-we-rebuilt-the-traintest-split) we

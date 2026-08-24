@@ -6,6 +6,18 @@ tags:
 
 # Dataset
 
+!!! abstract "In short"
+    We trained on **123 photos**. Only 46 are ours (taken in the sports hall) — the
+    other 77 come from a free dataset on the internet, and that is why our pad is built
+    the way it is.
+
+    The photos arrived badly organised: near-identical copies were spread across both
+    the "learn from these" and the "test on these" piles, so the model could score well
+    by simply remembering. We reorganised them so that cannot happen.
+
+    We also added 76 photos with **no pad in them**. That sounds pointless and turned
+    out to be the most valuable thing on this page.
+
 ## Where the data comes from
 
 The dataset has **two sources**, and knowing which is which explains most of the

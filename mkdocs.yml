@@ -137,6 +137,7 @@ nav:
       - Evaluation: landing-pad/evaluation.md
       - Deployment: landing-pad/deployment.md
       - Flight-Code Integration: landing-pad/integration.md
+      - Glossary: landing-pad/glossary.md
   - Autopilot:
       - autopilot/index.md
       - ArduPilot Setup: autopilot/ardupilot-setup.md

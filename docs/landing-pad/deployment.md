@@ -6,6 +6,18 @@ tags:
 
 # Deployment
 
+!!! abstract "In short"
+    A trained model is a laptop file. To get it onto the drone it has to be repackaged,
+    and there are two possible destinations: the Raspberry Pi's own processor, or the
+    small AI processor inside the camera. **The camera is the right one**, because the
+    Pi is already busy flying the drone.
+
+    The repackaging takes three steps and they cannot all run on the same machine — the
+    last one only works on ARM Linux, which means a Raspberry Pi or a free ARM build
+    server on GitHub.
+
+    The rest of this page is the traps we hit, so nobody has to find them twice.
+
 The trained model is a PyTorch checkpoint. It has to be converted for the
 aircraft, and there are **two targets** with different trade-offs.
 
