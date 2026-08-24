@@ -128,6 +128,7 @@ nav:
       - RC & FPV: hardware/rc-fpv.md
   - Software:
       - software/index.md
+      - Simulation: software/SetupSimulation.md
       - Flight Controller Firmware: software/flight-controller.md
       - Raspberry Pi OS: software/raspberry-pi-os.md
       - Ground Control Station: software/gcs.md
