@@ -63,14 +63,10 @@ labelled photos of a pad with exactly this pattern. By building ours to look the
 we could use those photos for training instead of taking and labelling hundreds of our
 own. Details: [Dataset](dataset.md).
 
-Two things follow from the shape, and they come up again later:
-
-- **Turn it 90° and it looks identical.** Good for recognising it, but it means the
-  camera can never tell which way round the pad is lying.
-- **The cross is not usable as a second check.** "Only believe it if there is a red
-  cross inside the box" sounds like a free safety net. We measured it, and a real pad
-  scores *lower* on that test than a single red line painted on the floor does
-  ([why](evaluation.md#why-we-do-not-check-for-the-red-cross)).
+One thing follows from the shape and comes up again later: **turn it 90° and it looks
+identical.** That is convenient for recognising it, but it means the camera can never
+tell which way round the pad is lying. For landing on a square pad that does not
+matter.
 
 ## How it works, in four steps
 

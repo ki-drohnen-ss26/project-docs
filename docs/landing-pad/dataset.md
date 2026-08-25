@@ -224,11 +224,8 @@ marked area. Everything the checks complained about was then looked at by eye.
 | Lots of red *outside* the marked pad | 65 pictures — **all correct**, those are the hall's painted floor lines |
 
 That last row is interesting on its own: **in two thirds of our hall photos, most of the
-red in the picture is not the pad.** It is the floor — painted lines, most of them
-crossing lines of other colours rather than each other. Worth knowing before assuming
-that "there is red here" says anything about where the pad is. The
-[red-cross check](evaluation.md#why-we-do-not-check-for-the-red-cross) failed for a
-related but separate reason.
+red in the picture is not the pad.** It is the floor. Worth knowing before assuming that
+"there is red here" says anything about where the pad is.
 
 ### The double marking (1761)
 
