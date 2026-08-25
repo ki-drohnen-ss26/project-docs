@@ -218,46 +218,26 @@ So the table above and the real camera agree, for different reasons: **use 0.50*
     Throwing away impossible shapes helps too: anything longer than about 1:3, or
     touching the edge of the frame, cannot be a pad seen from above.
 
-## Two ideas about the red cross
+## Why we do not check for the red cross
 
-=== "Checking for it — does not work"
+The pad has a large red cross on it, so the obvious extra safety check is: only accept a
+detection if there is a red cross inside the box.
 
-    The idea: only accept a detection if there is a red cross inside the box.
+We measured it, and it does not merely fail — it points the **wrong way**:
 
-    We scored 16 real pads and 41 pad-free hall crops for "how much of a red cross is in
-    here". The result is not that the filter is weak — it is that it points the **wrong
-    way**:
+| | lowest | typical | highest |
+|---|---|---|---|
+| Real pads | 0.15 | **0.20** | 0.27 |
+| Pad-free hall crops | 0.00 | **0.23** | 0.42 |
 
-    | | lowest | typical | highest |
-    |---|---|---|---|
-    | Real pads | 0.15 | **0.20** | 0.27 |
-    | Pad-free hall crops | 0.00 | **0.23** | 0.42 |
+A pad-free piece of hall floor typically looks *more* like a red cross than the pad
+does. There is no threshold that separates them.
 
-    A pad-free piece of hall floor typically looks *more* like a red cross than the pad
-    does. There is no threshold that keeps the pads and rejects the floor: set it low
-    enough to keep even a quarter of the real pads and 14 of the 41 crops come through
-    with them; set it any higher and the real pads disappear first.
-
-    The reason is the room. A sports hall floor is painted with red lines that cross each
-    other, and they are bolder and more saturated than the tape on the mat. The same fact
-    turned up independently while
-    [checking the pictures](dataset.md#we-checked-every-single-picture), where two thirds
-    of the hall photos had more red outside the pad than inside it.
-
-=== "Measuring it afterwards — works"
-
-    Once a detection is *confirmed*, the red inside the box is clean and easy to trace.
-    `pad_pose.py` fits a rectangle to it and returns the pad's outline, its centre and
-    its angle.
-
-    Because the pad is square with a symmetrical cross, the angle can only be worked out
-    to within a quarter turn. A pad with one corner marked differently would fix that.
-
-!!! tip "A worthwhile upgrade that needs no new marking-up"
-    Our pictures are already marked with outlines rather than plain rectangles, so a
-    model that returns the pad's *outline* can be trained on exactly the same data.
-    From an outline you get the four corners, and from four corners you get the real
-    distance and tilt — which is what an automatic approach actually wants.
+The reason is the room: a sports hall floor is painted with red lines that cross each
+other, and they are bolder and more saturated than the tape on the mat. The same fact
+turned up independently while
+[checking the pictures](dataset.md#we-checked-every-single-picture), where two thirds of
+the hall photos had more red outside the pad than inside it.
 
 ## The scripts
 
@@ -267,5 +247,5 @@ So the table above and the real camera agree, for different reasons: **use 0.50*
 | `robustness.py` | the rotation / height / moving-camera tests |
 | `fp_bench.py` | false alarms on pictures with no pad |
 | `person_bench.py` | how well the combined model spots people |
-| `pattern_check.py` | the red-cross check (measured: does not work here) |
-| `pad_pose.py` | outline, centre and angle from a confirmed detection |
+| `pattern_check.py` | the red-cross check — measured, does not work here |
+| `pad_pose.py` | outline, centre and angle of a confirmed pad — written, not used by the mission |

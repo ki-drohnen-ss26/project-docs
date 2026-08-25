@@ -226,7 +226,7 @@ marked area. Everything the checks complained about was then looked at by eye.
 That last row is interesting on its own: **in two thirds of our hall photos, most of the
 red in the picture is not the pad.** It is the floor. That is the same fact that makes
 the "check for a red cross" idea useless, arrived at from a completely different
-direction — see [Evaluation](evaluation.md#two-ideas-about-the-red-cross).
+direction — see [Evaluation](evaluation.md#why-we-do-not-check-for-the-red-cross).
 
 ### The double marking (1761)
 
