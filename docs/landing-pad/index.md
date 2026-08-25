@@ -100,7 +100,7 @@ one is the actual hardware doing the actual job.
 ## What it cannot do yet
 
 - **It has never seen the pad from straight above.** Every training photo was taken by
-  hand from standing height, at an angle. Seen from an angle a square pad looks like a
+  hand from standing height, at an angle, with the pad filling most of the frame. Seen from an angle a square pad looks like a
   slanted trapezoid — and that is the only shape the model has ever been shown. Looking
   straight down it is a square. This is the real untested gap, and a bigger one than
   distance (see the box below).
@@ -120,13 +120,12 @@ one is the actual hardware doing the actual job.
     in the context of *this* drone.
 
     At the 2 m search height, a pad about a metre across fills roughly **38 %** of the
-    picture width. The photos the model learned from have the pad at **47 %** on
-    average. Those are close together, and both sit in the range where every version of
-    the model finds the pad **every time**.
+    picture width. The training photos have it much larger — **78 %** on average — but
+    the model was measured at both sizes and finds the pad **every time** at either.
 
-    The point where the model starts to struggle corresponds to flying at about **6 m**,
-    and the point where it fails badly to about **10 m** — both far above the 4 m indoor
-    limit, let alone the ceiling.
+    The point where it starts to struggle corresponds to flying at about **7 m**, and
+    where it drops off badly to about **10 m** — both far above the 4 m indoor limit,
+    let alone the ceiling.
 
     So the weakness is real, and this drone cannot climb high enough to meet it. What it
     *will* meet is the viewing angle, which is a different problem.

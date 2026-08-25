@@ -226,10 +226,15 @@ like.
 
 ## Three things that look broken and are not
 
-!!! warning "The first run after changing models seems to do nothing"
-    Loading a new model into the camera uploads about 3 MB and takes roughly **45
-    seconds**. A test with a 15-second timer that starts before the upload finishes will
-    process one picture and look broken. Start the timer after the upload finishes.
+!!! warning "A test can spend its whole run time uploading"
+    Loading a model into the camera uploads about 3 MB first. On our Pi that took **5
+    seconds** the first time and **3 seconds** on the next run — but a short test whose
+    timer starts before the upload finishes spends most of its life waiting, processes
+    almost no pictures, and looks broken.
+
+    Start the timer after the upload progress bar completes, and allow a moment more for
+    the exposure to settle: the first few pictures after starting are dark or washed out
+    and produce spurious detections.
 
 !!! warning "`Failed to reserve DRM plane`"
     The camera's example script wants to open a preview window, which needs a monitor.

@@ -214,9 +214,10 @@ python3 robustness.py runs/*/weights/best.pt
 python3 fp_bench.py   runs/*/weights/best.pt
 ```
 
-Training takes about **13 minutes** on an Apple laptop with a graphics chip — roughly 4
-seconds per pass over the pictures. Set `device="cpu"` if there is no graphics chip
-available; it just takes longer.
+Run F takes about **20 minutes** on an Apple laptop with a graphics chip — 149 passes
+over the pictures at roughly 8 seconds each. The shorter runs take 8 to 18 minutes; the
+combined pad-and-people model takes about 36. Set `device="cpu"` if there is no graphics
+chip available; it just takes longer.
 
 ??? bug "The combined model needs a newer version of the training tool"
     On Ultralytics 8.4.50 with torch 2.11, training the two-class set crashes:

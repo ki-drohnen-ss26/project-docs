@@ -48,36 +48,39 @@ So we made our own tests, based on what actually happens in flight:
 How often the model finds the pad as it gets smaller in the picture. `1.00` means it
 found every one.
 
-| Pad size in the picture | 296 px | 148 px | 89 px | 59 px | 35 px | 24 px |
+| Pad width the model sees | 296 px | 148 px | 89 px | 59 px | 35 px | 24 px |
 |---|---|---|---|---|---|---|
 | A (old settings) | 1.00 | 1.00 | 0.81 | 0.69 | **0.50** | **0.25** |
-| **D** (new settings) | 1.00 | 1.00 | 0.94 | 0.81 | **0.75** | **0.62** |
+| D (new settings) | 1.00 | 1.00 | 0.94 | 0.81 | 0.75 | 0.62 |
+| **F** (what we use) | 1.00 | 1.00 | **1.00** | **0.94** | **0.81** | **0.69** |
 
-The old settings **lose half their detections** by the time the pad is 35 pixels
-across. That is exactly the approach — the moment the detector matters most.
+The old settings **lose half their detections** by the time the pad is 35 pixels across.
+The model we deployed still finds four out of five.
 
-The cause is in the pictures, not the training: the typical pad in the collection fills
-[47 % of the image width](dataset.md#what-the-collection-is-biased-towards), because
+The cause is in the pictures, not the training: the typical training pad fills
+[78 % of the image width](dataset.md#what-the-collection-is-biased-towards), because
 every photo was taken standing next to it.
 
 !!! tip "What these sizes mean in flight"
-    The camera's lens covers 66° across, so how big the pad looks depends directly on
-    how high the drone is. For a pad about a metre across:
+    The camera's lens covers 66° across, so how big the pad looks follows directly from
+    how high the drone is. Taking the pad as roughly a metre across, and using the
+    deployed model's own numbers from the row above:
 
-    | Pad fills | Equivalent flying height | Model finds it |
-    |---|---|---|
-    | 47 % (the training average) | 1.6 m | every time |
-    | **38 %** | **2 m — the actual search height** | every time |
-    | 24 % | 3.3 m | every time |
-    | 19 % | 4 m — the indoor safety limit | reliably |
-    | 12 % | 6.4 m | starts to struggle |
-    | 8 % | 9.6 m | fails badly |
+    | Shrink factor | Pad fills | Same as flying at | **F finds it** |
+    |---|---|---|---|
+    | ×1.0 | 92 % | 0.8 m | 1.00 |
+    | ×0.5 | 46 % | 1.7 m | 1.00 |
+    | — | **38 %** | **2 m — the search height** | **between the two rows above: 1.00** |
+    | ×0.3 | 28 % | 2.8 m | 1.00 |
+    | ×0.2 | 18 % | 4.2 m — about the indoor limit | 0.94 |
+    | ×0.12 | 11 % | 6.9 m | 0.81 |
+    | ×0.08 | 7 % | 10.4 m | 0.69 |
 
-    **The drone cannot fly high enough to reach the weak part of this table.** Indoors
-    it searches at 2 m and may not exceed 4 m. Read the first four rows; the last two
-    describe a situation this aircraft never gets into.
+    **The drone cannot fly high enough to reach the weak part of this table.** It
+    searches at 2 m and may not exceed 4 m indoors — the top half of the table. The
+    bottom two rows describe heights this aircraft never reaches.
 
-    That does not make the test pointless — it is what chose the settings, and it is the
+    That does not make the test pointless: it is what chose the settings, and it is the
     right test for any future outdoor use. It does mean the weakness should not be read
     as a problem for the current mission.
 
@@ -110,7 +113,7 @@ which the model had seen:
 
 | | False alarms per picture | Finds real pads | Finds distant pads | Worst confidence on an empty picture |
 |---|---|---|---|---|
-| A (old settings) | 0.02 | all | 0.81 | 0.54 |
+| A (old settings) | 0.02 | all | 0.81 | 0.55 |
 | D | 0.33 | all | 0.94 | **0.87** |
 | **F** (what we use) | **0.02** | all | **0.94** | 0.66 |
 
@@ -198,13 +201,25 @@ So the table above and the real camera agree, for different reasons: **use 0.50*
 
     The idea: only accept a detection if there is a red cross inside the box.
 
-    We measured it. At a setting that keeps 88 % of the real pads, **21 of 41 false
-    detections survive anyway**.
+    We scored 16 real pads and 41 pad-free hall crops for "how much of a red cross is in
+    here". The result is not that the filter is weak — it is that it points the **wrong
+    way**:
 
-    The reason is the room. A sports hall floor is painted with red lines that cross
-    each other, so "there is a red cross here" is not unusual in the one place the
-    filter would have to work. The same fact turned up independently while
-    [checking the pictures](dataset.md#we-checked-every-single-picture).
+    | | lowest | typical | highest |
+    |---|---|---|---|
+    | Real pads | 0.15 | **0.20** | 0.27 |
+    | Pad-free hall crops | 0.00 | **0.23** | 0.42 |
+
+    A pad-free piece of hall floor typically looks *more* like a red cross than the pad
+    does. There is no threshold that keeps the pads and rejects the floor: set it low
+    enough to keep even a quarter of the real pads and 14 of the 41 crops come through
+    with them; set it any higher and the real pads disappear first.
+
+    The reason is the room. A sports hall floor is painted with red lines that cross each
+    other, and they are bolder and more saturated than the tape on the mat. The same fact
+    turned up independently while
+    [checking the pictures](dataset.md#we-checked-every-single-picture), where two thirds
+    of the hall photos had more red outside the pad than inside it.
 
 === "Measuring it afterwards — works"
 
