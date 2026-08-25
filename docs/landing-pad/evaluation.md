@@ -35,8 +35,19 @@ So we made our own tests, based on what actually happens in flight:
 
 === "Height"
 
-    Higher up means fewer pixels on the pad. We shrink the photo onto a floor-coloured
-    background, which makes the pad small in exactly the way climbing does.
+    Higher up means fewer pixels on the pad. We shrink the whole photo onto a
+    floor-coloured background, which makes the pad small in exactly the way climbing
+    does.
+
+    <figure markdown>
+      ![The same hall photo at all six shrink levels](../Images/LandingPad/zoom-levels.jpg){ width="760" }
+      <figcaption>One hall photo at the six levels, shown at the size the model actually receives (320 px). The green box is the correct answer.</figcaption>
+    </figure>
+
+    You can see the limit of the trick as well: the surroundings shrink with the pad and
+    are replaced by flat floor colour. A real photo taken from higher up would show more
+    floor, more lines, more clutter. The test makes the pad small honestly; it does not
+    reproduce everything else about being higher up.
 
 === "A moving camera"
 
@@ -48,7 +59,7 @@ So we made our own tests, based on what actually happens in flight:
 How often the model finds the pad as it gets smaller in the picture. `1.00` means it
 found every one.
 
-| Pad width the model sees | 296 px | 148 px | 89 px | 59 px | 35 px | 24 px |
+| Pad width the model sees (median) | 296 px | 148 px | 89 px | 59 px | 35 px | 24 px |
 |---|---|---|---|---|---|---|
 | A (old settings) | 1.00 | 1.00 | 0.81 | 0.69 | **0.50** | **0.25** |
 | D (new settings) | 1.00 | 1.00 | 0.94 | 0.81 | 0.75 | 0.62 |
@@ -60,6 +71,18 @@ The model we deployed still finds four out of five.
 The cause is in the pictures, not the training: the typical training pad fills
 [78 % of the image width](dataset.md#what-the-collection-is-biased-towards), because
 every photo was taken standing next to it.
+
+!!! note "The pixel row is a median, and the set is split in two"
+    The 16 grading photos are not one population. Ten of them are close-ups — the
+    black-background shots and the office ones — where the pad fills 89 to 99 % of the
+    frame. The other six are hall photos, where the pad is between 9 and 66 %, median
+    **80 px**.
+
+    So the hall photos already start where the close-ups only arrive after shrinking by
+    about a third. The illustration above is one of the hall photos, which is why its pad
+    is 111 px and not 296. When reading the table, remember that the columns to the right
+    push the *hall* photos into single-digit pixel sizes long before the close-ups get
+    there.
 
 !!! tip "What these sizes mean in flight"
     The camera's lens covers 66° across, so how big the pad looks follows directly from
