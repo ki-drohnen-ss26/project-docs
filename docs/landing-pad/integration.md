@@ -13,9 +13,36 @@ tags:
     This page is the agreement between the two halves: what gets handed over, in what
     units, and how to check on the ground that both sides mean the same thing.
 
-    **One setting is still wrong and one safeguard is missing.** Both are listed below
-    with the single test that catches each. Neither is difficult — but both are the kind
-    of mistake that looks fine in the log and flies the drone the wrong way.
+    **The two halves have never actually been connected.** Everything below is written,
+    read and checked — but not yet run together.
+
+!!! warning "Status: the detector and the flight software have never met"
+    They work, separately.
+
+    The detector runs on the Pi as its own program (`detect_pad.py`) and tracks the pad
+    in real time. The flight software has flown, but only ever with the pretend camera —
+    a mode that simply claims to have found the pad after a fixed delay, so that the
+    flight can be tested without a detector.
+
+    Nobody has yet started the flight software with the real camera switched on. Three
+    things stand in the way, all listed below: one wrong setting, one missing safeguard,
+    and one number that needs checking.
+
+## Where this fits in the flight
+
+The camera points **straight down**. The drone climbs to about 2 m and flies a search
+pattern across the hall, and this page describes what happens on every single picture
+while it does so:
+
+| The drone is | The detector says | The flight software does |
+|---|---|---|
+| searching | "no pad" | keep flying the pattern |
+| searching | "pad, 1.2 m right, 0.4 m ahead" | stop searching, start closing in |
+| closing in | "pad, 0.3 m right, 0.1 m ahead" | nudge sideways, at most 30 cm at a time |
+| closing in | "pad, 0.05 m right, 0.02 m ahead" | that counts as centred — release, then land |
+
+"Centred" means within **15 cm**. Everything below exists so that those metre figures
+mean what both halves think they mean.
 
 ## What gets handed over
 
@@ -128,10 +155,17 @@ yet.
     The team's own logs show that sensor reading **4 to 6.7 metres** while the drone is
     centimetres off the floor, because the propellers push air down onto it.
 
-    Since distance scales directly with height, a height that reads 4 m when the drone
-    is at 1 m makes every correction about four times too big — exactly during the final
-    approach. Worth checking whether the downward-facing distance sensor should feed
-    this calculation directly instead.
+    Distance scales directly with height, so a height that reads 4 m when the drone is
+    at 1 m makes every correction about four times too big.
+
+    **When this bites.** During the search at 2 m the estimate should be reasonable — the
+    downwash effect is worst close to the ground. The dangerous moment is the **final
+    descent**, which is exactly when the corrections need to be smallest and most
+    accurate.
+
+    Nobody has measured how bad it actually is. Worth comparing the reported height
+    against the downward-facing distance sensor during a hover, and considering feeding
+    that sensor into this calculation directly.
 
 !!! note "For the record: four blocks of data, not three"
     The camera returns boxes, confidences, categories **and** a count of valid
@@ -144,9 +178,9 @@ yet.
     distance — say exactly 1 metre to the drone's right, level with it, at a known
     height — and compare the logged metres against a tape measure.
 
-    - left/right and forward/back swapped → problem 1
-    - roughly four times too large near the floor → problem 3
-    - occasional wild readings between good ones → problem 2
+    - left/right and forward/back swapped → problem 1, the box order
+    - occasional wild readings between good ones → problem 2, no single-frame filter
+    - roughly four times too large close to the floor → problem 3, the height
 
 ## Related pages
 
