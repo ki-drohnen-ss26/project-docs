@@ -7,73 +7,44 @@ tags:
 # Getting it onto the drone
 
 !!! abstract "In short"
-    A trained model is a file on a laptop. To use it on the drone it has to be
-    repackaged, and there are two possible destinations: the Raspberry Pi's own
-    processor, or the small AI chip built into the camera.
+    A trained model is a file on a laptop. To reach the drone it has to be repackaged
+    into the format the camera chip understands.
 
-    **The camera is the right one**, because the Pi is already busy flying the drone.
-
-    Repackaging for the camera takes three steps, and they cannot all run on the same
-    machine — the last one only works on ARM Linux, which means a Raspberry Pi or a free
-    ARM build server on GitHub.
+    That takes three steps, and they cannot all run on the same machine: the last one
+    only works on ARM hardware. We use GitHub's free ARM build server for it.
 
     The rest of this page is the traps, so nobody has to find them twice.
 
-## The two destinations
+## Why the model runs inside the camera
 
-| | The Pi's own processor | The camera chip |
-|---|---|---|
-| File format | `.tflite` | `.rpk` |
-| Where the model runs | on the Raspberry Pi | **inside the camera** |
-| Speed | can only manage about one picture in three | up to 30 pictures per second |
-| How many models at once | two (pad *and* people) | **one** |
-| Confidence threshold | 0.4 | **0.5** ([why](evaluation.md#choosing-how-sure-the-model-has-to-be)) |
+The Raspberry Pi Zero 2 W has four small processor cores, and they are already fully
+occupied talking to the flight controller, watching the failsafes and running the
+mission. It cannot also run a detector at a useful rate.
 
-!!! tip "Why the camera chip is the better choice"
-    The Raspberry Pi Zero 2 W has four small processor cores, and they are already
-    fully occupied talking to the flight controller, watching the failsafes and running
-    the mission. Moving the model into the camera takes the whole job off the Pi.
+The camera we were given solves that: the Raspberry Pi AI Camera has a small AI
+processor built into the sensor itself. The model runs **inside the camera**, and the Pi
+only receives the finished answer.
 
-    That was the reason for buying this camera in the first place.
+That leaves exactly one route to get the model onto the aircraft, and the rest of this
+page is it.
 
-## Route 1: the Pi's own processor
+| | |
+|---|---|
+| File format the camera needs | `.rpk` |
+| Where the model runs | inside the camera, not on the Pi |
+| Speed | up to 30 pictures per second |
+| How many models at once | **one** |
+| Confidence threshold | **0.5** ([why](evaluation.md#choosing-how-sure-the-model-has-to-be)) |
 
-!!! note "Prepared, but never used on the aircraft"
-    This route works and is kept as a fallback, but nothing from it has ever flown. The
-    drone went straight to the camera chip. If you only care about what is on the
-    aircraft, skip to [route 2](#route-2-the-camera-chip).
+!!! note "A CPU version exists, and was never used"
+    `export.py` can also produce a `.tflite` file that runs on the Pi's own processor.
+    It was built and measured, but never put on the aircraft — the Pi is not fast enough
+    for it. It is kept only as a reference point in [How we tested it](evaluation.md), and
+    is not described further here.
 
-```bash
-python3 export.py runs/F_neg_fpv_320/weights/best.pt
-```
+## The three steps
 
-That produces `pad_320_int8.tflite`, 3 MB. Copy it, the people model and `drone_pi.py`
-into the same folder on the Pi and run:
-
-```bash
-python3 drone_pi.py --stream     # live picture at http://<pi-ip>:8080
-```
-
-??? bug "Three faults we had to fix in the old inference script"
-    All three produced wrong boxes silently, rather than an error message.
-
-    **Squashed pictures.** The camera picture was squeezed into a square instead of
-    being padded to shape. Training pads the picture, so the model was being shown a pad
-    25 % narrower than anything it had learned from. Fixing it improved box accuracy.
-
-    **The wrong input.** The people model was being fed the *pad* model's prepared data.
-    That happens to work while both models expect the same shape, and breaks silently as
-    soon as one of them is exported differently.
-
-    **A hard-coded size.** The picture size was written into the script as 320 while
-    being read from the model everywhere else, so any other export produced boxes in the
-    wrong place.
-
-    `test_pi_inference.py` checks the corrected version against the marked-up pictures.
-
-## Route 2: the camera chip
-
-Three steps, and they cannot all happen in one place:
+They cannot all happen in one place:
 
 | Step | Where it runs | What comes out |
 |---|---|---|
@@ -88,35 +59,21 @@ imx500-package -i packerOut.zip -o ~/models/pad      # step 3, on the Pi
 
 `~/models/pad` is where the flight code expects to find it.
 
-### Why step 3 only runs on ARM
+### Why step 3 needs different hardware
 
-Sony's documentation says this step must run on a Raspberry Pi. That is checkable rather
-than something to take on trust: the software package contains **no version for normal
-PCs**, and the program inside it is compiled for ARM processors only. No ordinary
-computer can run it — not a Mac, not a cloud machine, not Google Colab.
+The packaging tool is compiled for **ARM processors only**. It does not run on a Mac, an
+ordinary PC or in Google Colab. That leaves two practical options:
 
-Any ARM Linux machine works, which leaves three options:
+- **the Raspberry Pi itself**, since the hardware is already there;
+- **GitHub's free ARM build server**, which is what this project uses: upload
+  `packerOut.zip`, and about two minutes later `network.rpk` is ready to download. The Pi
+  does not even have to be switched on.
 
-- **the Raspberry Pi itself** — simplest, the hardware is already there;
-- **a free ARM build server on GitHub** — our setup does exactly this: you upload
-  `packerOut.zip`, and two minutes later `network.rpk` is ready to download. No Pi
-  needs to be switched on;
-- **an ARM container on an Apple Silicon Mac.**
-
-??? note "Steps 1 and 2 do run on macOS, despite the tool refusing"
-    The training tool blocks the export on anything but Linux. That block turns out to
-    be over-cautious rather than necessary — none of the software involved contains
-    anything Linux-specific:
-
-    | Component | What it actually is |
-    |---|---|
-    | `imx500-converter` | plain Python, only passes work along |
-    | `sdspconv` | plain Java, no platform-specific parts |
-    | `model-compression-toolkit` | plain Python |
-    | `ortools` | ships a macOS version |
-
-    `export_imx_local.py` lifts the block and runs steps 1 and 2 on a Mac in about
-    three and a half minutes.
+??? note "Steps 1 and 2 also run on macOS, despite the tool refusing"
+    The training tool blocks the export on anything but Linux. That block is
+    over-cautious rather than necessary — none of the software involved contains
+    anything platform-specific, and `export_imx_local.py` lifts it and runs both steps on
+    a Mac in about three and a half minutes.
 
 ### Two traps in the shrinking step
 
@@ -152,8 +109,13 @@ Two scripts, because there are two ways into the camera.
     ```
 
     The camera hands back four blocks of data: the boxes, how confident it is, which
-    category, and how many detections are valid. The overlapping-box cleanup has already
-    happened inside the camera, so the Pi only has to read and convert.
+    category, and how many detections are valid.
+
+    The cleanup of overlapping boxes has already happened **inside the camera**, so the
+    Pi only reads and converts. That is not a guess: the export tool bakes it in and says
+    so — `IMX export requires nms=True, setting nms=True` — and the raw model produced
+    2100 candidate boxes per picture before export, against the 300 slots the sensor
+    returns.
 
     !!! warning "Two details that silently produce boxes in the wrong place"
         - **The numbers are pixels, not fractions.** The boxes come back measured in
@@ -215,26 +177,14 @@ landingPad  centre 0.637,0.132  size 0.189x0.177  conf 0.50
 landingPad  centre 0.638,0.133  size 0.189x0.175  conf 0.56
 ```
 
-The centre is where the pad sits in the picture — `0.5, 0.5` would be dead centre. Watch
-how little it moves between frames: that smoothness is what a working detector looks
-like.
+The centre is where the pad sits in the picture — `0.5, 0.5` would be dead centre.
 
 !!! note "Confidence comes back in steps"
     You will only ever see certain values — 0.32, 0.38, 0.44, 0.50, 0.56 and so on,
     about 0.06 apart. That is normal, and it is why the threshold is 0.5 rather than 0.3
     ([the reasoning](evaluation.md#what-the-real-camera-does-differently)).
 
-## Three things that look broken and are not
-
-!!! warning "A test can spend its whole run time uploading"
-    Loading a model into the camera uploads about 3 MB first. On our Pi that took **5
-    seconds** the first time and **3 seconds** on the next run — but a short test whose
-    timer starts before the upload finishes spends most of its life waiting, processes
-    almost no pictures, and looks broken.
-
-    Start the timer after the upload progress bar completes, and allow a moment more for
-    the exposure to settle: the first few pictures after starting are dark or washed out
-    and produce spurious detections.
+## Two things that look broken and are not
 
 !!! warning "`Failed to reserve DRM plane`"
     The camera's example script wants to open a preview window, which needs a monitor.
@@ -250,11 +200,10 @@ like.
 
 | File | What it does |
 |---|---|
-| `export.py` | makes the file for the Pi's processor, and measures what shrinking costs |
-| `export_imx.py` | steps 1–2 for the camera chip, on Linux |
-| `export_imx_local.py`, `run_imx_local.sh` | the same steps on a Mac |
+| `export_imx_local.py`, `run_imx_local.sh` | steps 1–2, on a Mac |
+| `export_imx.py` | the same steps on Linux |
 | `make_imx_bundle.py`, `imx_colab.ipynb` | the same steps in the cloud instead |
-| `.github/workflows/imx500-rpk.yml` | step 3 on GitHub's free ARM server |
-| `drone_pi.py` | runs the model on the Pi's processor |
+| `.github/workflows/imx500-rpk.yml` | **step 3 on GitHub's free ARM server** |
 | `detect_pad.py`, `pi_aicam.py` | run the model on the camera chip |
 | `live.py` | try it on a webcam, a video or a single picture on a PC |
+| `export.py`, `drone_pi.py` | the unused Raspberry Pi processor route |
