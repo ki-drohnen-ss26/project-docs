@@ -269,4 +269,4 @@ walking further away and taking a photo.
 | `negatives.py` | cuts out the pictures with no pad in them |
 | `audit_dataset.py` | checks every picture and answer sheet |
 | `synth.py` | makes the fake distant pictures (the attempt that did not pay off) |
-| `build_2class.py` | merges pad and person pictures (see [Training](training.md#one-model-or-two)) |
+| `build_2class.py` | merges pad and person pictures (see [Training](training.md#a-short-detour-spotting-people-too)) |

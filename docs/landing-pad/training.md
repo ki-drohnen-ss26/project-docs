@@ -20,24 +20,28 @@ tags:
 
     **What we use:** the sixth attempt, which we call run F.
 
-## First: we were using the worst of three models
+## First: three old models, and the scripts pointed at the worst one
 
 When this work started, three trained models from earlier attempts were lying around,
-all with names like *"best"*. The one actually on the drone was the **oldest and
-weakest** of the three.
+all with names like *"best"*. The test scripts loaded the **oldest and weakest** of the
+three.
 
 Here they are, graded on the same photos. The grade is a single number between 0 and 1;
 higher is better, 1.0 would be perfect. (It is called *mAP* — [what it measures](glossary.md#measuring-it).)
 
 | Model file | Trained | Grade |
 |---|---|---|
-| `best.pt` — **this was the one on the drone** | May | 0.73 |
+| `best.pt` — **the one the scripts loaded** | May | 0.73 |
 | `best-2.pt` | end of May | 0.80 |
 | `pad_v2` | June | **0.99** |
 
-A much better model already existed. Nobody had swapped it in. Simply using the June one
-instead cost nothing and was the biggest single improvement available anywhere in the
-project.
+A much better model already existed. Nobody had switched over to it.
+
+!!! note "None of these ever ran on the drone"
+    They only ever ran on laptops — in test scripts and in a webcam demo. The first
+    model to actually reach the aircraft is the one described in
+    [Getting it onto the drone](deployment.md), and it went straight onto the camera
+    chip. There was never an older model on the drone to replace.
 
 !!! warning "None of these three grades can be trusted"
     All three were trained on the badly sorted pictures described in
@@ -52,12 +56,13 @@ project.
 
     | Checkpoint | Trained | mAP50 | mAP50-95 |
     |---|---|---|---|
-    | `best.pt` (deployed) | May, 50 epochs @ 320 px | 0.734 | 0.643 |
+    | `best.pt` (the one the scripts loaded) | May, 50 epochs @ 320 px | 0.734 | 0.643 |
     | `best-2.pt` | 27 May, 80 epochs @ 416 px | 0.799 | 0.647 |
     | `pad_v2/weights/best.pt` | 24 Jun, 80 epochs @ 416 px | 0.995 | 0.971 |
 
-    The file actually on the drone had additionally been shrunk for speed, and in that
-    form measured **mAP50 0.657**.
+    A shrunk copy of that same checkpoint had also been prepared for the Raspberry Pi's
+    processor, and measured **mAP50 0.657** in that form. It was never put on the
+    aircraft.
 
 ## The six attempts
 
@@ -153,49 +158,50 @@ black-background pictures.
 If the landing needs a very precise centre in the final metre, this is worth measuring
 in flight.
 
-## One model or two?
+## A short detour: spotting people too
 
-The drone would also like to know whether a **person** is standing on the pad. There are
-two ways to do that, and the hardware decides.
+It would be useful to know whether somebody is standing on the pad. On a normal computer
+that is easy — run a second, off-the-shelf model alongside ours.
 
-- **On the Raspberry Pi's own processor** you can run two separate models per picture:
-  ours for the pad, a standard off-the-shelf one for people.
-- **On the camera chip you cannot.** It holds exactly one model, and swapping means
-  restarting the camera. So it would have to be a single model that recognises both.
+**The camera chip cannot do that.** It holds exactly one model at a time, and swapping
+means restarting the camera. So detecting people as well would mean training *one*
+model that recognises both, from scratch, including gathering and marking up pictures of
+people.
 
-We built that single model to see what it costs. Two attempts:
+We tried it to see what it would cost. **The pad half kept working** — the combined
+model finds pads just as well as ours does. The people half worked less well, and the
+combined model got noticeably worse at the difficult pad cases.
 
-| Run | What changed | Finds pads | Finds people |
-|---|---|---|---|
-| G | pad rotated through a full circle during training | 0.993 | 0.511 |
-| **H** | only slight rotation | **0.995** | **0.644** |
+We did not pursue it further. **The model on the drone is the pad-only one**, because
+the pad is what the mission needs, and that decision is easy to revisit later.
 
-Run G's heavy rotation halved its ability to spot people — predictable, since people in
-photos are upright and the pad does not benefit from rotation anyway.
+??? note "The numbers, if you want them"
+    Two attempts at the combined model:
 
-But even H is a trade, and the standard grade hides it completely: H scores 0.995 on
-pads, exactly like F. Only the stress tests show the difference:
+    | Run | What changed | Finds pads | Finds people |
+    |---|---|---|---|
+    | G | pad rotated through a full circle during training | 0.993 | 0.511 |
+    | **H** | only slight rotation | **0.995** | **0.644** |
 
-| | Pad: rotated and far away | Pad: worst case | People |
-|---|---|---|---|
-| Two separate models | **0.75** | **0.62** | **0.59** |
-| One combined model (H) | 0.38 | 0.12 | 0.51 |
+    Heavy rotation halved the ability to spot people — predictable, since people in
+    photos are upright and the pad gains nothing from rotation.
 
-!!! note "Which one to use"
-    - **On the Pi's processor: two models.** Both jobs get done better.
-    - **On the camera chip: H, if people need detecting at all.** The per-picture loss
-      may not be the full story — the camera runs at up to 30 pictures per second while
-      the Pi's processor manages roughly one in three, and more attempts at lower
-      accuracy can beat fewer attempts at higher accuracy. That is a reasonable guess,
-      not something we measured.
-    - **What is on the drone today is the pad-only model**, because the pad is what the
-      mission needs.
+    Even the better attempt is a trade, and the standard grade hides it completely (0.995
+    on pads either way). Only the stress tests show it:
 
-??? note "If the combined model has to get better"
-    Two things, in order. Re-download the person pictures — the archive we used was
-    truncated and part of it never arrived. Then show the pad pictures more often during
-    training: they are only 172 of 2601 marked objects, which is the likely reason the
-    hard cases got worse.
+    | | Pad: rotated and distant | Pad: worst case | People |
+    |---|---|---|---|
+    | Two separate models | **0.75** | **0.62** | **0.59** |
+    | One combined model (H) | 0.38 | 0.12 | 0.51 |
+
+    That comparison is not quite fair to the combined model: the camera chip runs at up
+    to 30 pictures per second while a Raspberry Pi processor manages roughly one in
+    three, and more attempts at lower accuracy can beat fewer at higher accuracy. That
+    is a reasonable guess, not something we measured.
+
+    If it ever needs improving: re-download the person pictures (the archive we used was
+    truncated), and show the pad pictures more often during training — they are only 172
+    of 2601 marked objects.
 
 ## Doing it again yourself
 

@@ -38,6 +38,11 @@ tags:
 
 ## Route 1: the Pi's own processor
 
+!!! note "Prepared, but never used on the aircraft"
+    This route works and is kept as a fallback, but nothing from it has ever flown. The
+    drone went straight to the camera chip. If you only care about what is on the
+    aircraft, skip to [route 2](#route-2-the-camera-chip).
+
 ```bash
 python3 export.py runs/F_neg_fpv_320/weights/best.pt
 ```
