@@ -7,22 +7,53 @@ tags:
 # Talking to the flight software
 
 !!! abstract "In short"
-    The detector does not fly the drone. Once per picture it hands the flight software
-    one answer: *"the pad is 1.2 m to your right and 0.4 m ahead"* — or *"no pad"*.
+    Two separate programs on the Pi read the same camera, and they do **not** produce
+    the same thing.
 
-    This page is the agreement between the two halves: what gets handed over, in what
-    units, and how to check on the ground that both sides mean the same thing.
+    What runs today prints **positions in the picture** — *"the pad's centre is at 0.63,
+    0.13"* — to the terminal, and sends them nowhere.
 
-    **The two halves have never actually been connected.** Everything below is written,
-    read and checked — but not yet run together.
+    What the flight software needs is **distances on the ground** — *"the pad is 1.2 m
+    to your right"*. The code to convert one into the other exists, and has never been
+    run.
+
+    This page is the agreement between the two halves, and the list of what is still
+    missing between them.
+
+## What actually runs today
+
+`detect_pad.py` on the Pi. It loads the model into the camera, reads a detection per
+picture and prints it:
+
+```
+landingPad  Mitte 0.628,0.135  Groesse 0.178x0.175  conf 0.32  px=(345, 23, 114, 84)
+```
+
+| What it prints | What it means |
+|---|---|
+| `Mitte 0.628,0.135` | where the pad's centre sits **in the picture**. `0.5, 0.5` would be dead centre |
+| `Groesse 0.178x0.175` | how much of the picture the pad fills. Bigger means closer to it |
+| `conf 0.32` | how sure the model is |
+| `px=(...)` | the same box in pixels |
+
+Three things to notice, because they are the whole point of this page:
+
+- **These are fractions of the picture, not metres.** There is no distance anywhere in
+  that line.
+- **The drone's height is not involved.** The program never asks how high the aircraft
+  is, because it does not need to in order to print a fraction.
+- **It sends nothing anywhere.** It prints to a terminal. The flight software is not
+  listening, and is not even running at the same time.
+
+That is a complete, working detector. It is not yet connected to anything.
 
 !!! warning "Status: the detector and the flight software have never met"
     They work, separately.
 
-    The detector runs on the Pi as its own program (`detect_pad.py`) and tracks the pad
-    in real time. The flight software has flown, but only ever with the pretend camera —
-    a mode that simply claims to have found the pad after a fixed delay, so that the
-    flight can be tested without a detector.
+    `detect_pad.py` tracks the pad in real time on the drone's own Pi. The flight
+    software has flown, but only ever with the pretend camera — a mode that simply
+    claims to have found the pad after a fixed delay, so a flight can be tested without
+    a detector.
 
     Nobody has yet started the flight software with the real camera switched on. Three
     things stand in the way, all listed below: one wrong setting, one missing safeguard,
@@ -44,9 +75,10 @@ while it does so:
 "Centred" means within **15 cm**. Everything below exists so that those metre figures
 mean what both halves think they mean.
 
-## What gets handed over
+## What the flight software expects instead
 
-Once per picture, the detector produces four values:
+The flight software does not want fractions. It has its own camera module
+(`RealCamera` in the Pi-Code repository) which reads the same camera and produces this:
 
 | Value | Meaning |
 |---|---|
@@ -54,6 +86,9 @@ Once per picture, the detector produces four values:
 | **left / right** | how far the pad is to the drone's right, **in metres** |
 | **forward / back** | how far the pad is ahead of the drone, **in metres** |
 | height | the height used to work those out |
+
+**That module has never run.** It is the missing link: same camera, same model, but it
+converts the fractions into ground distances before handing them over.
 
 !!! info "Why metres, and not "30 % of the picture""
     A camera naturally reports *"the pad is 30 % of the frame to the right"*. But the
@@ -64,8 +99,11 @@ Once per picture, the detector produces four values:
     If the real camera reported percentages instead, every one of those settings would
     quietly mean something different, and none of the simulator testing would carry over.
 
-The conversion needs the drone's height. The further up it is, the more ground a
-percentage of the picture covers:
+### How a fraction becomes a distance
+
+This is the step `detect_pad.py` does not do and `RealCamera` does. It needs the drone's
+height, because the further up the aircraft is, the more ground each percent of the
+picture covers:
 
 ```
 distance on the ground = tan( fraction of the picture × half the camera's angle ) × height

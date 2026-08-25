@@ -17,8 +17,12 @@ to answer one question, once per camera picture:
 
 > **Is there a landing pad in this picture, and where?**
 
-The answer is a rectangle drawn around the pad. The flight code turns that rectangle
-into something like *"the pad is 1.2 m to your right"* and nudges the drone that way.
+The answer is a rectangle drawn around the pad — reported as a position *in the
+picture*, like *"the centre of the pad is at 0.63, 0.13"*.
+
+Turning that into *"the pad is 1.2 m to your right"*, which is what the flight software
+needs, is a separate step that needs the drone's height. That step is written but has
+not run yet — see [Talking to the flight software](integration.md).
 
 That is the whole job. Everything else on these pages is about making that answer
 reliable.
