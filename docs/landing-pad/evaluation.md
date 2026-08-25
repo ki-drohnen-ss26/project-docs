@@ -221,23 +221,36 @@ So the table above and the real camera agree, for different reasons: **use 0.50*
 ## Why we do not check for the red cross
 
 The pad has a large red cross on it, so the obvious extra safety check is: only accept a
-detection if there is a red cross inside the box.
+detection if there is a red cross inside the box. `pattern_check.py` measures exactly
+that — how much of the red in a box lies along two perpendicular directions. A clean X
+should score near 1.
 
-We measured it, and it does not merely fail — it points the **wrong way**:
+It does not work, and the numbers say why:
 
-| | lowest | typical | highest |
-|---|---|---|---|
-| Real pads | 0.15 | **0.20** | 0.27 |
-| Pad-free hall crops | 0.00 | **0.23** | 0.42 |
+<figure markdown>
+  ![Two real pads scoring lower than three pictures with no pad](../Images/LandingPad/red-cross-check.jpg){ width="900" }
+  <figcaption>The two on the left are real pads with a textbook red cross. The three on the right contain no pad — and score higher.</figcaption>
+</figure>
 
-A pad-free piece of hall floor typically looks *more* like a red cross than the pad
-does. There is no threshold that separates them.
+**A real pad scores about 0.17**, whether it is photographed straight on or at an angle.
+**Things that are not crosses score higher**: a single painted floor line reaches 0.44, a
+red sleeve in an office 0.43. The measure rewards scattered red more than it rewards an
+actual cross, so there is no threshold to set.
 
-The reason is the room: a sports hall floor is painted with red lines that cross each
-other, and they are bolder and more saturated than the tape on the mat. The same fact
-turned up independently while
-[checking the pictures](dataset.md#we-checked-every-single-picture), where two thirds of
-the hall photos had more red outside the pad than inside it.
+!!! warning "This is not because the hall floor has crossing red lines"
+    That was our first explanation and it is wrong — the hall has red lines crossing
+    *green* and *black* ones, but no red crossing red. Look at the three right-hand
+    pictures above: not one contains a cross of any kind.
+
+    The problem is on the pad's side. Most of its red is the **border**, a rectangle,
+    and a rectangle spreads red across every direction rather than concentrating it in
+    two. Cropping tighter to drop the border lifts the pad from 0.18 to 0.27 — and the
+    pad-free pictures stay at 0.26 and above. There is no setting at which the two
+    separate.
+
+The idea is sound in principle and dead in practice on this pad. Detection alone has to
+carry the decision, which is what the [76 empty training
+pictures](dataset.md#the-pictures-with-nothing-in-them) were for.
 
 ## The scripts
 

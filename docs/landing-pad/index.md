@@ -67,9 +67,10 @@ Two things follow from the shape, and they come up again later:
 
 - **Turn it 90° and it looks identical.** Good for recognising it, but it means the
   camera can never tell which way round the pad is lying.
-- **Red crossing lines are everywhere in a sports hall.** The floor is painted with
-  them. So "it has a red cross on it" is not a useful way to double-check a detection —
-  we tried, and measured that it does not work.
+- **The cross is not usable as a second check.** "Only believe it if there is a red
+  cross inside the box" sounds like a free safety net. We measured it, and a real pad
+  scores *lower* on that test than a single red line painted on the floor does
+  ([why](evaluation.md#why-we-do-not-check-for-the-red-cross)).
 
 ## How it works, in four steps
 
