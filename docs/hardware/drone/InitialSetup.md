@@ -349,6 +349,8 @@ Lastly we also set the `SERVO_DSHOT_ESC` parameters, that specifies the ESC type
 Some newer ESC types also support Extended DShot Telemetry(EDT), where more data than just the RPM data is returned through bi-directional DShot, which we can enable through the value 3 for Kiss/AM32/BL32 controllers and through using 4 for Bluejay controllers.
 
 ### Setup initial Harmonic notches
+First off we want to thank Nur Uddin Syeed for setting up the notch filter on our drone. The following information is based upon [AI-Drones](https://github.com/christianbaun/aidrones), the book he co-authored, as well as the work of Chris Rosser, that has a full [Tuning Guide](https://www.youtube.com/playlist?list=PLFPBjpbd5xKSGFJfuQJBPWOm-sGv0VxD1) on youtube, and the official documentation of how to [measure vibration](https://ardupilot.org/copter/docs/common-measuring-vibration.html) and how to [configure the notch filter](https://ardupilot.org/copter/docs/common-imu-notch-filtering.html).
+
 To setup our initial harmoic notch settings, we set `INS_HNTCH_ENABLE` to 1, to enable harmonic notch filters. Writing the parameters will enable more parameters to be used. 
 
 First we look at the parameter `INS_HNTCH_HMNCS`, that allows us set the harmonic frequencies to be filtered. This generally depends on the number of blades on the propeller and will be changed after evaluating the log data. 
