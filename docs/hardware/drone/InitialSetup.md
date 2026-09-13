@@ -335,6 +335,10 @@ Given the onboard computer is already installed, it is possible to store the log
 
 On our Raspberry Pi it is advised to install MAVProxy, ArduPilots official command-line ground station tool and running it as background service.  The flight controllers .bin or .tlog files will be stored directly on the Pis micro SD card.
 
+To download a log from the flight controller, we can once again use the Mission Planner.
+![MissionPlanner_INS_LOG_BAT_OPT.png](../../Images/Vibrations_HarmonicNotch/MissionPanner_Vibrations.png)
+The lower left window shows multiple tabs, which we can scroll through using the two arrows on the upper right. The tab to the very right called DataFlash Logs.
+
 #### Setup bi-directional DShot
 For our logging to work as intended, we still need to make some changes to our DShot settings, namely we want to set Bi-directional DShot, where the ESC will send back the exact revolutions per minute(RPM) of the motor, instead of just getting instructions from our flight controller. 
 
@@ -350,6 +354,18 @@ Some newer ESC types also support Extended DShot Telemetry(EDT), where more data
 
 ### Setup initial Harmonic notches
 First off we want to thank Nur Uddin Syeed for setting up the notch filter on our drone. The following information is based upon [AI-Drones](https://github.com/christianbaun/aidrones), the book he co-authored, as well as the work of Chris Rosser, that has a full [Tuning Guide](https://www.youtube.com/playlist?list=PLFPBjpbd5xKSGFJfuQJBPWOm-sGv0VxD1) on youtube, and the official documentation of how to [measure vibration](https://ardupilot.org/copter/docs/common-measuring-vibration.html) and how to [configure the notch filter](https://ardupilot.org/copter/docs/common-imu-notch-filtering.html).
+
+#### Vibrations
+The autopilot of our drone uses accelerometers, rangefinders and GPS or optical flow sensors to estimate the drones position. Excessive vibrations can affect the accelerometers and the position estimate can be thrown off, resulting in bad performance, especially in flight modes that need accurate poitioning, as Position Hold, Loiter or Guided mode.
+
+We can directly see the vibrations inside the Ground station. Inside the Data tab, in the heads up display on the upper right, we can click on vibe,
+![MissionPlanner_INS_LOG_BAT_OPT.png](../../Images/Vibrations_HarmonicNotch/MissionPanner_Vibrations.png)
+which opens a little popup, that allows us to measure vibration in flight.
+![MissionPlanner_INS_LOG_BAT_OPT.png](../../Images/Vibrations_HarmonicNotch/MissionPanner_Vibrations_PopUp.png)
+
+In general, we want Vibration levels to be beneath 30m/s/s, as levels above might already lead to a degraded performance of our drone. Levels above 60m/s/s almost always lead to problems in regards to position estimation, making it impossible to use modes like Loiter or Guided, which we need for our autonomous flight.
+
+As we might not necessarily have a connection to our Ground Control Station, we can also use the Log we already set up. To access the log we first 
 
 To setup our initial harmoic notch settings, we set `INS_HNTCH_ENABLE` to 1, to enable harmonic notch filters. Writing the parameters will enable more parameters to be used. 
 
