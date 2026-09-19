@@ -583,7 +583,7 @@ There will be many possible problems in the first flight, and we will address so
 
 ![Hover.png](../../Images/InitialSetup/Hover.png)
 
-    As we are trying to use our drone indoors, it will generally be a problem to get a GPS lock, which might stop the drone from arming. **Disable only the GPS check, never all of them:**. In our case we set `ARMING_CHECK = 786390`, which is every check *except* the GPS lock. This value can change depending on the firmware used.
+As we are trying to use our drone indoors, it will generally be a problem to get a GPS lock, which might stop the drone from arming. **Disable only the GPS check, never all of them:**. In our case we set `ARMING_CHECK = 786390`, which is every check *except* the GPS lock. This value can change depending on the firmware used.
 
 - **The drone tries to flip upon increasing throttle**:
 There are mutilple reasons that might happen:
