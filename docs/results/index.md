@@ -13,8 +13,8 @@ below are split into **verified** (we have logs, test runs or bench evidence) an
     GPS-connector pins were straightened, and on 2026-08-24 stock 4.6.3 detected the
     barometer again (see the
     [crash & recovery story](../problems/crash-2026-08-21.md)). The real-flight
-    milestones are now **unblocked**, pending a parameter reload after the firmware
-    flash — they have not yet been flown.
+    milestones are now **unblocked**, and on **2026-08-24 AltHold and Loiter both flew
+    on the real aircraft**. The full autonomous GUIDED mission is the next real-flight step.
 
 ## What works (verified)
 
@@ -34,8 +34,10 @@ firmware version as the real flight controller:
   exercised purely via configuration — no source edits between scenarios.
 - Diagnostics and safety hardening built in and tested: autopilot `STATUSTEXT`
   mirrored into the mission log, companion heartbeat, verified (not assumed) origin
-  and takeoff, mode monitoring, `LAND` instead of `RTL` indoors, and an FC safety
-  envelope that is saved before every change and restored on every exit.
+  and takeoff, mode monitoring, `LAND` instead of `RTL` indoors, and a **read-only
+  verification** of the FC parameters against the published set. Since 2026-08-24 the
+  companion no longer writes any FC parameter (Mission Planner is the single owner; see
+  [Flight Parameters](../autopilot/parameters.md)) and refuses to fly on a mismatch.
 
 ### Staged bring-up concept for real flights
 

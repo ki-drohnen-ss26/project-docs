@@ -1,10 +1,12 @@
 # Radio Controller & FPV System
 
-Two independent radio links leave the aircraft: the **control link** (ELRS,
+Two independent radio links can leave the aircraft: the **control link** (ELRS,
 pilot's sticks in, telemetry out) and the **video link** (analog 5.8 GHz FPV).
 They share nothing — the FPV feed can die while the pilot keeps full control,
-and vice versa. This page covers both chains and the one safety setup that must
-happen before any flight: a disarm switch on the transmitter.
+and vice versa. The video link is **not fitted on the current build** (see the
+status note in the FPV-chain section below) but remains part of the delivered kit;
+this page covers both chains and the one safety setup that must happen before any
+flight: a disarm switch on the transmitter.
 
 ## Control link: ELRS
 
@@ -78,6 +80,10 @@ Mission Planner; the full walk-through with screenshots is in
     can drop from GUIDED back to a manual mode at any time.
 
 ## Video link: analog FPV chain
+
+!!! info "Removed from the current build"
+    The **FPV camera (RunCam Phoenix 2)**, the **SpeedyBee TX800 VTX** and its
+    **TrueRC Singularity antenna** have been removed from the current build.
 
 ```mermaid
 graph LR

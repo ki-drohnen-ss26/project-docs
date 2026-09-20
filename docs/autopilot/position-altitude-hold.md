@@ -46,7 +46,7 @@ which comes from the MTF-01P's rangefinder. With flow as the only horizontal sou
 EKF provides a **relative** position estimate (`EKF_POS_HORIZ_REL`), good enough for
 local-NED navigation but anchored to nothing absolute.
 
-**`EK3_SRC1_POSZ` is 2 (Range Finder), as the assignment mandates.** The barometer is
+**`EK3_SRC1_POSZ` is 2 (Range Finder)** The barometer is
 not permitted as the EKF height source; the rangefinder is the height source and the
 barometer stays only as an independent witness in the logs. This is the configuration
 that crashed us when flown without mitigations, so it is flown only under the safety
@@ -78,8 +78,10 @@ deliberately, under a safety protocol implemented in the Pi-Code companion:
 
 - a ground-drift GO/NO-GO in `preflight.py` before every arming, plus a bench hand-lift
   test proving the EKF altitude follows a real lift;
-- `ARMING_CHECK = 786390` and the geofence off (no baro-referenced threshold near the
-  ground);
+- `ARMING_CHECK = 41350` and the geofence off, no baro-referenced threshold near the
+  ground (these are set in Mission Planner and the companion **verifies** them read-only,
+  refusing to fly if it finds the fence re-enabled; see
+  [Flight Parameters](parameters.md));
 - a rangefinder-gated pilot takeover that refuses when the EKF altitude and the raw
   rangefinder disagree;
 - a continuous in-flight EKF-vs-rangefinder cross-check (`EKF_ALT_DIVERGED` → LAND);
@@ -127,12 +129,3 @@ rangefinder-derived height following the lift and the EKF position flags coming 
 on the ground a dead rangefinder and a healthy one both read ~0 m, so only a height
 *change* proves the chain works. The mission code runs the same idea in the air:
 `verify_rangefinder_tracks_altitude()` right after every takeoff.
-
-!!! info "Status: real-flight validation still open"
-    The source configuration and both verification procedures are validated **in SITL
-    on ArduCopter 4.6.3** (the indoor mission flies green with flow + rangefinder, GPS
-    off). The real aircraft has been grounded since the 2026-08-21 crash
-    (barometer/I2C repair pending), so no real flight has yet flown the mandated
-    `EK3_SRC1_POSZ = 2` under the full safety protocol — that validation, together with
-    the pending parameter diff against the working team, is the first flight test once
-    the aircraft is repaired.
