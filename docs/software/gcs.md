@@ -6,6 +6,9 @@ loop: configuring the flight controller, finding out why an arm was refused, and
 downloading the dataflash logs that every one of our post-flight (and post-crash)
 analyses was built on.
 
+**Mission Planner is the single place where flight-controller parameters change.** The
+companion only verifies them read-only (see [Flight Parameters](../autopilot/parameters.md)).
+
 ## The two we use
 
 | | **Mission Planner** (our main tool) | **QGroundControl** |

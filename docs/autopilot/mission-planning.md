@@ -50,7 +50,7 @@ stateDiagram-v2
 
 | State | What happens |
 |---|---|
-| `IDLE` | safety envelope written to the FC, pre-arm sensor checks, GUIDED, arm |
+| `IDLE` | **verify** the FC parameters read-only (they are owned by Mission Planner — see [Flight Parameters](parameters.md)), pre-arm sensor checks, GUIDED, arm |
 | `TAKEOFF` | climb to search altitude (2 m) and verify the rangefinder tracks it |
 | `SEARCH` | fly a pattern, polling the camera at each waypoint |
 | `APPROACH` | visual servoing: nudge toward the detected pad until centred |

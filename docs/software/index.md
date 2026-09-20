@@ -36,7 +36,7 @@ flowchart TB
 | **Pi OS + MAVLink routing** | Raspberry Pi OS (Debian 13 *trixie* base) with the UART freed for the FC link and **mavlink-router** as a systemd service fanning the FC stream out to local UDP consumers. | [Raspberry Pi OS](raspberry-pi-os.md) |
 | **Companion mission code** | The [**Pi-Code** repository](https://github.com/ki-drohnen-ss26/Pi-Code): a pymavlink state machine (IDLE → TAKEOFF → SEARCH → APPROACH → DROP → RECOVER) with failsafe monitor, staged bring-up milestones 1–5 and a `--takeover` pilot handover. | [Pi-Code README](https://github.com/ki-drohnen-ss26/Pi-Code#readme) |
 | **AI stack** | The pad detector runs **on the camera sensor** (Sony IMX500) as a packaged `.rpk`; `picamera2` reads the detections as frame metadata. The Pi CPU stays free for MAVLink. | [AI Software](ai-software.md) |
-| **Simulation (SITL)** | ArduPilot Software-in-the-Loop, checked out at the **same tag** the FC runs (Copter-4.6.3). The companion connects to it exactly as it connects to the real drone. | [Setup Simulation](SetupSimulation.md) |
+| **Simulation (SITL)** | ArduPilot Software-in-the-Loop, checked out at the **same tag** the FC runs (Copter-4.6.3). The companion connects to it exactly as it connects to the real drone. | [Setup Simulation](SetupSimulation.md) · [SITL Testing](sitl-testing.md) |
 
 ## How the pieces talk
 

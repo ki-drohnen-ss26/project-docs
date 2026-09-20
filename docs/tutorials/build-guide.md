@@ -53,10 +53,12 @@ type, voltage/PID initial values, accel/compass/radio calibration, motor order a
 ESC setup, serial ports, flight modes, failsafes, logging, and the indoor-flying
 parameter block. The [Autopilot section](../autopilot/index.md) explains *why* these
 choices ([ArduPilot Setup](../autopilot/ardupilot-setup.md) collects the parameter
-work). Our recovered known-good parameter set lives in the Pi-Code repository
-(`params/fc_baseline_463_20260821.parm` plus `params/fc_safe_overrides.parm` — fence
-off, the mandated `EK3_SRC1_POSZ=2` with `RNGFND1_GNDCLEAR=2`, `ARMING_CHECK=786390`,
-`BATT_LOW_VOLT=12.8`).
+work). The **current published flight set** is `params/flight_v2.param`, set it in
+Mission Planner and nowhere else; the companion only verifies it read-only (see
+[Flight Parameters](../autopilot/parameters.md) for the curated list and the ownership
+rule). The earlier crash-recovery files (`params/fc_baseline_463_20260821.parm` plus the
+`params/fc_safe_overrides.parm` overlay) remain in the repository as the reconstructed
+post-crash baseline.
 
 **Done when:** all calibrations pass, no `PreArm` errors, and the
 [Quick Start](quickstart.md) hover test in Stabilize is calm and controllable.
@@ -125,7 +127,9 @@ RECOVER`, GUIDED via pymavlink) flies the complete mission — in the simulator.
 
 Build the **ArduCopter 4.6.3 SITL** environment
 ([Setup Simulation](../software/SetupSimulation.md) — check out the `Copter-4.6.3`
-tag, not master) and run the companion against it (`python main.py --sim`). The
+tag, not master) and run the companion against it (`python main.py --sim`); the
+step-by-step procedure, parameter mirror, verify line and the full test ladder, is on
+[Testing the Companion Code in SITL](../software/sitl-testing.md). The
 mission logic and the staged **milestones 1–5** bring-up plan (each real flight adds
 exactly one unknown, selected with `--milestone N`; `--takeover` covers pilot
 handover) are described in [Mission Planning](../autopilot/mission-planning.md) and

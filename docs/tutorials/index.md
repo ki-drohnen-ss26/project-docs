@@ -44,5 +44,3 @@ what a first hands-on session with the kit looks like.
 
 - Basic Linux command-line skills (the Raspberry Pi companion runs Debian).
 - Python fundamentals (the companion code uses `pymavlink`).
-- No prior FPV or ArduPilot experience is required — that is what these pages are for —
-  but budget real practice time for manual flying before any autonomous test.

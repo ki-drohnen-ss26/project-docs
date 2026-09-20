@@ -69,8 +69,13 @@ Rules we now follow without exception:
    version it was captured from.
 3. **Unknown names are silently ignored.** Loading a file with 4.7 names onto 4.6.3
    produces *no error* — the parameter simply keeps its old value. A setup can "load
-   fine" and leave the rangefinder unusable. Always read values back after writing;
-   the companion repo's `setparam.py` does exactly that (set + read-back verification).
+   fine" and leave the rangefinder unusable. Always read values back after writing.
+4. **Parameters have one owner: Mission Planner.** As of the 2026-08-24 team decision the
+   companion computer **no longer writes any FC parameter**. It verifies them read-only
+   (`preflight.py`) against the published, versioned set and refuses to fly on a
+   mismatch. This removes the "surprise overwrite" failure mode from the crash chain.
+   The full rule and the parameter set live on the
+   [Flight Parameters](parameters.md) page.
 
 ### Our recovered baseline
 

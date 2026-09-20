@@ -11,9 +11,6 @@ In this project we develop, implement, and evaluate a practical drone-AI applica
 - **Delivery mechanism** for the automated release of payloads
 - **AI-assisted object detection** via the Raspberry Pi AI Camera Module
 
-!!! info "Audience"
-    This documentation is aimed at students, researchers, and lecturers who want to reproduce these AI drone scenarios or use them as a basis for their own modules and research projects.
-
 !!! note "Project status (2026-08-24)"
     The full autonomous delivery pipeline runs **end-to-end in the ArduCopter 4.6.3
     simulator**; the MTF-01P sensor and the Raspberry Pi companion link are verified
@@ -74,6 +71,6 @@ The documentation follows the task structure defined in the project brief:
 
 ## Team
 
-This documentation is maintained by **Team Drone[X]**.
+This documentation and project was done by Lars Reul, Yichi Zhang, Amir Ebrahimi und Daniele Amore.
 
 <!-- TODO: add team members -->

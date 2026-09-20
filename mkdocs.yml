@@ -125,6 +125,7 @@ nav:
   - Software:
       - software/index.md
       - SITL Simulation: software/SetupSimulation.md
+      - SITL Testing: software/sitl-testing.md
       - Flight Controller Firmware: software/flight-controller.md
       - Raspberry Pi OS: software/raspberry-pi-os.md
       - Ground Control Station: software/gcs.md
@@ -132,6 +133,7 @@ nav:
   - Autopilot:
       - autopilot/index.md
       - ArduPilot Setup: autopilot/ardupilot-setup.md
+      - Flight Parameters: autopilot/parameters.md
       - Position & Altitude Hold: autopilot/position-altitude-hold.md
       - Mission Planning: autopilot/mission-planning.md
   - Sensors:
