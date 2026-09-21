@@ -58,7 +58,6 @@ a:hover{color:#0A353D}
         </div>
         <ul style="margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:6.23mm;">
           <li style="display:grid; grid-template-columns:9.63mm 1fr; column-gap:5.66mm; align-items:start; font:400 32.56pt/1.34 'IBM Plex Sans',sans-serif;"><span style="width:9.63mm; height:1.98mm; margin-top:7.36mm; background:var(--accent,#0E4C58);"></span><span>Detect landing pads reliably from a moving drone using onboard vision</span></li>
-          <li style="display:grid; grid-template-columns:9.63mm 1fr; column-gap:5.66mm; align-items:start; font:400 32.56pt/1.34 'IBM Plex Sans',sans-serif;"><span style="width:9.63mm; height:1.98mm; margin-top:7.36mm; background:var(--accent,#0E4C58);"></span><span>Detect persons to prevent unsafe payload release</span></li>
           <li style="display:grid; grid-template-columns:9.63mm 1fr; column-gap:5.66mm; align-items:start; font:400 32.56pt/1.34 'IBM Plex Sans',sans-serif;"><span style="width:9.63mm; height:1.98mm; margin-top:7.36mm; background:var(--accent,#0E4C58);"></span><span>Integrate autopilot and indoor position hold without GPS</span></li>
           <li style="display:grid; grid-template-columns:9.63mm 1fr; column-gap:5.66mm; align-items:start; font:400 32.56pt/1.34 'IBM Plex Sans',sans-serif;"><span style="width:9.63mm; height:1.98mm; margin-top:7.36mm; background:var(--accent,#0E4C58);"></span><span>Release the payload via a servo-based drop mechanism</span></li>
         </ul>
@@ -85,11 +84,23 @@ a:hover{color:#0A353D}
             </tr>
             <tr>
               <td style="padding:4.81mm 5.66mm 4.81mm 0; border-bottom:0.42mm solid #D5DBDA; vertical-align:top; font:500 25.48pt/1.3 'IBM Plex Mono',monospace; letter-spacing:0.03em; color:#5B6664;">Sensors</td>
-              <td style="padding:4.81mm 0; border-bottom:0.42mm solid #D5DBDA; vertical-align:top; font:400 31.14pt/1.28 'IBM Plex Sans',sans-serif;">Raspberry Pi AI Camera, MicroAir MTF-01P (LiDAR + optical flow)</td>
+              <td style="padding:4.81mm 0; border-bottom:0.42mm solid #D5DBDA; vertical-align:top; font:400 31.14pt/1.28 'IBM Plex Sans',sans-serif;">Raspberry Pi AI Camera, MicoAir MTF-01P (LiDAR + optical flow)</td>
             </tr>
             <tr>
-              <td style="padding:4.81mm 5.66mm 4.81mm 0; vertical-align:top; font:500 25.48pt/1.3 'IBM Plex Mono',monospace; letter-spacing:0.03em; color:#5B6664;">Payload</td>
+              <td  style="padding:4.81mm 5.66mm 4.81mm 0; border-bottom:0.42mm solid #D5DBDA; vertical-align:top; font:500 25.48pt/1.3 'IBM Plex Mono',monospace; letter-spacing:0.03em; color:#5B6664;">Payload</td>
               <td style="padding:4.81mm 0; vertical-align:top; font:400 31.14pt/1.28 'IBM Plex Sans',sans-serif;">9 g micro servo, 3D-printed frame extension</td>
+            </tr>
+            <tr>
+              <td  style="padding:4.81mm 5.66mm 4.81mm 0; border-bottom:0.42mm solid #D5DBDA; vertical-align:top; font:500 25.48pt/1.3 'IBM Plex Mono',monospace; letter-spacing:0.03em; color:#5B6664;">GPS</td>
+              <td style="padding:4.81mm 0; vertical-align:top; font:400 31.14pt/1.28 'IBM Plex Sans',sans-serif;">HGLRC M100 with compass</td>
+            </tr>
+            <tr>
+              <td  style="padding:4.81mm 5.66mm 4.81mm 0; border-bottom:0.42mm solid #D5DBDA; vertical-align:top; font:500 25.48pt/1.3 'IBM Plex Mono',monospace; letter-spacing:0.03em; color:#5B6664;">Motor</td>
+              <td style="padding:4.81mm 0; vertical-align:top; font:400 31.14pt/1.28 'IBM Plex Sans',sans-serif;">Emax Eco II 2004 3-6S 3000KV</td>
+            </tr>
+            <tr>
+              <td  style="padding:4.81mm 5.66mm 4.81mm 0; vertical-align:top; font:500 25.48pt/1.3 'IBM Plex Mono',monospace; letter-spacing:0.03em; color:#5B6664;">Rotors</td>
+              <td style="padding:4.81mm 0; vertical-align:top; font:400 31.14pt/1.28 'IBM Plex Sans',sans-serif;">Gemfan 90mm D90-5 3.5" Ducted 5-Blade Rotors</td>
             </tr>
           </tbody>
         </table>
@@ -146,7 +157,7 @@ a:hover{color:#0A353D}
           </div>
           <div></div>
 
-          <div style="grid-row:span 2; border:0.85mm solid #9AA5A4; background:#F4F6F6; padding:8.49mm 7.36mm; display:flex; flex-direction:column; gap:1.7mm; justify-content:center;">
+          <div style="border:0.85mm solid #9AA5A4; background:#F4F6F6; padding:8.49mm 7.36mm; display:flex; flex-direction:column; gap:1.7mm; justify-content:center;">
             <div style="font:600 32.56pt/1.12 'IBM Plex Sans',sans-serif; color:#141A1A;">Flight Controller</div>
             <div style="font:400 24.07pt/1.3 'IBM Plex Mono',monospace; color:#5B6664;">Flywoo GOKU GN745 · ArduPilot</div>
           </div>
@@ -157,24 +168,17 @@ a:hover{color:#0A353D}
               <div style="flex:1; border:0.85mm solid #9AA5A4; padding:5.66mm; font:600 26.9pt/1.15 'IBM Plex Sans',sans-serif; color:#3A4443;">ELRS receiver</div>
             </div>
           </div>
-          <div style="display:flex; flex-direction:column; gap:1.7mm;">
-            <div style="font:500 22.65pt 'IBM Plex Mono',monospace; color:#5B6664; padding-left:2.83mm; white-space:nowrap;">5.8 GHz</div>
-            <div style="display:flex; align-items:center;">
-              <div style="width:16.99mm; height:0.85mm; background:#9AA5A4;"></div>
-              <div style="flex:1; border:0.85mm solid #9AA5A4; padding:5.66mm; font:600 26.9pt/1.15 'IBM Plex Sans',sans-serif; color:#3A4443;">VTX</div>
-            </div>
-          </div>
 
           <div style="display:flex; justify-content:center;">
             <div style="display:flex; align-items:center; gap:4.25mm;">
               <div style="width:0.85mm; height:33.98mm; background:var(--accent,#0E4C58);"></div>
-              <div style="font:500 24.07pt 'IBM Plex Mono',monospace; color:var(--accent,#0E4C58);">UART</div>
+              <div style="font:500 24.07pt 'IBM Plex Mono',monospace; color:var(--accent,#0E4C58);">UART / MAVLink</div>
             </div>
           </div>
           <div></div>
 
           <div style="border:0.85mm solid var(--accent,#0E4C58); background:#ffffff; padding:6.8mm 7.36mm; display:flex; flex-direction:column; gap:1.7mm;">
-            <div style="font:600 29.73pt/1.15 'IBM Plex Sans',sans-serif; color:#141A1A;">MicroAir MTF-01P</div>
+            <div style="font:600 29.73pt/1.15 'IBM Plex Sans',sans-serif; color:#141A1A;">MicoAir MTF-01P</div>
             <div style="font:400 22.65pt 'IBM Plex Mono',monospace; color:#5B6664;">LiDAR + optical flow</div>
           </div>
           <div></div>
@@ -265,7 +269,7 @@ a:hover{color:#0A353D}
           <span style="font:600 31.14pt/1.1 'IBM Plex Mono',monospace; color:var(--accent,#0E4C58);">06</span>
           <h2 style="margin:0; font:600 48.13pt/1.1 'IBM Plex Sans',sans-serif; letter-spacing:-0.01em; color:var(--accent,#0E4C58);">Autopilot &amp; Position Hold</h2>
         </div>
-        <p style="margin:0; font:400 33.98pt/1.36 'IBM Plex Sans',sans-serif; text-wrap:pretty;">Migration from Betaflight to ArduPilot enables indoor position and altitude hold without GPS. Optical flow and LiDAR rangefinding from the MicroAir MTF-01P feed the flight controller over UART; sensor configuration and calibration follow. [Stand ergänzen]</p>
+        <p style="margin:0; font:400 33.98pt/1.36 'IBM Plex Sans',sans-serif; text-wrap:pretty;">Migration from Betaflight to ArduPilot enables indoor position and altitude hold without GPS. Optical flow and LiDAR rangefinding from the MicoAir MTF-01P feed the flight controller over UART; sensor configuration and calibration follow. [Stand ergänzen]</p>
       </div>
 
       <div style="display:flex; flex-direction:column; gap:7.08mm;">
