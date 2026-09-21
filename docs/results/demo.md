@@ -84,8 +84,14 @@ Prerequisites, in order:
    wires, boot stock 4.6.3), then either connector repair or replacement hardware
    (see the [incident page](../problems/incident-analysis-2026-08-21.md#collateral-damage-and-the-current-hardware-state)).
 2. **Parameter restore** — load `fc_baseline_463_20260821.parm`, then
-   `fc_safe_overrides.parm` (fence off, the mandated `EK3_SRC1_POSZ=2` with
-   `RNGFND1_GNDCLEAR=2`, arming checks on).
+   `fc_safe_overrides.parm` (fence off, `EK3_SRC1_POSZ=2` with
+   `RNGFND1_GNDCLEAR=2`, arming checks on). The rangefinder height source
+   `EK3_SRC1_POSZ=2` is what the
+   aircraft currently flies, under the documented safety protocol; the task
+   prescribes no EKF source parameter. Putting the EKF height source back on
+   the barometer (`EK3_SRC1_POSZ=1`) remains an available option. Either way
+   the LiDAR stays the sensor the assignment asks the project to use for
+   altitude and position hold.
 3. **Mounts** — 3D-printed mounts for MTF-01P, camera and servo (to be designed).
 4. **Manual shakedown** — AltHold and PosHold by a pilot before any milestone.
 

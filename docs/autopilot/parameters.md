@@ -8,9 +8,11 @@ allowed to change it**.
 
 Every flight-controller parameter is set in **exactly one place — Mission Planner —
 against the published, versioned flight parameter set**. The companion computer
-**never writes a parameter**. It reads them back and **verifies** them (see
-`preflight.py`), and refuses to fly when what it finds disagrees with what the mission
-expects; it does not "fix" anything on the FC.
+**never writes a parameter**. Before every mission it reads a curated subset of the
+flight parameters back and **verifies** them read-only against the published set, and it
+refuses to fly when a flight-critical value differs (abort reason
+`FC_PARAMS_MISMATCH`); it does not "fix" anything on the FC. Until that check moved into
+the mission start-up, only the manual `preflight.py` tool compared the two.
 
 Two reasons drove this decision:
 
@@ -58,6 +60,12 @@ The SITL parameter mirror (`params/sitl_flight_v2.parm`) is **generated from thi
 the simulator tests the same behavioural parameters we fly — see
 [Testing the Companion Code in SITL](../software/sitl-testing.md).
 
+Publishing a new version is two commands in the Pi-Code repository: `python dumpparams.py`
+captures the aircraft into `params/flight_v<next>.param`, then
+`python params/generate_sitl_flight_params.py` regenerates the SITL mirror from it. The
+mission parameter check and `preflight.py` both resolve the highest published version
+automatically, so they follow the new file without an edit.
+
 !!! info "A v3 will supersede this file"
     `v2` does not yet contain the flight-mode switch mapping (`FLTMODE1`–`FLTMODE6` are
     all `0` in this file — the mapping is done on the transmitter for now). **`v3` adds
@@ -87,7 +95,7 @@ Full rationale on the [Position & Altitude Hold](position-altitude-hold.md) page
 | `EK3_ENABLE` | `1` | EKF3 enabled |
 | `EK3_SRC1_POSXY` | `0` | No absolute horizontal position exists indoors (None) |
 | `EK3_SRC1_VELXY` | `5` | Horizontal velocity from optical flow (MTF-01P) |
-| `EK3_SRC1_POSZ` | `2` | **Height from the rangefinder — mandated** (not the barometer) |
+| `EK3_SRC1_POSZ` | `2` | **Height from the rangefinder** |
 | `EK3_SRC1_VELZ` | `0` | No vertical-velocity sensor (None) |
 | `EK3_SRC1_YAW` | `1` | Heading from the compass |
 

@@ -92,9 +92,13 @@ not this sensor — see the [incident analysis](../problems/incident-analysis-20
 
 !!! note "The sensor being healthy is only half the job"
     These steps make the FC *receive* flow and range data. Making the EKF *use*
-    them (`EK3_SRC1_VELXY = 5` and the assignment-mandated `EK3_SRC1_POSZ = 2` — the
-    rangefinder as the EKF height source, **not** the barometer) is a separate step
-    with its own failure modes: it is exactly this configuration that crashed us on
+    them (`EK3_SRC1_VELXY = 5` plus `EK3_SRC1_POSZ = 2`, the rangefinder as the EKF
+    height source rather than the barometer) is a separate step with its own failure
+    modes. The `POSZ = 2` half is the configuration we currently fly,
+    not something the assignment prescribes: the task asks us to *use* the LiDAR for
+    altitude and position hold, which it does under either source setting, and moving
+    the EKF height source back to the barometer (`EK3_SRC1_POSZ = 1`) remains an
+    available option. It is exactly this configuration that crashed us on
     2026-08-21, so it is flown only under the safety protocol covered in
     [Position & Altitude Hold](../autopilot/position-altitude-hold.md) and on the
     [LiDAR page](lidar.md).

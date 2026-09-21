@@ -33,7 +33,7 @@ EKF3 lets each axis of the estimate take its measurement from a different sensor
 |---|---|---|---|
 | `EK3_SRC1_POSXY` | 3 (GPS) | **0 (None)** | no absolute horizontal position exists indoors |
 | `EK3_SRC1_VELXY` | 3 (GPS) | **5 (Optical Flow)** | MTF-01P flow supplies horizontal velocity |
-| `EK3_SRC1_POSZ` | 1 (Baro) | **2 (Range Finder)** — mandated | height comes from the LiDAR rangefinder, flown only under the safety protocol |
+| `EK3_SRC1_POSZ` | 1 (Baro) | **2 (Range Finder)** | height comes from the LiDAR rangefinder, flown only under the safety protocol |
 | `EK3_SRC1_VELZ` | 3 (GPS) | **0 (None)** | no sensor for vertical velocity |
 | `EK3_SRC1_YAW` | 1 (Compass) | **1 (Compass)** | heading reference |
 | `EK3_SRC_OPTIONS` | 0 | **0** | do not fuse all velocity sources at once |
@@ -46,11 +46,9 @@ which comes from the MTF-01P's rangefinder. With flow as the only horizontal sou
 EKF provides a **relative** position estimate (`EKF_POS_HORIZ_REL`), good enough for
 local-NED navigation but anchored to nothing absolute.
 
-**`EK3_SRC1_POSZ` is 2 (Range Finder)** The barometer is
-not permitted as the EKF height source; the rangefinder is the height source and the
-barometer stays only as an independent witness in the logs. This is the configuration
-that crashed us when flown without mitigations, so it is flown only under the safety
-protocol below.
+**`EK3_SRC1_POSZ` is 2 (Range Finder).** The rangefinder is the EKF height source and the
+barometer stays as an independent witness in the logs. Putting the barometer back in as
+the height source (`EK3_SRC1_POSZ = 1`) remains available.
 
 ## Why `EK3_SRC1_POSZ = 2` crashed the aircraft — and how we fly it now
 
@@ -71,30 +69,38 @@ One related lesson for anyone reproducing this: the barometer spikes **4–6.7 m
 every takeoff from propeller downwash. Baro height is trustworthy in flight, but never
 place a fence or a decision threshold inside that near-ground noise band.
 
-The assignment mandates the rangefinder as the EKF height source, so "switch back to the
-barometer" is not an available fix — the crash above is the documented failure mode of
-exactly the configuration we are required to fly. We therefore fly `EK3_SRC1_POSZ = 2`
-deliberately, under a safety protocol implemented in the Pi-Code companion:
+Moving the EKF height source back to the barometer is an option we have deliberately
+not taken. The rangefinder is the sensor the task is about (Task 4 asks for altitude
+and position hold *using* LiDAR and optical flow, and says nothing about which EKF
+source parameter carries the vertical position), and the 2026-08-25 SITL work showed
+the on-ground non-fusion was the `RNGFND1_MIN_CM` validity floor rather than the source
+choice itself. It stays on the table if the real aircraft disagrees. So we fly
+`EK3_SRC1_POSZ = 2` as our own decision, under a safety protocol implemented in the
+Pi-Code companion:
 
 - a ground-drift GO/NO-GO in `preflight.py` before every arming, plus a bench hand-lift
   test proving the EKF altitude follows a real lift;
 - `ARMING_CHECK = 41350` and the geofence off, no baro-referenced threshold near the
-  ground (these are set in Mission Planner and the companion **verifies** them read-only,
-  refusing to fly if it finds the fence re-enabled; see
-  [Flight Parameters](parameters.md));
+  ground (these are set in Mission Planner and the companion **verifies** them
+  read-only before every mission, refusing to fly with `FC_PARAMS_MISMATCH` when a
+  flight-critical parameter differs from the published set, a re-enabled fence
+  included; see [Flight Parameters](parameters.md));
 - a rangefinder-gated pilot takeover that refuses when the EKF altitude and the raw
   rangefinder disagree;
 - a continuous in-flight EKF-vs-rangefinder cross-check (`EKF_ALT_DIVERGED` → LAND);
 - `RNGFND1_GNDCLEAR = 2 cm` aligned with the true mounting height, so the reading the
   EKF expects when landed matches reality.
 
-Why the on-ground fusion never engaged is **still under investigation**. A colleague
-team flies the same sensor with `POSZ = 2` successfully, so the next step is a full
-parameter diff against their aircraft — hot suspects are `RNGFND1_GNDCLEAR` (ours was
-the 10 cm default while the sensor sits ~2 cm up), `RNGFND1_MIN_CM` and `EK3_ALT_M_NSE`;
-the alternative explanation is that their EKF drifts on the ground too but is simply
-never left standing for minutes. The barometer remains an independent witness in the
-logs — never the EKF source.
+Why the on-ground fusion never engaged has an answer in simulation: the 2026-08-25 SITL
+work traced it to the `RNGFND1_MIN_CM` validity floor rather than to the height source
+choice. Confirming that on the real aircraft is the open step. A colleague team flies
+the same sensor with `POSZ = 2` successfully, so a full parameter diff against their
+aircraft stays on the list; further suspects are `RNGFND1_GNDCLEAR` (ours was the 10 cm
+default while the sensor sits ~2 cm up) and `EK3_ALT_M_NSE`, and the alternative
+explanation is that their EKF drifts on the ground too but is simply never left standing
+for minutes. The barometer remains an independent witness in the logs, and returning it
+to the EKF as the height source stays an available option if the real aircraft
+disagrees with the simulation.
 
 ## The on-ground deadlock, and the pilot takeover
 

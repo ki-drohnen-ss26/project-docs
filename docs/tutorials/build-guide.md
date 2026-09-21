@@ -54,9 +54,16 @@ ESC setup, serial ports, flight modes, failsafes, logging, and the indoor-flying
 parameter block. The [Autopilot section](../autopilot/index.md) explains *why* these
 choices ([ArduPilot Setup](../autopilot/ardupilot-setup.md) collects the parameter
 work). The **current published flight set** is `params/flight_v2.param`, set it in
-Mission Planner and nowhere else; the companion only verifies it read-only (see
+Mission Planner and nowhere else; the companion writes no FC parameter, it reads a
+curated subset back before every mission and refuses to fly when a flight-critical
+value differs from the published set (abort reason `FC_PARAMS_MISMATCH`), so that check
+no longer depends on remembering to run `preflight.py` by hand (see
 [Flight Parameters](../autopilot/parameters.md) for the curated list and the ownership
-rule). The earlier crash-recovery files (`params/fc_baseline_463_20260821.parm` plus the
+rule). When the aircraft's own settings change, republish them: `python dumpparams.py`
+captures the aircraft into `params/flight_v<next>.param`, then
+`python params/generate_sitl_flight_params.py` regenerates the SITL mirror; the mission
+check and `preflight.py` both resolve the highest version automatically. The earlier
+crash-recovery files (`params/fc_baseline_463_20260821.parm` plus the
 `params/fc_safe_overrides.parm` overlay) remain in the repository as the reconstructed
 post-crash baseline.
 
@@ -80,13 +87,22 @@ the [Sensors section](../sensors/index.md), with deep dives on
 when you lift the drone by hand, and optical-flow data arrives with usable quality
 over textured, lit ground.
 
-!!! danger "The rangefinder is the mandated EKF height source — fly it under the protocol"
-    The assignment requires `EK3_SRC1_POSZ = 2` (rangefinder, not barometer). This is
-    the configuration that crashed us on 2026-08-21 when flown without mitigations, so it
+!!! danger "The rangefinder is the EKF height source, flown under the protocol"
+    `EK3_SRC1_POSZ = 2` (rangefinder, not barometer) is the configuration that currently flies. The assignment asks for altitude and position hold that
+    *use* the LiDAR and the optical flow; it names no ArduPilot EKF source parameter,
+    so this value is our own decision, not a rule imposed from outside. It is also the
+    configuration that crashed us on 2026-08-21 when flown without mitigations, so it
     is flown only under the safety protocol (ground-drift preflight, rangefinder-gated
-    takeover, in-flight EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 2`), and why
-    on-ground fusion never engaged is still under investigation — see the
-    [crash analysis](../problems/incident-analysis-2026-08-21.md).
+    takeover, in-flight EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 2`); see
+    the [crash analysis](../problems/incident-analysis-2026-08-21.md). Moving the EKF
+    height source back to the barometer (`EK3_SRC1_POSZ = 1`) is an option we have
+    deliberately not taken: the rangefinder is the sensor the task is about, and the
+    2026-08-25 SITL work showed the on-ground non-fusion was the `RNGFND1_MIN_CM`
+    validity floor rather than the source choice itself. It stays on the table if the
+    real aircraft disagrees. Either way the LiDAR keeps its other jobs: it scales the
+    optical flow into a horizontal velocity, it is the low-altitude terrain reference,
+    and it is the independent height witness behind the takeover gate and the
+    in-flight cross-check.
 
 ## Step 5 — Raspberry Pi OS and MAVLink routing
 
