@@ -102,7 +102,9 @@ out.
 This is how the EKF sources are documented on
 [Position & Altitude Hold](../autopilot/position-altitude-hold.md); the safe-overrides
 parameter file carries `EK3_SRC1_POSZ = 2` together with the protocol
-parameters (fence off, `ARMING_CHECK = 786390`, `RNGFND1_GNDCLEAR = 2`).
+parameters (fence off, `ARMING_CHECK = 786390`, `RNGFND1_GNDCLEAR = 5`, the
+parameter's own minimum accepted by Mission Planner: the true mounting height is ~2 cm,
+but a value of `2` is rejected).
 
 !!! info "Status"
     The rangefinder itself is configured, verified on the real aircraft and healthy in

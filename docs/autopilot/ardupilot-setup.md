@@ -93,7 +93,7 @@ under `params/`:
 | File | Content |
 |---|---|
 | `params/fc_baseline_463_20260821.parm` | Full real-FC baseline (1154 parameters, incl. accel calibration, ESC/servo setup, MTF-01P and Pi serial config). **Byte-faithful to the crash-day state — contains the crash configuration.** |
-| `params/fc_safe_overrides.parm` | The safety overlay from the crash analysis: fence off, `EK3_SRC1_POSZ = 2` (rangefinder) with `RNGFND1_GNDCLEAR = 2`, `ARMING_CHECK = 786390`, `BATT_LOW_VOLT = 12.8`. |
+| `params/fc_safe_overrides.parm` | The safety overlay from the crash analysis: fence off, `EK3_SRC1_POSZ = 2` (rangefinder) with `RNGFND1_GNDCLEAR = 5` (Mission Planner refuses anything below 5 for this parameter; true mounting height is still ~2 cm), `ARMING_CHECK = 786390`, `BATT_LOW_VOLT = 12.8`. |
 
 `EK3_SRC1_POSZ = 2` Task 4 asks that the LiDAR and the optical flow be *used* for position
 hold and altitude hold, and they are, under either height source: the rangefinder scales

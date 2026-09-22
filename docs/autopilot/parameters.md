@@ -107,7 +107,7 @@ Full rationale on the [Position & Altitude Hold](position-altitude-hold.md) page
 | `RNGFND1_ORIENT` | `25` | Facing straight down |
 | `RNGFND1_MIN_CM` | `1` | Minimum valid range (4.6.3 `_CM` name) |
 | `RNGFND1_MAX_CM` | `800` | Maximum valid range, 8 m (4.6.3 `_CM` name) |
-| `RNGFND1_GNDCLEAR` | `10` | Ground clearance when landed — **kept at 10, an open item** (see below) |
+| `RNGFND1_GNDCLEAR` | `5` | Ground clearance when landed. **Adopted at `5`, the firmware's own minimum** (see below) |
 | `FLOW_TYPE` | `5` | MAVLink optical flow |
 | `SERIAL5_PROTOCOL` | `1` | MAVLink1 on the MTF-01P port |
 | `SERIAL5_BAUD` | `115` | 115200 baud for the MTF-01P |
@@ -196,9 +196,14 @@ are decisions, not oversights — recorded here so nobody "corrects" them by acc
       includes the INS and RC checks) was **declined for now**. `41350` decodes to
       **Baro (2) + Compass (4) + Board voltage (128) + Battery (256) + System (8192) +
       RangeFinder (32768)** = 41350. The declined `786390` adds INS and RC groups on top.
-    - **`RNGFND1_GNDCLEAR` still `10`** — `2` was recommended (the sensor sits ~2 cm above
-      the ground). Left at `10` for now; this is an **open** item, and a candidate suspect
-      in the on-ground EKF-height investigation on the
+    - **`RNGFND1_GNDCLEAR` adopted at `5`.** `2` was the original recommendation (the
+      sensor sits ~2 cm above the ground). On 2026-09-21 the team tried setting the real
+      aircraft to `2` in Mission Planner and found the parameter refuses anything below
+      `5`: that is this ArduCopter build's own valid-range floor, not a re-measurement.
+      `5` is the closest value the firmware accepts, so that is what the aircraft now
+      runs, and the item is no longer open. The true mounting height is still about
+      2 cm, so the parameter now overstates ground clearance by roughly 3 cm; that gap
+      remains a candidate suspect in the on-ground EKF-height investigation on the
       [Position & Altitude Hold](position-altitude-hold.md) page.
     - **`RNGFND1_MIN_CM = 1` now under review** — a SITL 2×2 matrix (2026-08-25) showed the
       on-ground EKF-fusion blocker is this **validity floor**, not the height source: SITL's

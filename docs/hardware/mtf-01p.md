@@ -86,7 +86,8 @@ optional detail — it decides whether the sensor works at all:
   optical flow for altitude hold and position hold. This is the
   configuration that crashed us on 2026-08-21 when flown without mitigations, so we fly
   it only under the safety protocol (ground-drift preflight, rangefinder-gated takeover,
-  in-flight EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 2`). Moving the EKF
+  in-flight EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 5`, the parameter's
+  own minimum in Mission Planner rather than the true ~2 cm mount height). Moving the EKF
   height source back to the barometer (`EK3_SRC1_POSZ = 1`) is an option we have
   deliberately not taken: the rangefinder is the sensor the task is about, and the
   2026-08-25 SITL work showed the on-ground non-fusion was the `RNGFND1_MIN_CM` validity

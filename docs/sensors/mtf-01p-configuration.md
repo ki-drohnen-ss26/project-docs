@@ -63,7 +63,7 @@ set and the FC has booted with it.
 | `RNGFND1_MIN_CM` | `1` | Minimum range in **centimetres** — see the warning below |
 | `RNGFND1_MAX_CM` | `800` | Maximum range, 8 m |
 | `RNGFND1_ORIENT` | `25` | Facing down |
-| `RNGFND1_GNDCLEAR` | `2` | Ground clearance in **cm** = the sensor's real mounted height (~2 cm), not the 10 cm default: EKF3 treats it as the rangefinder reading to expect when landed, so it must match reality — a mitigation for the on-ground EKF divergence with `EK3_SRC1_POSZ = 2`. |
+| `RNGFND1_GNDCLEAR` | `5` | Ground clearance in **cm**. The MTF-01P's real mounted height is about 2 cm, but this ArduCopter build's Mission Planner refuses any `RNGFND1_GNDCLEAR` value below `5` (a `2` was tried on 2026-09-21 and rejected), so `5` is the closest value the firmware actually accepts. EKF3 treats this value as the rangefinder reading to expect when landed, so `5` slightly overstates the true mounting height by about 3 cm: the best available given the firmware floor, and still a large improvement over the 10 cm default. This is our mitigation for the on-ground EKF divergence with `EK3_SRC1_POSZ = 2`. |
 
 Reboot once more so the rangefinder backend re-reads its limits.
 

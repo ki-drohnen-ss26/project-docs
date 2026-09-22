@@ -158,6 +158,7 @@ nav:
       - problems/index.md
       - Crash & barometer recovery: problems/crash-2026-08-21.md
       - Full incident analysis: problems/incident-analysis-2026-08-21.md
+      - Loiter drifts in the hall: problems/hall-magnetics.md
   - Results:
       - results/index.md
       - Live Demo: results/demo.md

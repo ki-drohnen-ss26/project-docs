@@ -63,9 +63,11 @@ camera source) are confined to one config preset and documented in
 the component relationships and mission flow are in
 [Pi-Code `docs/ARCHITECTURE.md`](https://github.com/ki-drohnen-ss26/Pi-Code/blob/main/docs/ARCHITECTURE.md).
 
-!!! info "Status (2026-08-22)"
+!!! info "Status (2026-09-21)"
     The SITL pipeline and the companion code are fully working, including the GPS-denied
     indoor path on ArduCopter 4.6.3 SITL. On the real aircraft the staged milestones 1–5
     have **not yet been flown** — the drone is grounded pending the barometer/I2C repair
-    from the [2026-08-21 incident](../problems/incident-analysis-2026-08-21.md), and the detector's
-    `.rpk` export is still pending (see [AI Software](ai-software.md)).
+    from the [2026-08-21 incident](../problems/incident-analysis-2026-08-21.md). The pad detector
+    has since been re-exported to the IMX500's `.rpk` format, and object detection now works
+    on the real aircraft (see [AI Software](ai-software.md)); the autonomous milestone bring-up
+    flights with it are still ahead.

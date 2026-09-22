@@ -6,12 +6,12 @@ the moment you need it. Each step states its **goal**, the **page(s)** that expl
 and a **"done when"** criterion so you know when to move on.
 
 !!! info "How far our own project got"
-    Steps 1–5, 7 and 8 are **completed and verified** by our team (the full mission
-    runs end-to-end in SITL; FC, sensor and companion link are bench-proven). Three
-    steps are honestly marked **open**: the on-sensor `.rpk` model export (step 6, a
-    teammate is on it),
-    the 3D-printed frame mounts (step 9), and the real flight tests (step 10) —
-    the aircraft is currently not flightworthy after the
+    Steps 1–8 are **completed and verified** by our team (the full mission
+    runs end-to-end in SITL; FC, sensor and companion link are bench-proven), and this
+    now includes step 6: the on-sensor `.rpk` model export has landed and the pad
+    detector produces real detections on the aircraft. Two steps are honestly marked
+    **open**: the 3D-printed frame mounts (step 9) and the real flight tests (step 10).
+    The aircraft is currently not flightworthy after the
     [2026-08-21 incident](../problems/incident-analysis-2026-08-21.md). Everything below is
     written so *you* can complete all ten.
 
@@ -93,8 +93,13 @@ over textured, lit ground.
     so this value is our own decision, not a rule imposed from outside. It is also the
     configuration that crashed us on 2026-08-21 when flown without mitigations, so it
     is flown only under the safety protocol (ground-drift preflight, rangefinder-gated
-    takeover, in-flight EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 2`); see
-    the [crash analysis](../problems/incident-analysis-2026-08-21.md). Moving the EKF
+    takeover, in-flight EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 5`); see
+    the [crash analysis](../problems/incident-analysis-2026-08-21.md). On 2026-09-21 we
+    tried to set `RNGFND1_GNDCLEAR` to the MTF-01P's true mounting height of about 2 cm
+    and found Mission Planner refuses anything below 5: that is this ArduPilot build's
+    own minimum for the parameter, not a re-measurement. `5` is therefore the value we
+    adopted, the closest the firmware accepts; it overstates the true ~2 cm mounting by
+    about 3 cm. Moving the EKF
     height source back to the barometer (`EK3_SRC1_POSZ = 1`) is an option we have
     deliberately not taken: the rangefinder is the sensor the task is about, and the
     2026-08-25 SITL work showed the on-ground non-fusion was the `RNGFND1_MIN_CM`
@@ -131,10 +136,13 @@ the model pipeline ([AI Software](../software/ai-software.md)): the IMX500 loads
 **Done when:** `rpicam-hello --list-cameras` lists the IMX500 and your pad-detector
 `.rpk` produces detections in the live stream.
 
-!!! note "Status in our project: open"
-    Our trained pad detector currently exists only as `pad_320_int8.tflite`; the
-    `.rpk` re-export is pending (a teammate is on it). Until it lands, the mission
-    code runs against the simulated detector.
+!!! note "Status in our project: done"
+    The `.rpk` re-export has landed: our trained pad detector now runs on the
+    IMX500 itself, and the RealCamera pipeline produces real detections on the
+    actual aircraft. What is still ahead is the companion's own autonomous milestone
+    bring-up flights in GUIDED mode that fly the full search, detect and drop
+    mission with this detector, as opposed to the manually flown AltHold/Loiter and
+    standalone detector testing done so far.
 
 ## Step 7 — Companion code: SITL first, then milestones
 

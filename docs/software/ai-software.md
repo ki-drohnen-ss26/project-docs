@@ -85,14 +85,14 @@ inference off the Pi, which is why the *only* deployable model format for us is 
 
 ## Detector status
 
-!!! info "Status: `.rpk` export pending"
-    A pad detector has been trained and exists as **`pad_320_int8.tflite`** — which,
-    per the above, the IMX500 cannot load. The re-export through
-    `yolo export format=imx` → `imx500-package` is **pending** (a teammate is on it).
-    Until the `.rpk` is on the Pi, the companion flies with `camera_source = "timed"`
-    (a camera-less test mode that drops after a fixed time) rather than pretending to
-    detect; the mission logic itself is already validated against simulated detections
-    in SITL.
+!!! success "Status: `.rpk` export landed, detection works (2026-09-21)"
+    A pad detector was trained as **`pad_320_int8.tflite`**, which, per the above, the
+    IMX500 cannot load directly. The re-export through `yolo export format=imx` →
+    `imx500-package` has now landed, and **object detection works on the real
+    aircraft** with `camera_source = "real"`. Still ahead: the companion's own
+    autonomous `--milestone` bring-up flights that fly the search, detect and drop
+    sequence under the real camera have not been flown yet; the mission logic itself
+    is already validated end to end against simulated detections in SITL.
 
 ## Where to go next
 

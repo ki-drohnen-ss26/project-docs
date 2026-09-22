@@ -85,10 +85,20 @@ Understanding the limits is part of the design:
   first metre by hand (`--takeover`); see [Optical flow](optical-flow.md).
 - **Needs floor texture and light.** A uniform, dark or glossy floor drops the flow
   quality and with it the velocity estimate.
+- **Depends on a compass yaw reference it does not control.** Flow only ever measures a
+  body-frame velocity; turning it into a usable position needs the current yaw estimate,
+  and that comes from the compass, not from flow. In this hall the compass has proven
+  unreliable enough to misdirect the whole position controller, an indoor magnetic
+  field problem, not a flow problem. See
+  [Loiter drifts in the hall](../problems/hall-magnetics.md).
 
 !!! info "Status"
     The MTF-01P was configured, wired and verified on the real aircraft (healthy
     values measured and logged), and the equivalent SITL setup flew complete indoor
-    missions on ArduCopter 4.6.3. The aircraft itself is currently grounded for
-    repair of an unrelated barometer/I2C fault after the 2026-08-21 crash, and the
-    sensor's frame mount is still to be designed.
+    missions on ArduCopter 4.6.3. The barometer/I2C fault that followed the
+    2026-08-21 crash was resolved on 2026-08-24 (bent GPS-connector pins, not a dead
+    sensor; see [Crash & barometer recovery](../problems/crash-2026-08-21.md)), and
+    both AltHold and Loiter now fly on the real aircraft, Loiter well in the lab and
+    still imperfect in the hall (see
+    [Loiter drifts in the hall](../problems/hall-magnetics.md)). The sensor's frame
+    mount is still to be designed.

@@ -11,7 +11,8 @@ autonomous mission logic today, **bench demos** of the real subsystems, and a
     was only unreachable behind a hung I2C bus — the bent GPS-connector pins were
     straightened and stock 4.6.3 detects it again (the full story:
     [crash & barometer recovery](../problems/crash-2026-08-21.md)). Demos (a) and (b)
-    below can be shown today (b3 once the `.rpk` model export lands); demo (c) is
+    below, including b3, can be shown today: the pad detector's `.rpk` export has
+    landed and object detection now works on the real camera. Demo (c) is
     unblocked and follows the parameter reload, compass recalibration and
     milestones 1–5.
 
@@ -58,8 +59,9 @@ call the DROP state uses in flight. *(Available today.)*
 
 **b3 — AI-camera pad detection.** The Raspberry Pi AI Camera (IMX500) running the
 pad detector *on the sensor* and printing detection offsets (`dx/dy`) live.
-*(Pending: the detector exists as `pad_320_int8.tflite`; the IMX500 requires a
-Sony `.rpk` package, and that re-export is in progress with a teammate.)*
+*(Available today: the detector has been re-exported to Sony's packaged `.rpk`
+format and object detection now works on the real camera, running on the
+IMX500's own NPU.)*
 
 ## (c) Flight demo — contingent on the hardware repair
 
@@ -85,7 +87,7 @@ Prerequisites, in order:
    (see the [incident page](../problems/incident-analysis-2026-08-21.md#collateral-damage-and-the-current-hardware-state)).
 2. **Parameter restore** — load `fc_baseline_463_20260821.parm`, then
    `fc_safe_overrides.parm` (fence off, `EK3_SRC1_POSZ=2` with
-   `RNGFND1_GNDCLEAR=2`, arming checks on). The rangefinder height source
+   `RNGFND1_GNDCLEAR=5`, arming checks on). The rangefinder height source
    `EK3_SRC1_POSZ=2` is what the
    aircraft currently flies, under the documented safety protocol; the task
    prescribes no EKF source parameter. Putting the EKF height source back on

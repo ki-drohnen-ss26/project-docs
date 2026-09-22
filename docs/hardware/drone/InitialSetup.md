@@ -525,8 +525,9 @@ To make sure the drone starts safely, we can use the following steps:
   rangefinder, not the EKF altitude, and refuses when the two disagree.
 - **Continuous in-flight EKF-vs-rangefinder cross-check** (`EKF_ALT_DIVERGED` →
   LAND).
-- **`RNGFND1_GNDCLEAR = 2`** aligned with the true mounting height (see the
-  rangefinder block above).
+- **`RNGFND1_GNDCLEAR = 5`**: the parameter's own minimum settable value in Mission
+  Planner. The value `2`, matching the true ~2 cm mounting height, was tried and
+  refused (see the rangefinder block above).
 
 To allow for position hold and autonomous flight we will also need a optical flow sensor and rangefinder. The rangefinder can tell the drone its correct altitude and the optical flow sensor can track the movement of the ground using a small camera.
 
@@ -542,7 +543,7 @@ Not all parameters are shown when some parameters are not set. The rangefinder p
 - **`RNGFND1_MAX_CM` = 800:** This parameter sets the range finder’s maximum range, **in centimetres** on ArduCopter 4.6.
 - **`RNGFND1_MIN_CM` = 1:** sets the minimum range in centimetres. **Not the 20 cm default:** the MTF-01P sits only a few cm above the floor; with a higher minimum the driver reports "out of range low" on the ground, the EKF gets no terrain height, optical flow cannot be scaled and arming fails with *"Need Position Estimate"*.
 - **`RNGFND1_ORIENT` = 25**: sets the orientation of the rangefinder, in our case we want it to be downwards.
-- **`RNGFND1_GNDCLEAR` = 2:** ground clearance in **centimetres**, set to the sensor's real mounted height (~2 cm above the floor) instead of the 10 cm default. EKF3 treats `RNGFND1_GNDCLEAR` as the rangefinder reading it should expect when the aircraft is landed, so an over-large value biases the height the filter sees on the ground, aligning it with the true mounting height is one of the mitigations we are testing for the on-ground divergence (see the danger box below).
+- **`RNGFND1_GNDCLEAR` = 5:** ground clearance in **centimetres**. The sensor's real mounted height is only about 2 cm above the floor, and `2` was the value we originally tried in Mission Planner, but the firmware refused it. On this ArduCopter build, `5` is the parameter's own minimum settable value, not a re-measurement, so we adopted `5` instead of the 10 cm default as the closest achievable approximation, even though it now overstates the true mounting height by about 3 cm. EKF3 treats `RNGFND1_GNDCLEAR` as the rangefinder reading it should expect when the aircraft is landed, so an over-large value biases the height the filter sees on the ground. Getting this value as close as the firmware allows to the true mounting height is one of the mitigations we are testing for the on-ground divergence (see the danger box below).
 
 !!! warning "`RNGFND1_MIN`/`RNGFND1_MAX` (in metres) are the **4.7** names"
     On our pinned 4.6.3 they do not exist, and ArduPilot silently ignores unknown

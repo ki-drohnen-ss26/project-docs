@@ -50,6 +50,18 @@ local-NED navigation but anchored to nothing absolute.
 barometer stays as an independent witness in the logs. Putting the barometer back in as
 the height source (`EK3_SRC1_POSZ = 1`) remains available.
 
+**`EK3_SRC1_YAW` is 1 (Compass), and that turned out to be its own failure mode.** Loiter
+and PosHold convert the optical flow's body-frame velocity into the earth frame using
+this yaw estimate, so a wrong yaw does not just point the nose the wrong way, it makes
+the position controller correct in the wrong direction. The hall's magnetic field is
+distorted makes the EKF reset yaw by 30 to 80 degrees at a
+time, and we **believe** that this is the actual cause of the Loiter drift seen in the hall, not a flow or
+rangefinder problem. **Both AltHold and Loiter now fly on the real aircraft**, Loiter
+good in the lab and still imperfect but flyable in the hall with a "minimise ground
+dwell before climbing" procedure. See
+[Loiter drifts in the hall](../problems/hall-magnetics.md) for the full mechanism, the
+mitigation, and the log evidence from two separate sessions.
+
 ## Why `EK3_SRC1_POSZ = 2` crashed the aircraft — and how we fly it now
 
 Our aircraft flew with the rangefinder as the **only** EKF height source. On the ground
@@ -88,15 +100,22 @@ Pi-Code companion:
 - a rangefinder-gated pilot takeover that refuses when the EKF altitude and the raw
   rangefinder disagree;
 - a continuous in-flight EKF-vs-rangefinder cross-check (`EKF_ALT_DIVERGED` → LAND);
-- `RNGFND1_GNDCLEAR = 2 cm` aligned with the true mounting height, so the reading the
-  EKF expects when landed matches reality.
+- `RNGFND1_GNDCLEAR = 5 cm`, the closest match to the sensor's true ~2 cm mounting
+  height that this firmware build allows (Mission Planner refused the true value when
+  we tried it on 2026-09-21; 5 is the parameter's own minimum, not a re-measurement).
+  The reading the EKF expects when landed now overstates the real height by about 3 cm,
+  the best available given that floor.
 
 Why the on-ground fusion never engaged has an answer in simulation: the 2026-08-25 SITL
 work traced it to the `RNGFND1_MIN_CM` validity floor rather than to the height source
 choice. Confirming that on the real aircraft is the open step. A colleague team flies
 the same sensor with `POSZ = 2` successfully, so a full parameter diff against their
-aircraft stays on the list; further suspects are `RNGFND1_GNDCLEAR` (ours was the 10 cm
-default while the sensor sits ~2 cm up) and `EK3_ALT_M_NSE`, and the alternative
+aircraft stays on the list; further suspects were `RNGFND1_GNDCLEAR` (left at the 10 cm
+default while the sensor sits ~2 cm up) and `EK3_ALT_M_NSE`. On 2026-09-21 we tried
+closing that GNDCLEAR gap by setting it to the true ~2 cm mounting height and found
+Mission Planner refuses anything below 5, so `RNGFND1_GNDCLEAR = 5` is now the adopted
+value (the firmware's own floor, not a re-measurement); whether that change is enough to
+fix the on-ground fusion is still to be confirmed. The alternative
 explanation is that their EKF drifts on the ground too but is simply never left standing
 for minutes. The barometer remains an independent witness in the logs, and returning it
 to the EKF as the height source stays an available option if the real aircraft
