@@ -69,8 +69,18 @@ Rules we now follow without exception:
    version it was captured from.
 3. **Unknown names are silently ignored.** Loading a file with 4.7 names onto 4.6.3
    produces *no error* — the parameter simply keeps its old value. A setup can "load
-   fine" and leave the rangefinder unusable. Always read values back after writing;
-   the companion repo's `setparam.py` does exactly that (set + read-back verification).
+   fine" and leave the rangefinder unusable. Always read values back after writing.
+4. **Parameters have one owner: Mission Planner.** As of the 2026-08-24 team decision the
+   companion computer **no longer writes any FC parameter**. It now verifies a curated
+   subset read-only before every mission and refuses to fly when a flight-critical
+   parameter differs from the published, versioned set (abort reason
+   `FC_PARAMS_MISMATCH`); previously only the manual `preflight.py` tool ran that
+   comparison, and it still does on demand. This removes the "surprise overwrite"
+   failure mode from the crash chain. Publishing a new set is two commands in Pi-Code:
+   `python dumpparams.py` captures the aircraft into `params/flight_v<next>.param`, then
+   `python params/generate_sitl_flight_params.py` regenerates the SITL mirror. Both the
+   mission check and `preflight.py` resolve the highest version automatically. The full
+   rule and the parameter set live on the [Flight Parameters](parameters.md) page.
 
 ### Our recovered baseline
 
@@ -83,7 +93,13 @@ under `params/`:
 | File | Content |
 |---|---|
 | `params/fc_baseline_463_20260821.parm` | Full real-FC baseline (1154 parameters, incl. accel calibration, ESC/servo setup, MTF-01P and Pi serial config). **Byte-faithful to the crash-day state — contains the crash configuration.** |
-| `params/fc_safe_overrides.parm` | The corrections from the crash analysis: fence off, `EK3_SRC1_POSZ = 1` (baro, not rangefinder), `ARMING_CHECK = 786390`, `BATT_LOW_VOLT = 12.8`. |
+| `params/fc_safe_overrides.parm` | The safety overlay from the crash analysis: fence off, `EK3_SRC1_POSZ = 2` (rangefinder) with `RNGFND1_GNDCLEAR = 5` (Mission Planner refuses anything below 5 for this parameter; true mounting height is still ~2 cm), `ARMING_CHECK = 786390`, `BATT_LOW_VOLT = 12.8`. |
+
+`EK3_SRC1_POSZ = 2` Task 4 asks that the LiDAR and the optical flow be *used* for position
+hold and altitude hold, and they are, under either height source: the rangefinder scales
+the flow into a horizontal velocity, it is the low-altitude terrain reference, and it is
+the independent height witness behind the companion's takeover gate and in-flight
+cross-check. 
 
 !!! danger "Load order is mandatory"
     The baseline alone restores the configuration **that crashed the aircraft**.

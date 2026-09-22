@@ -281,22 +281,24 @@ It is also possible to add simulated peripherals, see https://ardupilot.org/dev/
 ## Simulating indoor flight (GPS-denied, optical flow + LiDAR)
 
 For the delivery scenario the drone flies indoors without GPS, using the MicoAir MTF-01P
-(optical flow + rangefinder). SITL can stand in for that sensor. The parameter overlays
-live in the `Pi-Code` repository under `params/` and are loaded in the MAVProxy console:
+(optical flow + rangefinder). SITL can stand in for that sensor. The one parameter file
+for this is the generated flight-set mirror `Pi-Code/params/sitl_flight_v2.parm` —
+simulated flow + rangefinder backends, GPS off, and the flight set's behavioural
+parameters, all in one file. Load it **twice, with a reboot after each pass**, in the
+MAVProxy console:
 
 ```
-param load .../Pi-Code/params/sitl_flow_phaseA.parm    # enable simulated flow + rangefinder
+param load .../Pi-Code/params/sitl_flight_v2.parm
 reboot
-param load .../Pi-Code/params/sitl_flow_phaseB.parm    # configure them, point the EKF at flow
-reboot
-param load .../Pi-Code/params/sitl_gps_off.parm        # GPS truly off (Phase 3)
+param load .../Pi-Code/params/sitl_flight_v2.parm
 reboot
 ```
 
-The split into phases is necessary because the `RNGFND1_*` sub-parameters only come into
-existence after `RNGFND1_TYPE` is set **and** the autopilot has rebooted. The second
-reboot is likewise required, because the analog rangefinder backend only reads
-`RNGFND1_PIN` on the next boot.
+The double load is necessary because the `RNGFND1_*` sub-parameters only come into
+existence after `RNGFND1_TYPE` is set **and** the autopilot has rebooted. On the first
+pass they are unknown and silently discarded, the second pass fills them in. The full
+procedure, expected verification values and the test ladder are on
+[Testing the Companion Code in SITL](sitl-testing.md).
 
 ### Start SITL at the location of the real flight
 
@@ -350,7 +352,7 @@ altitude, so the same vehicle climbs differently at 112 m (Frankfurt) than at 58
     reboot
     ```
 
-    It is included in `Pi-Code/params/sitl_flow_phaseA.parm`, so loading the overlays
+    It is included in `Pi-Code/params/sitl_flight_v2.parm`, so loading the mirror
     covers it. **How to check:** in QGroundControl's MAVLink Inspector, `DISTANCE_SENSOR`
     must follow the actual altitude. In a dataflash log, the `RFND.Dist` values must
     track `CTUN.Alt`. A rangefinder that reads 0.00 m at every altitude is this bug.

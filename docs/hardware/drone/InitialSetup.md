@@ -6,7 +6,7 @@ This readme contains the setup of a drone to be used with ardupilot and ultimate
     Everything below was written for and verified against **ArduCopter 4.6.3**. Parameter
     names move between releases (e.g. `RNGFND1_MIN_CM`/`RNGFND1_MAX_CM` in 4.6 became
     `RNGFND1_MIN`/`RNGFND1_MAX` in 4.7, `RTL_ALT` became `RTL_ALT_M`), and ArduPilot
-    **silently ignores parameter names it does not know** — a setup that "loaded fine"
+    **silently ignores parameter names it does not know**. A setup that "loaded fine"
     can leave a sensor unusable with no error shown. Do not install "latest"; install
     4.6.3 and check the version banner in Mission Planner before changing anything.
 
@@ -31,14 +31,14 @@ The wiring can be seen here:
 
 ## Installaltion of Ardupilot
 ### Download correct firmware
-For our installation, we first need our firmware to flash the flight controller, in this case we are using the Flywoo Goku GN745 flight controller, that is using a STM32F745 controller. For the default version, we can download our firmware from https://firmware.ardupilot.org/, where we can find firmware for a multitude of different drone types. We are using the copter firmware **pinned to the stable release 4.6.3** (see the warning at the top — do *not* take "latest"): https://firmware.ardupilot.org/Copter/stable-4.6.3/FlywooF745/, where we want to download the file ending with `bl.hex` (it includes the bootloader).
+For our installation, we first need our firmware to flash the flight controller, in this case we are using the Flywoo Goku GN745 flight controller, that is using a STM32F745 controller. For the default version, we can download our firmware from https://firmware.ardupilot.org/, where we can find firmware for a multitude of different drone types. We are using the copter firmware **pinned to the stable release 4.6.3** (see the warning at the top, do *not* take "latest"): https://firmware.ardupilot.org/Copter/stable-4.6.3/FlywooF745/, where we want to download the file ending with `bl.hex` (it includes the bootloader).
 
 This approach works generally to be able to just fly a drone, but as our goal is to create an autopilot using a lidar and optical flow combination, as well as an onboard computer, we need a custom version of ardupilot, which we can create under 
 https://custom.ardupilot.org/. On the upper right we can see the option to create a new build:
 
 ![customBuild_1.png](../../Images/InitialSetup/customBuild_1.png)
 
-This leads to a page where we can choose our drone type, the version we want to use (**choose the 4.6.3 stable tag**, matching the pinned project version — not "latest") and the flight controller we are using
+This leads to a page where we can choose our drone type, the version we want to use (**choose the 4.6.3 stable tag**, matching the pinned project version, not "latest") and the flight controller we are using
 
 ![customBuild_addNewBuild.png](../../Images/InitialSetup/customBuild_addNewBuild.png)
 
@@ -253,7 +253,7 @@ Double check that the correct motor spins and that they spin in the right direct
 
 Now there are some more parameters we will have to change for our initial motor setup that define the PWM output range that is sent to the ESC and ensures that the entire range of throttle values used in flight is in linear range of the propulsion system.
 
-- **MOT_PWM_TYPE**: This parameter is used to select the output PWM type. For DShot600, which we are using, the value should be 6.
+- **MOT_PWM_TYPE**: This parameter is used to select the output PWM type. For DShot300, which we are using, the value should be 5. We ran into problems using DShot of higher rates, like DShot600, as there seems to be too much data for our flight controller to handle. If there are problems regarding ESC tracking, try a lower DShot protocol.
 - **MOT_PWM_MAX**: Sets the maximum PWM output in microseconds, and depends on the used ESC.
 - **MOT_PWM_MIN**: Sets the minimum PWM output in microseconds, and depends on the used ESC.
 - **MOT_SPIN_ARM**: This defines the point at which motors start to spin with values between 0 and 1. Recommended are values betwee 0.05 to 0.1. Important, when armed we want the propellers to spin stably, but the drone should not be about to leave the ground!
@@ -335,6 +335,22 @@ Given the onboard computer is already installed, it is possible to store the log
 
 On our Raspberry Pi it is advised to install MAVProxy, ArduPilots official command-line ground station tool and running it as background service.  The flight controllers .bin or .tlog files will be stored directly on the Pis micro SD card.
 
+To download a log from the flight controller, we can once again use the Mission Planner.
+![MissionPlanner_Logs.png](../../Images/Vibrations_HarmonicNotch/MissionPlanner_Logs.png)
+
+The lower left window shows multiple tabs, which we can scroll through using the two arrows on the upper right. The tab to the very right called DataFlash Logs contains everything regarding logs. To download logs that are currently inside the flash memory on the chip, we can click on "Download DataFlash Log Via Mavlink", that opnes the following window:
+
+![MissionPlanner_Logs.png](../../Images/Vibrations_HarmonicNotch/MissionPlanner_LogDownload.png)
+
+Here we see the logs currently on the flight controller, which we can download. Either we choose certain logs or just download everything. It is advised to regularly delete logs, so the flash memory is not full, which can stop the drone from arming, depending on the arming checks.
+
+To look at our logs, we can use the "Review a Log" option in the "DataFlash Logs" tab. 
+
+![MissionPlanner_Logs.png](../../Images/Vibrations_HarmonicNotch/MissionPlanner_Logs_Graph.png)
+
+This opens up a new window, where we can see a graph that allows us to graph the data we can choose using the options on the right.
+
+
 #### Setup bi-directional DShot
 For our logging to work as intended, we still need to make some changes to our DShot settings, namely we want to set Bi-directional DShot, where the ESC will send back the exact revolutions per minute(RPM) of the motor, instead of just getting instructions from our flight controller. 
 
@@ -349,14 +365,130 @@ Lastly we also set the `SERVO_DSHOT_ESC` parameters, that specifies the ESC type
 Some newer ESC types also support Extended DShot Telemetry(EDT), where more data than just the RPM data is returned through bi-directional DShot, which we can enable through the value 3 for Kiss/AM32/BL32 controllers and through using 4 for Bluejay controllers.
 
 ### Setup initial Harmonic notches
-To setup our initial harmoic notch settings, we set `INS_HNTCH_ENABLE` to 1, to enable harmonic notch filters. Writing the parameters will enable more parameters to be used. 
+First off we want to thank Nur Uddin Syeed for setting up the notch filter on our drone. The following information is based upon [AI-Drones](https://github.com/christianbaun/aidrones), the book he co-authored, as well as the work of Chris Rosser, that has a full [Tuning Guide](https://www.youtube.com/playlist?list=PLFPBjpbd5xKSGFJfuQJBPWOm-sGv0VxD1) on youtube, and the official documentation of how to [measure vibration](https://ardupilot.org/copter/docs/common-measuring-vibration.html) and how to [configure the notch filter](https://ardupilot.org/copter/docs/common-imu-notch-filtering.html).
 
-First we look at the parameter `INS_HNTCH_HMNCS`, that allows us set the harmonic frequencies to be filtered. This generally depends on the number of blades on the propeller and will be changed after evaluating the log data. 
-For a start we can either ues the base frequency and first harmonic, which would be a value of 3, or we can add some higher harmonics, namely the 4th and/or the fifth. For our five bladed propeller, the third harmonic normally does not add a lot of noise. Do note though, that too many harmonics might cause excessive CPU loading and can lead to performance issues. Three harmonics are usually considered safe.
+#### Vibrations
+The autopilot of our drone uses accelerometers, rangefinders and GPS or optical flow sensors to estimate the drones position. Excessive vibrations can affect the accelerometers and the position estimate can be thrown off, resulting in bad performance, especially in flight modes that need accurate poitioning, as Position Hold, Loiter or Guided mode.
 
-Next we set the parameter INS_HNTCH_MODE to 3, that sets the dynamic frequency tracking mode to ESC telemetry.
+We can directly see the vibrations inside the Ground station. Inside the Data tab, in the heads up display on the upper right, we can click on vibe,
 
-Then we set the parameter `INS_HNTCH_OPTIONS` to 6 to enable Multi-source, that attaches a harmonic notch to each detected noise frequency, in case of our ESC telemetry tracking mode it will attach notches to each of four motor RPM values and to update at the loop rate, that changes the notch center frequency at the scheduler loop rate.
+![MissionPlanner_Vibrations](../../Images/Vibrations_HarmonicNotch/MissionPlanner_Vibrations.png)
+
+which opens a little popup, that allows us to measure vibration in flight.
+
+![PopUp](../../Images/Vibrations_HarmonicNotch/MissionPlanner_Vibration_PopUp.png)
+
+In general, we want Vibration levels to be beneath $30m/s^2$, as levels above might already lead to a degraded performance of our drone. Levels above $60m/s^2$ almost always lead to problems in regards to position estimation, making it impossible to use modes like Loiter or Guided, which we need for our autonomous flight.
+
+As we might not necessarily have a connection to our Ground Control Station, we can also use the Log we already set up. We navigate to "Review a Log", just as described in the logging section, and open a Graph. On the right side we can choose what to graph, in our case we want to graph the vibrations, which are given as the parameters VibeX, VibeY and VibeZ, that show vibration in the corrseponding directions.
+
+![MissionPlanner_Logs_Graph2.png](../../Images/Vibrations_HarmonicNotch/MissionPlanner_Logs_Graph2.png)
+
+We can see, that in this graph the vibration level is well below $60m/s^2$, meaning there is no need to further dampen vibrations.
+When we look at the example provided by [Ardupilot](https://ardupilot.org/copter/_images/mp_measuring_vibration_bad_vibes.png) for high vibrations, that will result in bad drone performance:
+
+![MissionPlanner_Vibrations_Bad.png](../../Images/Vibrations_HarmonicNotch/MissionPlanner_Vibrations_Bad.png)
+
+The values of the graph are regularly far above $60m/s^2$. If you see a graph like this, you may need to look at more involved solutions, that can be seen in [Vibration Damping](https://ardupilot.org/copter/docs/common-vibration-damping.html)
+
+For bad Vibration issues we will also see multiple accounts of clipping, where physical vibrations push the flight controllers accelerometers past their measurement limits, as seen here:
+
+![MissionPlanner_Clipping.png](../../Images/Vibrations_HarmonicNotch/MissionPlanner_Clipping.png)
+
+Generally we want zero occurence of clipping events. If you see any clipping, try to reduce the vibrations.
+
+To reduce the most extreme mechanical vibrations, we can use some of the options ardupilot has documented under [Vibration Damping](https://ardupilot.org/copter/docs/common-vibration-damping.html), but we need software filtering to remove further noise.
+
+There are three filter possibilities provided by Ardupilot.
+
+- Lowpass filters on accelerometer and gyro signals, controlled using the parameters INS_ACCEL_FILTER and INS_GYRO_FILTER respectively.
+- Attitude and Altitude rate PID loop filtering for different inputs:
+  - Attitude of reference inputs, controlled by
+    - ATC_RAT_RLL_NTF
+    - ATC_RAT_PIT_NTF
+    - ATC_RAT_YAW_NTF
+  - Attitude of error inputs, controlled by
+    - ATC_RAT_RLL_NEF 
+    - ATC_RAT_PIT_NEF 
+    - ATC_RAT_YAW_NEF
+  - Altitude acceleration controlled by
+    - PSC_ACCZ_NTF (before 4.7) / PSC_D_ACC_NTF (after 4.7)
+    - PSC_ACCZ_NEF (before 4.7) / PSC_D_ACC_NEF (after 4.7)
+- Harmonic Notch Filters on gyro signals, that are controlled by
+  - INS_HNTCH_ENABLE
+  - INS_HNTC2_ENABLE (for a second set of Harmonic notches)
+
+#### Notch filter
+
+Here we will concentrate on the last point, the Harmonic Notch Filters. For our multicopter, most vibrations are generally caused by the motor's rotational frequency, which provides notches at a primary frequency, as well as its harmonics.
+
+Ardupilot allows for two dynamic notch filters, where the filter frequency is linked to the rotational frequency of the motors.
+
+The first step is to enable harmonic notch filters, which we can do through the parameter
+`INS_HNTCH_ENABLE = 1` for the first notch and `INS_HNTC2_ENABLE=1` for the second notch.
+
+Having two notches takes quite a lot of computing power and might not be possible depending on the flight controller. We will be using only one notch.
+
+There are 5 different modes using notches:
+1. `INS_HNTCH_MODE = 0`:\
+    This mode is using a static center frequency, this means there is no dynamic notch frequency control is fixed.
+2. `INS_HNTCH_MODE = 1`:\
+    This mode is based on the throttle position. The frequency at hover throttle can be determined using the logs and the variation of the throttle position is used to track the increase in noise frequency. An ardupilot guide can be found here: [Throttle Based Dynamic Notch Setup](https://ardupilot.org/copter/docs/common-throttle-based-notch.html)
+3. `INS_HNTCH_MODE = 2`:\
+    This mode is based in an external RPM sensor, that is used to determine the motor frequency, that is the primary vibration source, to determine the notch. 
+4. `INS_HNTCH_MODE = 3`:\
+    This mode uses the ESC telemetry to get the RPM information of the motor for the notch. This is the best mode for flight controllers that support bi-dircetional DShot, as it automatically adapts and is easy to set up, while not needing the computational requirements of the FFT(following mode)
+5. `INS_HNTCH_MODE = 4`:\
+    This mode uses the Fast Fourier Transformation (FFT) to determine the primary noise frequency for adjusting the notch. This is according to the [Ardupilot documentation](https://ardupilot.org/copter/docs/common-imu-notch-filtering.html) the best mode, but flight controllers should have 2MB of memory, which is not the case for the flight controller used here. A in-depth guide for setting this up can be found here: [In-Flight FFT-Based Harmonic Notch Setup](https://ardupilot.org/copter/docs/common-imu-fft.html)
+
+We will concentrate on `INS_HNTCH_MODE = 3`. 
+
+First we determine the notch filter center frequency. They are needed for both the static center frequency (Mode 0) and the throttle based method (Mode 1), but because we want to identify which harmonics of the center frequency we want to filter out, it is also helpful to know, what the center frequency is for the method using ESC telemetry. We can do this using the [Filter Review Tool](https://firmware.ardupilot.org/Tools/WebTools/FilterReview/) provided by Ardupilot.
+
+After providing a log file to the tool, we can see different graphs inside it. Our main focus is on the IMU spectrum:
+
+![IMU_Spectrum.png](../../Images/Vibrations_HarmonicNotch/IMU_Spectrum.png)
+
+We can see a quite significant bump, a noise peak, in amplitude around 213 Hz, this will be the center frequency. If we use either the static center frequency or the throttle position mode, we will need to set the two parameters `INS_HNTCH_FREQ` to the center frequency and `INS_HNTCH_BW`, that sets the bandwidth of the filter, to half the center frequency. In our case it would look like the following:
+
+```
+INS_HNTCH_FREQ = 213
+INS_HNTCH_BW = 213/2
+```
+
+As the mode using ESC telemetry to calculate the frequency dynamically based on the measured RPM, we do not need to set the center frequency, but we still need to specify the harmonics that are used by the notch, we can do this by looking at the IMU spectorgram:
+
+![IMU_Spectogram.png](../../Images/Vibrations_HarmonicNotch/IMU_Spectogram.png)
+
+We are interested in the red lines inside our graph, as these correlate to high amplitudes of the frequencies. The lowest red lines we see are caused by the rigid body movement of the drone. We are mainly interested in the red line at our center frequency, here around 213 Hz. This is the base frequency, and we want to look at the harmonics, multiples of the base frequency, that add significant noise as well. In our case we also see thicker red lines around 420 Hz and a little above 600 Hz. These are the second and third harmonic of our base frequency.
+
+To set the harmonics, we change the `INS_HNTCH_HMNCS` parameter. We can just click at the Bitmask button
+
+![MissionPlanner_HarmonicNotch.png](../../Images/Vibrations_HarmonicNotch/MissionPlanner_HarmonicNotch.png)
+
+and set the needed harmonics, in our case we use the value 7. Ardupilot allows for up to 16 Harmonics, but because of computational limitations, the number of harmonics should be kept as low as possible.
+
+Another parameter we need is `INS_HNTCH_OPTS` that controlls the configuration harmonic notches as multiple notches, that can give a wider spread of significant attenuation. The options are:
+
+0. Double overlapping notches, where two notch filters are stacked closely over the same frequency band, allowing for deeper attenuation across a wider bandwidth
+1. Multisource, where in ESC mode each motor will have a notch assigned at its respective RPM. In FFT mode the three largest noise sources are assigned a notch, and for throuttle mode each motor will have a notch assigned at its throttle input.
+2. Update filters at loop rate, meaning the notch center frequency is updated at the scheduler loop rate.
+3. This option enables the notches on every IMU instead of only using the primary IMU
+4. Triple overlapping notches, for similar reasons as double overlapping notches
+5. This option allows for using the given center frequency, in case the RPM source fails.
+
+For our use case we use  option 1 for multisource, so every Motor has a notch assigned, and option 2 for faster updating of the center frequency.
+
+The [Filter Review Tool](https://firmware.ardupilot.org/Tools/WebTools/FilterReview/) allows us to directly see the notches for our given specifications as well. Given our drone and setup, we get the following:
+
+![IMU_Spectogram_Notches.png](../../Images/Vibrations_HarmonicNotch/IMU_Spectogram_Notches.png)
+
+For each harmonic we see four lines. This is because of the multisource, as each Motor has its own notch based on its individual RPM. We also see, that they pretty much cover the red lines.
+After filtering, the specogram looks like this:
+
+![IMU_Spectogram_Filtered.png](../../Images/Vibrations_HarmonicNotch/IMU_Spectogram_Filtered.png)
+
+which is a large improvement regarding unwanted noise.
 
 ### Set up indoor flying
 Ardupilot is very reliant on the GPS, which is problematic if we are trying to fly our drone in an indoor setting, where we generally will not have a GPS connection.
@@ -376,15 +508,26 @@ The indoor-safe values are:
 | `FS_THR_ENABLE` | `3` | Radio (throttle) failsafe → **Land** where it is, instead of the default RTL |
 | `FS_EKF_ACTION` | `1` | EKF failsafe → **Land**. Do not disable this: a diverged position estimate flying on is the textbook indoor flyaway |
 | `FS_GCS_ENABLE` | `5` (Land) or `0` | Reaction when the ground station / companion falls silent. `0` is defensible in a hall, but then a dead companion has no automatic rescue |
-| `FS_DR_ENABLE` | `0` | Dead-reckoning failsafe needs GPS — meaningless indoors |
+| `FS_DR_ENABLE` | `0` | Dead-reckoning failsafe needs GPS, meaningless indoors |
 | `BATT_FS_LOW_ACT` | `1` | Low battery → **Land**, not RTL |
 
-!!! danger "Do not set the failsafes to 0 across the board"
-    An earlier version of this guide recommended disabling all of these. Combined with
-    `ARMING_CHECK = 0` (below) that removes every layer that could catch a bad
-    position estimate — our 2026-08-21 crash flight armed with an EKF vertical error
-    of over 1000 m that an enabled check would have refused. See the
-    [incident analysis](../../problems/incident-analysis-2026-08-21.md).
+To make sure the drone starts safely, we can use the following steps:
+
+- **Ground-drift GO/NO-GO before every arming** (`preflight.py`): the divergence is
+  quadratic, so seconds of EKF-altitude drift on the disarmed aircraft already print
+  a DO-NOT-FLY verdict.
+- **Bench hand-lift test** proving the EKF altitude actually follows a real lift
+  before any flight.
+- **`ARMING_CHECK = 786390`**: everything except the GPS lock that can never pass
+  indoors.
+- **Geofence off**: no barometric fence inside the takeoff downwash noise band.
+- **Rangefinder-gated pilot takeover** (`--takeover`): the handover trusts the raw
+  rangefinder, not the EKF altitude, and refuses when the two disagree.
+- **Continuous in-flight EKF-vs-rangefinder cross-check** (`EKF_ALT_DIVERGED` →
+  LAND).
+- **`RNGFND1_GNDCLEAR = 5`**: the parameter's own minimum settable value in Mission
+  Planner. The value `2`, matching the true ~2 cm mounting height, was tried and
+  refused (see the rangefinder block above).
 
 To allow for position hold and autonomous flight we will also need a optical flow sensor and rangefinder. The rangefinder can tell the drone its correct altitude and the optical flow sensor can track the movement of the ground using a small camera.
 
@@ -400,10 +543,11 @@ Not all parameters are shown when some parameters are not set. The rangefinder p
 - **`RNGFND1_MAX_CM` = 800:** This parameter sets the range finder’s maximum range, **in centimetres** on ArduCopter 4.6.
 - **`RNGFND1_MIN_CM` = 1:** sets the minimum range in centimetres. **Not the 20 cm default:** the MTF-01P sits only a few cm above the floor; with a higher minimum the driver reports "out of range low" on the ground, the EKF gets no terrain height, optical flow cannot be scaled and arming fails with *"Need Position Estimate"*.
 - **`RNGFND1_ORIENT` = 25**: sets the orientation of the rangefinder, in our case we want it to be downwards.
+- **`RNGFND1_GNDCLEAR` = 5:** ground clearance in **centimetres**. The sensor's real mounted height is only about 2 cm above the floor, and `2` was the value we originally tried in Mission Planner, but the firmware refused it. On this ArduCopter build, `5` is the parameter's own minimum settable value, not a re-measurement, so we adopted `5` instead of the 10 cm default as the closest achievable approximation, even though it now overstates the true mounting height by about 3 cm. EKF3 treats `RNGFND1_GNDCLEAR` as the rangefinder reading it should expect when the aircraft is landed, so an over-large value biases the height the filter sees on the ground. Getting this value as close as the firmware allows to the true mounting height is one of the mitigations we are testing for the on-ground divergence (see the danger box below).
 
 !!! warning "`RNGFND1_MIN`/`RNGFND1_MAX` (in metres) are the **4.7** names"
     On our pinned 4.6.3 they do not exist, and ArduPilot silently ignores unknown
-    parameter names — setting them "works" and changes nothing. Use the `_CM` names
+    parameter names. Setting them "works" and changes nothing. Use the `_CM` names
     above and verify by reading the values back.
 
 We will also have to make some changes to our Extended Kalman filter, that uses some sensors to estimate vehicle position, velocity and angular orientation, which we base on the article found at https://ardupilot.org/copter/docs/common-optical-flow-sensor-setup.html. The default parameters use the GPS for estimating the position and velocity, a barometer for the altitude and a compass for yaw orientation. We will specify both the default and new options. It is also possible to use multiple source configurations for our extended kalman filter, that can be switched in flight.
@@ -420,23 +564,11 @@ The default parameters that are set for the extended Kalman filter:
 The parameters we are using for indoor flight are:
 
 - `EK3_SRC1_POSXY` = 0 (None)
-- `EK3_SRC1_POSZ` = **1 (Baro)** — see the warning below; this project flew with `2` (Range Finder) and crashed
+- `EK3_SRC1_POSZ` = 2 (Range Finder) 
 - `EK3_SRC1_VELXY` = 5 (Optical Flow)
 - `EK3_SRC1_VELZ` = 0 (None)
 - `EK3_SRC1_YAW` = 1 (Compass)
 - `EK3_SRC_OPTIONS` = 0 (Disable FuseAllVelocities)
-
-!!! danger "`EK3_SRC1_POSZ = 2` (Range Finder) caused our crash — use 1 (Baro)"
-    An earlier version of this guide set the rangefinder as the EKF's *only* height
-    source. In practice EKF3 never fused a single height measurement from it: the
-    vertical estimate diverged quadratically **while the drone stood on the floor**
-    (−268 m after 90 s, −1070 m after three minutes, "climb rate" −12.6 m/s while
-    stationary), and the first altitude-controlled mode — a fence-forced LAND — went
-    to full throttle and flew the aircraft into the hall ceiling on 2026-08-21.
-    Keep the **barometer as the primary height source** (`EK3_SRC1_POSZ = 1`); the
-    rangefinder still improves low-altitude flight via ArduPilot's terrain-following
-    (`EK3_RNG_USE_HGT`) without ever being the only reference. Full analysis:
-    [incident report](../../problems/incident-analysis-2026-08-21.md).
 
 We set the parameter `EK3_SRC_OPTIONS` to zero, to avoid that the drone fuses all velocities, as fusing velocities of GPS and optical flow will lead to problems, especially if the GPS coverage is spotty at best.
 Further we have to set the actual position in XY axis `EK3_SRC1_POSXY` and the velocity along the z-axis `EK3_SRC1_VELZ` to none, as we do not have the necessary sensors to accomplish such calculations and keeping the GPS would lead to complications.
@@ -451,16 +583,8 @@ There will be many possible problems in the first flight, and we will address so
 - **The drone does not arm**: Ardupilot has a lot of different checks it makes before arming, that are saved in the `ARMING_CHECK` parameter.
 
 ![Hover.png](../../Images/InitialSetup/Hover.png)
-	As we are trying to use our drone indoors, it will generally be a problem to get a GPS lock, which might stop the drone from arming. **Disable only the GPS check, never all of them:** set `ARMING_CHECK = 786390`, which is every check *except* the GPS lock.
 
-    !!! danger "`ARMING_CHECK = 0` is not a troubleshooting shortcut"
-        Our aircraft flew with `ARMING_CHECK = 0`, and on 2026-08-21 it armed with an
-        EKF vertical position error of more than **1000 m** — a state the EKF pre-arm
-        check exists to refuse. The flight ended in the hall ceiling
-        ([incident report](../../problems/incident-analysis-2026-08-21.md)). The pre-arm checks
-        are the last automated layer between a bad estimate and a flying aircraft; if
-        one blocks you, read *which* check it is (Mission Planner messages tab, or
-        `preflight.py` from Pi-Code) and address that check specifically.
+As we are trying to use our drone indoors, it will generally be a problem to get a GPS lock, which might stop the drone from arming. **Disable only the GPS check, never all of them:**. In our case we set `ARMING_CHECK = 786390`, which is every check *except* the GPS lock. This value can change depending on the firmware used.
 
 - **The drone tries to flip upon increasing throttle**:
 There are mutilple reasons that might happen:
@@ -468,11 +592,12 @@ There are mutilple reasons that might happen:
     -  The orientation is set up incorrectly and the drone believes to be on its head. In this case we will have to change the orientation like we did in the section about acceleration calibration and orientation.
     -  Propellers are not mounted correctly
 - **The drone leaves the ground but oscillates strongly**: If the drone oscillates strongly, there is generally a problem in the PID controllers. As a start for later tuning, it is recommended to reduce the following PID parameters of the roll and pitch PID controllers by 50% until we no longer see the oscillations:
+
  	- ATC_RAT_PIT_P
-	-	ATC_RAT_PIT_I
-	-	ATC_RAT_PIT_D
-	-	ATC_RAT_RLL_P
-	-	ATC_RAT_RLL_I
+	- ATC_RAT_PIT_I
+	- ATC_RAT_PIT_D
+	- ATC_RAT_RLL_P
+	- ATC_RAT_RLL_I
  	- ATC_RAT_RLL_D
   
 	If we no longer observe oscillations, we can increase the values by 10%, until we once again see oscillations, and back off to the last used values where no oscillations were observed.

@@ -118,7 +118,6 @@ nav:
       - hardware/index.md
       - Drone (Frame & FC): hardware/drone.md
       - Drone Initial Setup: hardware/drone/InitialSetup.md
-      - Drone Tuning: hardware/drone/Tuning.md
       - Raspberry Pi Zero 2: hardware/raspberry-pi.md
       - AI Camera Module: hardware/ai-camera.md
       - MTF-01P Sensor: hardware/mtf-01p.md
@@ -126,6 +125,7 @@ nav:
   - Software:
       - software/index.md
       - SITL Simulation: software/SetupSimulation.md
+      - SITL Testing: software/sitl-testing.md
       - Flight Controller Firmware: software/flight-controller.md
       - Raspberry Pi OS: software/raspberry-pi-os.md
       - Ground Control Station: software/gcs.md
@@ -141,6 +141,7 @@ nav:
   - Autopilot:
       - autopilot/index.md
       - ArduPilot Setup: autopilot/ardupilot-setup.md
+      - Flight Parameters: autopilot/parameters.md
       - Position & Altitude Hold: autopilot/position-altitude-hold.md
       - Mission Planning: autopilot/mission-planning.md
   - Sensors:
@@ -165,6 +166,8 @@ nav:
       - problems/index.md
       - Crash & barometer recovery: problems/crash-2026-08-21.md
       - Full incident analysis: problems/incident-analysis-2026-08-21.md
+      - Loiter drifts in the hall: problems/hall-magnetics.md
+      - Rangefinder dropout mid-flight: problems/rangefinder-dropout-2026-09-22.md
   - Results:
       - results/index.md
       - Live Demo: results/demo.md

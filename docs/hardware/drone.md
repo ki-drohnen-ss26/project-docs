@@ -17,7 +17,7 @@ firmware installation and parameter setup lives in
 | Propellers | Gemfan D90-5 90 mm 3.5" ducted 5-blade |
 | Receiver | Radiomaster XR4 Gemini dual-band ELRS (see [RC & FPV](./rc-fpv.md)) |
 | GPS / compass | HGLRC M100 with integrated compass |
-| FPV camera / VTX | RunCam Phoenix 2 / SpeedyBee TX800 (see [RC & FPV](./rc-fpv.md)) |
+| FPV camera / VTX | RunCam Phoenix 2 / SpeedyBee TX800 — *removed from the current build* (see [RC & FPV](./rc-fpv.md)) |
 | Battery | 4S Li-Ion pack (16.4 V full, 11.2 V empty) |
 | Additional | MicroAir MTF-01P ([sensor page](./mtf-01p.md)), Raspberry Pi Zero 2 WH ([companion page](./raspberry-pi.md)) |
 
@@ -33,7 +33,7 @@ The [SpeedyBee BEE35 Pro 3.5" CineWhoop frame kit](https://www.speedybee.com/spe
 is designed for the DJI O3 Air Unit, with dedicated heat-dissipation hardware and
 support for other compatible 20×20 video transmitters as well as external action
 cameras. For this project its ducts/propeller guards are what matter: they make
-indoor flight near people and walls survivable.
+indoor flight near people and walls survivable and safe.
 
 ### Flywoo GOKU GN745 45A AIO
 
@@ -67,9 +67,6 @@ in the datasheet and that directly affected this project.
     straightening them, compass *and* barometer worked again — no chip had died.
     The full story: [crash & barometer recovery](../problems/crash-2026-08-21.md).
 
-    Practical consequence for rebuilders: treat the GPS/compass cable as
-    flight-critical wiring even indoors where GPS itself is useless, and after
-    *any* hard landing check that the baro is still detected before the next arm.
 
 ### 16 MB SPI flash logging — no SD card slot
 
@@ -95,7 +92,7 @@ Seven UARTs, all in use. This is the wiring as configured on our aircraft
 |---|---|---|---|
 | SERIAL1 | Telemetry (DJI VTX pad) | MAVLink | 57600 |
 | SERIAL2 | Radiomaster XR4 receiver | RCIN (CRSF) | auto |
-| SERIAL3 | SpeedyBee TX800 VTX control | IRC Tramp | auto |
+| SERIAL3 | SpeedyBee TX800 VTX control (*VTX removed from current build*) | IRC Tramp | auto |
 | SERIAL4 | Raspberry Pi Zero 2 WH | MAVLink2 | 921600 |
 | SERIAL5 | MicroAir MTF-01P | MAVLink1 | 115200 |
 | SERIAL6 | HGLRC M100 GPS (UART part) | GPS | 115200 |

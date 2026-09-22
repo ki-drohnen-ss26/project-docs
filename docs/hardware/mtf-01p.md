@@ -81,10 +81,22 @@ optional detail — it decides whether the sensor works at all:
   our logs show flow quality between 45 and 113 on the hall floor.
 - **Range limits.** Configured usable rangefinder window is 1 cm to 8 m
   (`RNGFND1_MIN_CM`/`RNGFND1_MAX_CM`).
-- **Height *reference*, not sole height *source*.** Using the LiDAR as the
-  EKF's only altitude source (`EK3_SRC1_POSZ = 2`) caused our crash — keep the
-  barometer primary and let the rangefinder assist near the ground. Details in
-  the [incident report](../problems/incident-analysis-2026-08-21.md) and the
+- **Our EKF height source, and mitigated.** We run the LiDAR as the EKF's
+  altitude source (`EK3_SRC1_POSZ = 2`). The task asks us to *use* the LiDAR and the
+  optical flow for altitude hold and position hold. This is the
+  configuration that crashed us on 2026-08-21 when flown without mitigations, so we fly
+  it only under the safety protocol (ground-drift preflight, rangefinder-gated takeover,
+  in-flight EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 5`, the parameter's
+  own minimum in Mission Planner rather than the true ~2 cm mount height). Moving the EKF
+  height source back to the barometer (`EK3_SRC1_POSZ = 1`) is an option we have
+  deliberately not taken: the rangefinder is the sensor the task is about, and the
+  2026-08-25 SITL work showed the on-ground non-fusion was the `RNGFND1_MIN_CM` validity
+  floor rather than the source choice itself. It stays on the table if the real aircraft
+  disagrees, and under either setting the LiDAR keeps the jobs the assignment asks for:
+  it scales the optical flow, it is the low-altitude terrain reference, and it is the
+  independent height witness behind the takeover gate and the in-flight cross-check. The
+  barometer stays as an independent witness in the logs. Details in the
+  [incident report](../problems/incident-analysis-2026-08-21.md) and the
   [sensors section](../sensors/index.md).
 
 ## Related pages

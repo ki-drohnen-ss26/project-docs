@@ -85,34 +85,14 @@ inference off the Pi, which is why the *only* deployable model format for us is 
 
 ## Detector status
 
-!!! success "Status (2026-08-24): the detector runs on the sensor"
-    The re-export is **done**. The deployed detector is a single-class YOLO11n
-    (`landingPad`, 320 px), and both artefacts exist:
-
-    - **`pad_320_int8.tflite`** — the CPU model, kept only as a reference for the
-      comparison above;
-    - **`network.rpk`** — the IMX500 package, built 2026-08-19 via
-      `packerOut.zip` → `imx500-package`. The ARM-only packaging step runs on a free
-      `ubuntu-24.04-arm` GitHub Actions runner, so no Pi has to be powered on for it.
-
-    Quantisation was measured rather than assumed: **mAP50 0.9950 and recall 1.000
-    unchanged**, only mAP50-95 falls 0.8098 → 0.6737 (looser boxes, same detections).
-
-    **`network.rpk` is on the Pi and detecting in real time**, on the IMX500's own
-    NPU. A bench run tracked the pad across dozens of consecutive frames.
-
-    Outstanding is configuration and one check, not model work: switch
-    `camera_source` from `"timed"` to `"real"`, set `cam_box_order = "xyxy"` (the
-    default reads the box tensor transposed), and add a single-frame outlier filter
-    on the mission side. `camera_confidence = 0.5` turns out to be correct as it
-    stands. Until milestone 2 has confirmed the decoded `dx`/`dy` against a tape
-    measure, the companion should keep flying `"timed"`.
-
-    **Nothing has flown yet.** No detection has been produced in the air.
-
-    Full write-up: **[Landing Pad Detection](../landing-pad/index.md)** —
-    [deployment](../landing-pad/deployment.md) and
-    [flight-code integration](../landing-pad/integration.md).
+!!! success "Status: `.rpk` export landed, detection works (2026-09-21)"
+    A pad detector was trained as **`pad_320_int8.tflite`**, which, per the above, the
+    IMX500 cannot load directly. The re-export through `yolo export format=imx` →
+    `imx500-package` has now landed, and **object detection works on the real
+    aircraft** with `camera_source = "real"`. Still ahead: the companion's own
+    autonomous `--milestone` bring-up flights that fly the search, detect and drop
+    sequence under the real camera have not been flown yet; the mission logic itself
+    is already validated end to end against simulated detections in SITL.
 
 ## Where to go next
 

@@ -32,8 +32,12 @@ Each team receives the following main components:
 
 === "FPV / Video"
 
-    - FPV camera
-    - Video transmitter (VTX)
+    !!! info "Removed from the current build"
+        The **FPV camera (RunCam Phoenix 2)** and the **video transmitter (SpeedyBee
+        TX800 VTX)** with its antenna have been removed from the current build.
+
+    - FPV camera (RunCam Phoenix 2) — *removed from the current build*
+    - Video transmitter (SpeedyBee TX800 VTX) — *removed from the current build*
     - Skyzone Cobra X FPV goggles
     - A/V video grabber (MacroSilicon MS210x)
 
@@ -42,6 +46,12 @@ Each team receives the following main components:
     - Raspberry Pi Zero 2 WH
     - Raspberry Pi AI Camera Module
     - 32 GB MicroSD card
+
+=== "Sensing & Delivery"
+
+    - **MicroAir MTF-01P**: optical flow + LiDAR rangefinder, on FC **SERIAL5**
+    - **9 g drop servo**: payload release driven from the Pi on **GPIO18** (PWM); see
+      [Servo mechanism](../delivery-system/servo-mechanism.md)
 
 ## Architecture
 
@@ -54,8 +64,9 @@ graph TD
     F[MTF-01P] -->|UART| C
     G[Raspberry Pi Zero 2] -->|MAVLink/UART| C
     H[AI camera] -->|CSI| G
-    C --> I[VTX]
-    I -.->|5.8 GHz| J[FPV goggles]
+    G -->|GPIO18 PWM| K[Drop servo]
+    C --> I["VTX (removed)"]
+    I -.->|5.8 GHz| J["FPV goggles (removed)"]
 ```
 
 ## Tools & accessories
