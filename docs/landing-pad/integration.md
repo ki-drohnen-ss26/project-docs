@@ -164,8 +164,11 @@ all. Three need changing before the detector may fly:
     What 0.7 buys is the last few false alarms, and those are better removed by
     requiring the pad in several consecutive pictures — see problem 2 below.
 
-    If the threshold was raised because of something seen in flight, that observation
-    beats these photographs and this box should say so instead.
+    **Where the number comes from:** the code comment says *"team decision 2026-08-24"*,
+    and the value was actually committed on 2026-09-17 by Daniele. If that decision was
+    based on something seen in flight, that observation beats these photographs and this
+    box should be replaced with it. If it was a precaution rather than a measurement, the
+    table above is the argument for going back to 0.5.
 
 ## What is still open
 
