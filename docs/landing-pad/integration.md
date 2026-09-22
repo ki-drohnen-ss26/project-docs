@@ -1,0 +1,251 @@
+---
+tags:
+  - ai
+  - landing-pad
+---
+
+# Talking to the flight software
+
+!!! abstract "In short"
+    Two separate programs on the Pi read the same camera, and they do not produce
+    the same thing.
+
+    What runs today prints positions in the picture — *"the pad's centre is at 0.63,
+    0.13"* — to the terminal, and sends them nowhere.
+
+    What the flight software needs is distances on the ground — *"the pad is 1.2 m
+    to the right"*. The code to convert one into the other exists, and has never been
+    run.
+
+    This section documents the interface between the two components and the work
+    outstanding on it.
+
+## What actually runs today
+
+`detect_pad.py` on the Pi. It loads the model into the camera, reads a detection per
+picture and prints it:
+
+```
+landingPad  Mitte 0.628,0.135  Groesse 0.178x0.175  conf 0.32  px=(345, 23, 114, 84)
+```
+
+| What it prints | What it means |
+|---|---|
+| `Mitte 0.628,0.135` | where the pad's centre sits **in the picture**. `0.5, 0.5` would be dead centre |
+| `Groesse 0.178x0.175` | how much of the picture the pad fills. Bigger means closer to it |
+| `conf 0.32` | how sure the model is |
+| `px=(...)` | the same box in pixels |
+
+Three properties of this output are relevant to the integration:
+
+- These are fractions of the picture, not metres. There is no distance anywhere in
+  that line.
+- The drone's height is not involved. The program never asks how high the aircraft
+  is, because it does not need to in order to print a fraction.
+- It sends nothing anywhere. It prints to a terminal. The flight software is not
+  listening, and is not even running at the same time.
+
+That is a complete, working detector. It is not yet connected to anything.
+
+!!! warning "Status: connected, but not yet flown autonomously"
+    The flight software now runs with the real camera — `camera_source = "real"` — and
+    detection works on the aircraft.
+
+    What has not happened is a flight where the detector actually steers: the autonomous
+    search, detect and drop sequence has not been flown. Three things below are still
+    worth settling before it is: one setting that is probably wrong, one safeguard that
+    does not exist, and one number nobody has measured.
+
+## Where this fits in the flight
+
+The camera points straight down. The drone climbs to about 2 m and flies a search
+pattern across the hall. The following describes the handling of each individual
+picture during that search:
+
+| The drone is | The detector says | The flight software does |
+|---|---|---|
+| searching | "no pad" | keep flying the pattern |
+| searching | "pad, 1.2 m right, 0.4 m ahead" | stop searching, start closing in |
+| closing in | "pad, 0.3 m right, 0.1 m ahead" | nudge sideways, at most 30 cm at a time |
+| closing in | "pad, 0.05 m right, 0.02 m ahead" | that counts as centred — release, then land |
+
+"Centred" means within 15 cm. Everything below exists so that those metre figures
+mean what both halves think they mean.
+
+## What the flight software expects instead
+
+The flight software does not want fractions. It has its own camera module
+(`RealCamera` in the Pi-Code repository) which reads the same camera and produces this:
+
+| Value | Meaning |
+|---|---|
+| found | was a pad seen at all |
+| **left / right** | how far the pad is to the drone's right, **in metres** |
+| **forward / back** | how far the pad is ahead of the drone, **in metres** |
+| height | the height used to work those out |
+
+That module has never run. It is the missing link: same camera, same model, but it
+converts the fractions into ground distances before handing them over.
+
+!!! info "Why metres, and not "30 % of the picture""
+    A camera naturally reports *"the pad is 30 % of the frame to the right"*. But the
+    mission logic is written in metres — how close counts as centred, how big a
+    correction to make, and all of it was tested in the simulator against a camera that
+    reported metres.
+
+    If the real camera reported percentages instead, every one of those settings would
+    quietly mean something different, and none of the simulator testing would carry over.
+
+### How a fraction becomes a distance
+
+This is the step `detect_pad.py` does not do and `RealCamera` does. It needs the drone's
+height, because the further up the aircraft is, the more ground each percent of the
+picture covers:
+
+```
+distance on the ground = tan( fraction of the picture × half the camera's angle ) × height
+```
+
+The camera's viewing angle is 66° across and 52.3° top to bottom.
+
+!!! warning "That assumes the camera points straight down and uses the full sensor"
+    Every correction is scaled by these numbers. If the camera is tilted, or cropped, or
+    switched to a different mode, they are wrong and every correction is wrong with them.
+    A tilted camera would need its tilt taken into account, which nothing currently does.
+
+## Checking which way round it is
+
+Which way the camera is mounted decides whether "right in the picture" means right for
+the drone. That cannot be guessed — it has to be checked on the real aircraft. It is a
+setting rather than code, so checking it does not mean editing anything mid-test:
+
+| Setting | Meaning |
+|---|---|
+| `cam_swap_axes` | camera mounted rotated a quarter turn |
+| `cam_invert_x` | "positive" must mean the pad is to the **right** |
+| `cam_invert_y` | "positive" must mean the pad is **ahead** |
+
+How to check. Hover. Put the pad clearly to the drone's right and confirm the
+logged sideways number is positive. Then put it ahead and check the other one.
+
+That is bring-up step 2 (`python main.py --milestone 2`), which flies the detector in
+watch-only mode — it logs what it sees and drops nothing.
+
+!!! danger "A wrong sign is worse than no detection at all"
+    With the sign inverted, the drone corrects *away* from the pad — smoothly,
+    confidently, and with nothing in the log looking wrong.
+
+## The settings that still have to change
+
+The flight software ships with values chosen to be safe when there is no detector at
+all. Three need changing before the detector may fly:
+
+| Setting | Currently | Change to | Why |
+|---|---|---|---|
+| `camera_source` | `"timed"` by default | `"real"` | `"timed"` is the honest no-camera mode: it just claims to have found the pad after a fixed delay. Runs already use `"real"`; only the default is unchanged |
+| `cam_box_order` | `"yxyx"` | **`"xyxy"`** | our camera reports the box the other way round, so the default reads it sideways |
+| `camera_confidence` | **`0.7`** | see below | a team decision of 2026-08-24. Our measurements say it is expensive |
+| `camera_model_path` | `/home/drone/models/pad/network.rpk` | leave, and put the file there | the on-Pi scripts currently point one folder higher — make them agree |
+
+!!! warning "0.7 throws away a fifth of the detections"
+    The flight software asks for 0.7 confidence before it believes a detection. On
+    the grading pictures that costs:
+
+    | Threshold | Finds real pads | Finds distant pads | False alarms |
+    |---|---|---|---|
+    | **0.5** | **all of them** | **0.88** | 0.02 per picture |
+    | 0.7 | 0.81 | 0.56 | 0.00 per picture |
+
+    At 0.7 roughly one pad in five is missed outright, and of the distant ones nearly
+    half. The live bench run points the same way: real detections arrived between
+    0.50 and 0.78, so a 0.7 cut-off discards most of the range the pad actually
+    occupies.
+
+    What 0.7 buys is the last few false alarms, and those are better removed by
+    requiring the pad in several consecutive pictures; see problem 2 below.
+
+    Where the number comes from: the code comment says *"team decision 2026-08-24"*,
+    and the value was actually committed on 2026-09-17 by Daniele. If that decision was
+    based on something seen in flight, that observation beats these photographs and this
+    box should be replaced with it. If it was a precaution rather than a measurement, the
+    table above is the argument for going back to 0.5.
+
+## What is still open
+
+Two things were checked against the real camera and turned out fine. Two are not fine
+yet.
+
+!!! success "Fixed: the box numbers are read correctly"
+    The camera reports its boxes in pixels rather than fractions, which used to be
+    misread. The flight software now detects that and converts automatically.
+
+    It falls back to assuming a 640-pixel model if it cannot ask the camera — which
+    would halve every correction, since ours is 320. On the drone's own hardware the
+    question is answered correctly, so the fallback never happens. Setting it to 320
+    anyway costs nothing and removes the trap.
+
+!!! warning "1. `cam_box_order` is on the wrong setting"
+    Confirmed on the camera. It reports the box as left-top-right-bottom; the flight
+    software's default expects top-left-bottom-right, so it reads the two axes swapped.
+
+    The flight code's own notes now describe both conventions and say to check the
+    decoded box on the bench before trusting any offsets, but the default itself is
+    still `"yxyx"`.
+
+    The symptom is that left/right and forward/back come out exchanged, which is
+    easy to "fix" by flipping `cam_swap_axes`, hiding the real cause. Set
+    `cam_box_order` to `"xyxy"`.
+
+!!! warning "2. Nothing rejects a single bad frame"
+    The detector returns its best guess for every picture, and the approach logic
+    acts on it. In the bench test, occasional impossible boxes appeared — stuck to the
+    edge of the frame, far too long and thin — each lasting one frame, while the real
+    pad held steady for dozens.
+
+    Something has to sit between the two. Either require the pad in **3 of 4
+    consecutive pictures** in roughly the same place, or throw away impossible shapes,
+    or both. A landing controller should never react to a single picture anyway.
+
+!!! warning "3. The height used for the conversion is unreliable near the floor"
+    Every distance is scaled by the drone's height, and that height comes from the
+    flight controller's own estimate, which since the
+    [August crash](../problems/incident-analysis-2026-08-21.md) is based mainly on the
+    air-pressure sensor.
+
+    The team's own logs show that sensor reading 4 to 6.7 metres while the drone is
+    centimetres off the floor, because the propellers push air down onto it.
+
+    Distance scales directly with height, so a height that reads 4 m when the drone is
+    at 1 m makes every correction about four times too big.
+
+    When this bites. During the search at 2 m the estimate should be reasonable — the
+    downwash effect is worst close to the ground. The dangerous moment is the **final
+    descent**, which is exactly when the corrections need to be smallest and most
+    accurate.
+
+    Nobody has measured how bad it actually is. Worth comparing the reported height
+    against the downward-facing distance sensor during a hover, and considering feeding
+    that sensor into this calculation directly.
+
+!!! note "For the record: four blocks of data, not three"
+    The camera returns boxes, confidences, categories and a count of valid
+    detections. The flight software checks for at least three and ignores the fourth,
+    scanning all 300 slots and filtering by confidence instead. That works; using the
+    count would be cheaper.
+
+!!! tip "One hover checks all of it"
+    Bring-up step 2 flies the detector in watch-only mode. Put the pad at a measured
+    distance — say exactly 1 metre to the drone's right, level with it, at a known
+    height, and compare the logged metres against a tape measure.
+
+    - left/right and forward/back swapped → problem 1, the box order
+    - occasional wild readings between good ones → problem 2, no single-frame filter
+    - roughly four times too large close to the floor → problem 3, the height
+
+## Related pages
+
+- [Deployment](deployment.md) — how the model gets onto the camera, and which script reads it
+- [Evaluation](evaluation.md) — where the confidence threshold comes from
+- [AI Camera Module](../hardware/ai-camera.md) — connecting the camera and installing its firmware
+- [AI Software](../software/ai-software.md) — why the model runs inside the camera at all
+- [Limitations](../results/limitations.md): the sensor and firmware constraints assumed here

@@ -96,6 +96,9 @@ inference off the Pi, which is why the *only* deployable model format for us is 
 
 ## Where to go next
 
+- [Landing Pad Detection](../landing-pad/index.md) — the detector itself: dataset,
+  training runs, robustness measurements, both deployment paths, and the contract
+  with the flight code
 - [Raspberry Pi AI Camera](../hardware/ai-camera.md) — connecting the camera, IMX500
   firmware install, first detection demo
 - [Raspberry Pi OS](raspberry-pi-os.md) — the OS the stack runs on

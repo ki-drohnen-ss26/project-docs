@@ -44,6 +44,7 @@ in full on the [incident page](../problems/incident-analysis-2026-08-21.md).
 | Limit | Consequence / mitigation |
 |---|---|
 | **The CPU cannot run YOLO inference alongside MAVLink handling.** The trained pad detector as `pad_320_int8.tflite` would have to run on the Pi's CPU — a Zero 2 W cannot sustain that next to the mission loop. | Detection must run *on the camera sensor* (Sony IMX500), which loads **only** `.rpk` packages. The `.tflite → .rpk` re-export (`yolo export format=imx`, then `imx500-package` on the Pi) has since happened, so detection now works: the RealCamera pipeline runs the network on the IMX500's own NPU on the real aircraft. The full autonomous search, detect and drop milestone flights are still ahead. |
+| **The IMX500 holds exactly one network on the sensor**, and swapping costs a camera restart. | The Pi CPU path could run a pad detector *and* a person detector per frame; the AI Camera cannot. Detecting people on the pad as well would require a single two-class model, which measurably costs pad recall in the hard cases — [measured here](../landing-pad/training.md#a-short-detour-spotting-people-too). |
 | **One UART to the flight controller, many consumers.** The mission script, a ground station and a log all need the same MAVLink stream. | Mitigation: `mavlink-router` fans the single serial link (SERIAL4, 921 600 baud) out to the mission script, a ground station and a logfile simultaneously. |
 
 ## Power (4S Li-Ion)
