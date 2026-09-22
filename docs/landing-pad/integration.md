@@ -47,17 +47,14 @@ Three things to notice, because they are the whole point of this page:
 
 That is a complete, working detector. It is not yet connected to anything.
 
-!!! warning "Status: the detector and the flight software have never met"
-    They work, separately.
+!!! warning "Status: connected, but not yet flown autonomously"
+    The flight software now runs with the real camera — `camera_source = "real"` — and
+    detection works on the aircraft.
 
-    `detect_pad.py` tracks the pad in real time on the drone's own Pi. The flight
-    software has flown, but only ever with the pretend camera — a mode that simply
-    claims to have found the pad after a fixed delay, so a flight can be tested without
-    a detector.
-
-    Nobody has yet started the flight software with the real camera switched on. Three
-    things stand in the way, all listed below: one wrong setting, one missing safeguard,
-    and one number that needs checking.
+    What has not happened is a flight where the detector actually steers: the autonomous
+    search, detect and drop sequence has not been flown. Three things below are still
+    worth settling before it is: one setting that is probably wrong, one safeguard that
+    does not exist, and one number nobody has measured.
 
 ## Where this fits in the flight
 
@@ -145,12 +142,30 @@ all. Three need changing before the detector may fly:
 
 | Setting | Currently | Change to | Why |
 |---|---|---|---|
-| `camera_source` | `"timed"` | `"real"` | `"timed"` is the honest no-camera mode: it just claims to have found the pad after a fixed delay |
+| `camera_source` | `"timed"` by default | `"real"` | `"timed"` is the honest no-camera mode: it just claims to have found the pad after a fixed delay. Runs already use `"real"`; only the default is unchanged |
 | `cam_box_order` | `"yxyx"` | **`"xyxy"`** | our camera reports the box the other way round, so the default reads it sideways |
+| `camera_confidence` | **`0.7`** | see below | a team decision of 2026-08-24. Our measurements say it is expensive |
 | `camera_model_path` | `/home/drone/models/pad/network.rpk` | leave, and put the file there | the on-Pi scripts currently point one folder higher — make them agree |
 
-`camera_confidence` is already correct at `0.5`
-([why](evaluation.md#what-the-real-camera-does-differently)).
+!!! warning "0.7 throws away a fifth of the detections"
+    The flight software asks for **0.7** confidence before it believes a detection. On
+    the grading pictures that costs:
+
+    | Threshold | Finds real pads | Finds distant pads | False alarms |
+    |---|---|---|---|
+    | **0.5** | **all of them** | **0.88** | 0.02 per picture |
+    | 0.7 | 0.81 | 0.56 | 0.00 per picture |
+
+    At 0.7 roughly one pad in five is missed outright, and of the distant ones nearly
+    half. The live bench run points the same way: real detections arrived between
+    **0.50 and 0.78**, so a 0.7 cut-off discards most of the range the pad actually
+    occupies.
+
+    What 0.7 buys is the last few false alarms, and those are better removed by
+    requiring the pad in several consecutive pictures — see problem 2 below.
+
+    If the threshold was raised because of something seen in flight, that observation
+    beats these photographs and this box should say so instead.
 
 ## What is still open
 
@@ -169,6 +184,10 @@ yet.
 !!! warning "1. `cam_box_order` is on the wrong setting"
     **Confirmed on the camera.** It reports the box as left-top-right-bottom; the flight
     software's default expects top-left-bottom-right, so it reads the two axes swapped.
+
+    The flight code's own notes now describe both conventions and say to check the
+    decoded box on the bench before trusting any offsets — but the default itself is
+    still `"yxyx"`.
 
     The symptom is that left/right and forward/back come out **exchanged** — which is
     easy to "fix" by flipping `cam_swap_axes`, hiding the real cause. Set

@@ -104,8 +104,9 @@ one is the actual hardware doing the actual job.
 
 - **It has never seen the pad while moving.** Every training photo is a still shot of a
   stationary pad. The drone searches continuously.
-- **It has never flown.** The camera detects the pad on a table. Nobody has yet flown
-  the drone while it does so.
+- **The autonomous flights have not happened.** Detection itself now runs on the real
+  aircraft, but nobody has yet flown the full search-detect-drop sequence under the
+  real camera.
 - **Indoors only.** Grass, asphalt, sunlight — all untested.
 - **Only this one pad.** Because we built our pad to match the training data, we cannot
   say whether the model would recognise a *different* landing pad. It might just have
@@ -127,14 +128,12 @@ one is the actual hardware doing the actual job.
     So the weakness is real, and this drone cannot climb high enough to meet it. What it
     *will* meet is the viewing angle, which is a different problem.
 
-!!! info "Status (2026-08-24)"
-    The model is trained, converted, and **running on the camera on the drone**. A
-    bench test tracked the pad across dozens of frames and correctly reported "no pad"
-    once it was taken away.
+!!! info "Status (2026-09-22)"
+    `network.rpk` is on the Pi and **detection runs on the real aircraft**. What has not
+    happened is the autonomous bring-up: nobody has yet flown the search, detect and
+    drop sequence with the real camera in the loop.
 
-    Before it may steer the aircraft, three things are still open — one wrong setting
-    in the flight code, a filter against one-frame glitches, and a tape-measure check.
-    They are listed on [Flight-Code Integration](integration.md).
+    Every number on these pages still comes from photographs, not from a flight.
 
 ## The one thing worth doing next
 
