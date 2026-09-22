@@ -154,7 +154,7 @@ Build the **ArduCopter 4.6.3 SITL** environment
 tag, not master) and run the companion against it (`python main.py --sim`); the
 step-by-step procedure, parameter mirror, verify line and the full test ladder, is on
 [Testing the Companion Code in SITL](../software/sitl-testing.md). The
-mission logic and the staged **milestones 1–5** bring-up plan (each real flight adds
+mission logic and the staged **milestones 1–6** bring-up plan (each real flight adds
 exactly one unknown, selected with `--milestone N`; `--takeover` covers pilot
 handover) are described in [Mission Planning](../autopilot/mission-planning.md) and
 demonstrated in the [Live Demo plan](../results/demo.md).
@@ -194,22 +194,23 @@ and the drone still hovers with margin in Stabilize.
     The requirements are documented; the CAD design and printing have not been done
     yet. This is the main remaining hardware work besides the crash repair.
 
-## Step 10 — Flight tests: milestones 1–5
+## Step 10 — Flight tests: milestones 1–6
 
 **Goal:** transfer the SITL-proven mission to the real aircraft, one unknown at a
 time.
 
 Fly the staged milestones from [Mission Planning](../autopilot/mission-planning.md)
-(hover → detector logging → search pattern → search + centre → full delivery),
-each selected via `--milestone N`, always with a pilot ready on `--takeover`.
+(ground arm test → hover → detector logging → search pattern → search + centre →
+full delivery), each selected via `--milestone N`, always with a pilot ready on
+`--takeover`.
 Before the first attempt, read [Limitations](../results/limitations.md) and the
 [incident report](../problems/incident-analysis-2026-08-21.md) — and re-check `FENCE_*` and
 `ARMING_CHECK` on the actual FC.
 
-**Done when:** milestone 5 — the complete autonomous delivery — has been flown and
+**Done when:** milestone 6 — the complete autonomous delivery — has been flown and
 the logs confirm it.
 
 !!! note "Status in our project: open"
     No milestone has been flown yet. The aircraft is awaiting the baro/I2C repair
     after the [2026-08-21 crash](../problems/incident-analysis-2026-08-21.md); the SITL
-    pipeline and companion code for all five milestones are ready.
+    pipeline and companion code for all six milestones are ready.

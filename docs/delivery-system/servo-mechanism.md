@@ -103,10 +103,10 @@ stateDiagram-v2
 - In the **DROP** state the mission calls `drop()`, then `confirm()`; on the
   Pi path `confirm()` always returns `True` (open-loop), on the FC path it
   compares the FC's servo read-back against `drop_pwm`.
-- The staged bring-up decouples flying from dropping: **milestone 4** sets
+- The staged bring-up decouples flying from dropping: **milestone 5** sets
   `skip_drop = True` — the drone searches, detects and centres over the pad
-  but releases nothing, so after a clean milestone-4 flight only the release
-  itself is untested. **Milestone 5** is the full delivery.
+  but releases nothing, so after a clean milestone-5 flight only the release
+  itself is untested. **Milestone 6** is the full delivery.
 
 ## Status
 

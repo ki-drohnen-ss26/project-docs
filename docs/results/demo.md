@@ -14,7 +14,7 @@ autonomous mission logic today, **bench demos** of the real subsystems, and a
     below, including b3, can be shown today: the pad detector's `.rpk` export has
     landed and object detection now works on the real camera. Demo (c) is
     unblocked and follows the parameter reload, compass recalibration and
-    milestones 1–5.
+    milestones 1–6.
 
 ## (a) SITL demo — the full autonomous delivery, on a laptop
 
@@ -70,15 +70,16 @@ exactly one unknown, selected with `--milestone N`:
 
 | Milestone | Demonstrates | Pass condition |
 |---|---|---|
-| 1 | Companion-controlled hover at 1 m | Logged drift within bounds — not merely "it hovered" |
-| 2 | Same hover, detector running (logging only) | `dx`/`dy` signs verified |
-| 3 | Search pattern, no detector | Ends in `TARGET_NOT_FOUND` — that *is* the pass |
-| 4 | Search + detect + centre | Centres over the pad, nothing droppable on board |
-| 5 | **Full indoor delivery** | The complete mission of demo (a), for real |
+| 1 | Ground arm test only: automatic arm, a 5 s hold on the ground, automatic disarm, no takeoff | Logged `[ARM_TEST] PASS: automatic arm and disarm both confirmed` |
+| 2 | Companion-controlled hover at 1 m | Logged drift within bounds — not merely "it hovered" |
+| 3 | Same hover, detector running (logging only) | `dx`/`dy` signs verified |
+| 4 | Search pattern, no detector | Ends in `TARGET_NOT_FOUND` — that *is* the pass |
+| 5 | Search + detect + centre | Centres over the pad, nothing droppable on board |
+| 6 | **Full indoor delivery** | The complete mission of demo (a), for real |
 
 Which milestone can be shown at demo time depends on how far the flight-test
-campaign has progressed by then; a realistic minimal flight demo is milestone 1 or
-3, with milestone 5 as the goal.
+campaign has progressed by then; a realistic minimal flight demo is milestone 2 or
+4, with milestone 6 as the goal.
 
 Prerequisites, in order:
 

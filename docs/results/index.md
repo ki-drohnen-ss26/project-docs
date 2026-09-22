@@ -20,7 +20,9 @@ below are split into **verified** (we have logs, test runs or bench evidence) an
     [Loiter drifts in the hall](../problems/hall-magnetics.md)). Object detection
     also works, now that the AI camera's `.rpk` export has landed. The companion's
     own autonomous `--milestone` GUIDED bring-up flights are the next real-flight
-    step.
+    step — first attempted on 2026-09-22 (milestone 2), which surfaced a new,
+    still-open problem: the rangefinder's data intermittently freezes mid-climb,
+    see [Rangefinder dropout mid-flight](../problems/rangefinder-dropout-2026-09-22.md).
 
 ## What works (verified)
 
@@ -47,12 +49,12 @@ firmware version as the real flight controller:
 
 ### Staged bring-up concept for real flights
 
-Real flights are planned as **milestones 1–5**, each adding exactly one unknown
-(hover → detector logging → search pattern → search + centre → full delivery),
-selected with `--milestone N` on the command line so nothing is edited between
-flights. A `--takeover` pilot-handover mode covers the takeoff phase where optical
-flow cannot yet provide a position. The plan is laid out in the
-[live-demo page](demo.md) and the Pi-Code roadmap.
+Real flights are planned as **milestones 1–6**, each adding exactly one unknown
+(ground arm test → hover → detector logging → search pattern → search + centre →
+full delivery), selected with `--milestone N` on the command line so nothing is
+edited between flights. A `--takeover` pilot-handover mode covers the takeoff
+phase where optical flow cannot yet provide a position. The plan is laid out in
+the [live-demo page](demo.md) and the Pi-Code roadmap.
 
 ### Sensor integration: MTF-01P verified streaming
 
@@ -94,8 +96,8 @@ overriding exactly the causal values.
 |---|---|
 | **Hardware repair** | **Resolved (2026-08-24).** The baro-not-detected + `Bad Compass Health` symptoms were a single-I2C-bus hang from bent GPS-connector pins, not dead chips. Pins straightened; stock 4.6.3 now detects the barometer again — no replacement hardware needed. The board's single shared I2C bus remains a permanent [design limitation](limitations.md). |
 | **Parameter reload + compass recalibration** | Pending. The custom-firmware flash wiped all parameters; reload `fc_baseline_463_20260821.parm` then `fc_safe_overrides.parm` and reboot, then recalibrate the compass after the connector repair. |
-| **Real-flight milestones 1–5** | Not yet flown — now unblocked (was blocked on the repair), pending the parameter reload above. SITL equivalents are green. |
-| **AI-camera model (`.rpk`)** | **Resolved (2026-09-21).** The pad detector was re-exported (`yolo export format=imx`, then `imx500-package`) into Sony's `.rpk` format, and object detection now works on the real aircraft: the IMX500 runs the network on its own NPU (the `RealCamera` pipeline). Full autonomous search, detect and drop milestone flights (4 and 5) with the real camera are still ahead. |
+| **Real-flight milestones 1–6** | **Attempted, not yet clean.** Milestone 1 (ground arm/disarm) passes. Five real milestone-2 attempts on 2026-09-22 climbed and, in one case, appeared to hold near a metre — but all showed the EKF altitude estimate diverging from the rangefinder's own reading, the same failure class as the 2026-08-21 crash, this time caught by the pilot before it went further. Root cause (why the rangefinder's data freezes mid-climb) is a hardware investigation, still open; see [Rangefinder dropout mid-flight](../problems/rangefinder-dropout-2026-09-22.md). SITL equivalents of all six milestones are green. |
+| **AI-camera model (`.rpk`)** | **Resolved (2026-09-21).** The pad detector was re-exported (`yolo export format=imx`, then `imx500-package`) into Sony's `.rpk` format, and object detection now works on the real aircraft: the IMX500 runs the network on its own NPU (the `RealCamera` pipeline). Full autonomous search, detect and drop milestone flights (5 and 6) with the real camera are still ahead. |
 | **Frame mounts** | 3D-printed mounts for the MTF-01P, AI camera and drop servo still to be designed. |
 
 ## Read on
