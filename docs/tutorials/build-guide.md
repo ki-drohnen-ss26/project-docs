@@ -6,12 +6,12 @@ the moment you need it. Each step states its **goal**, the **page(s)** that expl
 and a **"done when"** criterion so you know when to move on.
 
 !!! info "How far our own project got"
-    Steps 1–5, 7 and 8 are **completed and verified** by our team (the full mission
-    runs end-to-end in SITL; FC, sensor and companion link are bench-proven). Three
-    steps are honestly marked **open**: the on-sensor `.rpk` model export (step 6, a
-    teammate is on it),
-    the 3D-printed frame mounts (step 9), and the real flight tests (step 10) —
-    the aircraft is currently not flightworthy after the
+    Steps 1–8 are **completed and verified** by our team (the full mission
+    runs end-to-end in SITL; FC, sensor and companion link are bench-proven), and this
+    now includes step 6: the on-sensor `.rpk` model export has landed and the pad
+    detector produces real detections on the aircraft. Two steps are honestly marked
+    **open**: the 3D-printed frame mounts (step 9) and the real flight tests (step 10).
+    The aircraft is currently not flightworthy after the
     [2026-08-21 incident](../problems/incident-analysis-2026-08-21.md). Everything below is
     written so *you* can complete all ten.
 
@@ -54,9 +54,16 @@ ESC setup, serial ports, flight modes, failsafes, logging, and the indoor-flying
 parameter block. The [Autopilot section](../autopilot/index.md) explains *why* these
 choices ([ArduPilot Setup](../autopilot/ardupilot-setup.md) collects the parameter
 work). The **current published flight set** is `params/flight_v2.param`, set it in
-Mission Planner and nowhere else; the companion only verifies it read-only (see
+Mission Planner and nowhere else; the companion writes no FC parameter, it reads a
+curated subset back before every mission and refuses to fly when a flight-critical
+value differs from the published set (abort reason `FC_PARAMS_MISMATCH`), so that check
+no longer depends on remembering to run `preflight.py` by hand (see
 [Flight Parameters](../autopilot/parameters.md) for the curated list and the ownership
-rule). The earlier crash-recovery files (`params/fc_baseline_463_20260821.parm` plus the
+rule). When the aircraft's own settings change, republish them: `python dumpparams.py`
+captures the aircraft into `params/flight_v<next>.param`, then
+`python params/generate_sitl_flight_params.py` regenerates the SITL mirror; the mission
+check and `preflight.py` both resolve the highest version automatically. The earlier
+crash-recovery files (`params/fc_baseline_463_20260821.parm` plus the
 `params/fc_safe_overrides.parm` overlay) remain in the repository as the reconstructed
 post-crash baseline.
 
@@ -80,13 +87,27 @@ the [Sensors section](../sensors/index.md), with deep dives on
 when you lift the drone by hand, and optical-flow data arrives with usable quality
 over textured, lit ground.
 
-!!! danger "The rangefinder is the mandated EKF height source — fly it under the protocol"
-    The assignment requires `EK3_SRC1_POSZ = 2` (rangefinder, not barometer). This is
-    the configuration that crashed us on 2026-08-21 when flown without mitigations, so it
+!!! danger "The rangefinder is the EKF height source, flown under the protocol"
+    `EK3_SRC1_POSZ = 2` (rangefinder, not barometer) is the configuration that currently flies. The assignment asks for altitude and position hold that
+    *use* the LiDAR and the optical flow; it names no ArduPilot EKF source parameter,
+    so this value is our own decision, not a rule imposed from outside. It is also the
+    configuration that crashed us on 2026-08-21 when flown without mitigations, so it
     is flown only under the safety protocol (ground-drift preflight, rangefinder-gated
-    takeover, in-flight EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 2`), and why
-    on-ground fusion never engaged is still under investigation — see the
-    [crash analysis](../problems/incident-analysis-2026-08-21.md).
+    takeover, in-flight EKF-vs-rangefinder cross-check, `RNGFND1_GNDCLEAR = 5`); see
+    the [crash analysis](../problems/incident-analysis-2026-08-21.md). On 2026-09-21 we
+    tried to set `RNGFND1_GNDCLEAR` to the MTF-01P's true mounting height of about 2 cm
+    and found Mission Planner refuses anything below 5: that is this ArduPilot build's
+    own minimum for the parameter, not a re-measurement. `5` is therefore the value we
+    adopted, the closest the firmware accepts; it overstates the true ~2 cm mounting by
+    about 3 cm. Moving the EKF
+    height source back to the barometer (`EK3_SRC1_POSZ = 1`) is an option we have
+    deliberately not taken: the rangefinder is the sensor the task is about, and the
+    2026-08-25 SITL work showed the on-ground non-fusion was the `RNGFND1_MIN_CM`
+    validity floor rather than the source choice itself. It stays on the table if the
+    real aircraft disagrees. Either way the LiDAR keeps its other jobs: it scales the
+    optical flow into a horizontal velocity, it is the low-altitude terrain reference,
+    and it is the independent height witness behind the takeover gate and the
+    in-flight cross-check.
 
 ## Step 5 — Raspberry Pi OS and MAVLink routing
 
@@ -115,10 +136,13 @@ the model pipeline ([AI Software](../software/ai-software.md)): the IMX500 loads
 **Done when:** `rpicam-hello --list-cameras` lists the IMX500 and your pad-detector
 `.rpk` produces detections in the live stream.
 
-!!! note "Status in our project: open"
-    Our trained pad detector currently exists only as `pad_320_int8.tflite`; the
-    `.rpk` re-export is pending (a teammate is on it). Until it lands, the mission
-    code runs against the simulated detector.
+!!! note "Status in our project: done"
+    The `.rpk` re-export has landed: our trained pad detector now runs on the
+    IMX500 itself, and the RealCamera pipeline produces real detections on the
+    actual aircraft. What is still ahead is the companion's own autonomous milestone
+    bring-up flights in GUIDED mode that fly the full search, detect and drop
+    mission with this detector, as opposed to the manually flown AltHold/Loiter and
+    standalone detector testing done so far.
 
 ## Step 7 — Companion code: SITL first, then milestones
 
@@ -130,7 +154,7 @@ Build the **ArduCopter 4.6.3 SITL** environment
 tag, not master) and run the companion against it (`python main.py --sim`); the
 step-by-step procedure, parameter mirror, verify line and the full test ladder, is on
 [Testing the Companion Code in SITL](../software/sitl-testing.md). The
-mission logic and the staged **milestones 1–5** bring-up plan (each real flight adds
+mission logic and the staged **milestones 1–6** bring-up plan (each real flight adds
 exactly one unknown, selected with `--milestone N`; `--takeover` covers pilot
 handover) are described in [Mission Planning](../autopilot/mission-planning.md) and
 demonstrated in the [Live Demo plan](../results/demo.md).
@@ -170,22 +194,23 @@ and the drone still hovers with margin in Stabilize.
     The requirements are documented; the CAD design and printing have not been done
     yet. This is the main remaining hardware work besides the crash repair.
 
-## Step 10 — Flight tests: milestones 1–5
+## Step 10 — Flight tests: milestones 1–6
 
 **Goal:** transfer the SITL-proven mission to the real aircraft, one unknown at a
 time.
 
 Fly the staged milestones from [Mission Planning](../autopilot/mission-planning.md)
-(hover → detector logging → search pattern → search + centre → full delivery),
-each selected via `--milestone N`, always with a pilot ready on `--takeover`.
+(ground arm test → hover → detector logging → search pattern → search + centre →
+full delivery), each selected via `--milestone N`, always with a pilot ready on
+`--takeover`.
 Before the first attempt, read [Limitations](../results/limitations.md) and the
 [incident report](../problems/incident-analysis-2026-08-21.md) — and re-check `FENCE_*` and
 `ARMING_CHECK` on the actual FC.
 
-**Done when:** milestone 5 — the complete autonomous delivery — has been flown and
+**Done when:** milestone 6 — the complete autonomous delivery — has been flown and
 the logs confirm it.
 
 !!! note "Status in our project: open"
     No milestone has been flown yet. The aircraft is awaiting the baro/I2C repair
     after the [2026-08-21 crash](../problems/incident-analysis-2026-08-21.md); the SITL
-    pipeline and companion code for all five milestones are ready.
+    pipeline and companion code for all six milestones are ready.

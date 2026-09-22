@@ -171,22 +171,26 @@ Prints live telemetry without flying — a quick confidence check that the compa
 connected to the simulator and reading sane state. **Pass:** attitude, altitude and mode
 update and look reasonable.
 
-### Milestones 1–5
+### Milestones 1–6
 
 Rehearse each staged bring-up milestone in the simulator with `--sim --milestone N`:
 
 ```
-python main.py --sim --milestone 1   # climb to 0.8 m, hold, land (position hold)
-python main.py --sim --milestone 2   # + detector, logging only    (detector)
-python main.py --sim --milestone 3   # fly the search pattern       (pattern)
-python main.py --sim --milestone 4   # search + detect + centre     (approach)
-python main.py --sim --milestone 5   # the full delivery            (release)
+python main.py --sim --milestone 1   # ground arm test only (arm, hold armed, disarm)
+python main.py --sim --milestone 2   # climb to 0.8 m, hold, land (position hold)
+python main.py --sim --milestone 3   # + detector, logging only    (detector)
+python main.py --sim --milestone 4   # fly the search pattern       (pattern)
+python main.py --sim --milestone 5   # search + detect + centre     (approach)
+python main.py --sim --milestone 6   # the full delivery            (release)
 ```
 
-**Pass criteria:** each milestone reaches and holds its stage, then lands cleanly.
-**Milestone 3 correctly ends with `TARGET_NOT_FOUND`** — with no simulated pad in the
+**Pass criteria:** milestones 2 through 6 each reach and hold their stage, then land
+cleanly. Milestone 1 never leaves the ground: it arms, holds armed through the
+diagnostics window, then disarms, and its pass condition is the log line
+`[ARM_TEST] PASS: automatic arm and disarm both confirmed`.
+**Milestone 4 correctly ends with `TARGET_NOT_FOUND`** — with no simulated pad in the
 scene the search pattern runs to completion and reports that no target was found; that
-abort reason *is* the pass condition for milestone 3, not a failure.
+abort reason *is* the pass condition for milestone 4, not a failure.
 
 ### Full mission
 
@@ -233,7 +237,7 @@ companion reacts:
     then, in the companion terminal:
 
     ```
-    python main.py --sim --milestone 1 --takeover
+    python main.py --sim --milestone 2 --takeover
     ```
 
 ## 4. Troubleshooting

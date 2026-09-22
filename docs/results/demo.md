@@ -11,9 +11,10 @@ autonomous mission logic today, **bench demos** of the real subsystems, and a
     was only unreachable behind a hung I2C bus — the bent GPS-connector pins were
     straightened and stock 4.6.3 detects it again (the full story:
     [crash & barometer recovery](../problems/crash-2026-08-21.md)). Demos (a) and (b)
-    below can be shown today (b3 once the `.rpk` model export lands); demo (c) is
+    below, including b3, can be shown today: the pad detector's `.rpk` export has
+    landed and object detection now works on the real camera. Demo (c) is
     unblocked and follows the parameter reload, compass recalibration and
-    milestones 1–5.
+    milestones 1–6.
 
 ## (a) SITL demo — the full autonomous delivery, on a laptop
 
@@ -58,8 +59,9 @@ call the DROP state uses in flight. *(Available today.)*
 
 **b3 — AI-camera pad detection.** The Raspberry Pi AI Camera (IMX500) running the
 pad detector *on the sensor* and printing detection offsets (`dx/dy`) live.
-*(Pending: the detector exists as `pad_320_int8.tflite`; the IMX500 requires a
-Sony `.rpk` package, and that re-export is in progress with a teammate.)*
+*(Available today: the detector has been re-exported to Sony's packaged `.rpk`
+format and object detection now works on the real camera, running on the
+IMX500's own NPU.)*
 
 ## (c) Flight demo — contingent on the hardware repair
 
@@ -68,15 +70,16 @@ exactly one unknown, selected with `--milestone N`:
 
 | Milestone | Demonstrates | Pass condition |
 |---|---|---|
-| 1 | Companion-controlled hover at 1 m | Logged drift within bounds — not merely "it hovered" |
-| 2 | Same hover, detector running (logging only) | `dx`/`dy` signs verified |
-| 3 | Search pattern, no detector | Ends in `TARGET_NOT_FOUND` — that *is* the pass |
-| 4 | Search + detect + centre | Centres over the pad, nothing droppable on board |
-| 5 | **Full indoor delivery** | The complete mission of demo (a), for real |
+| 1 | Ground arm test only: automatic arm, a 5 s hold on the ground, automatic disarm, no takeoff | Logged `[ARM_TEST] PASS: automatic arm and disarm both confirmed` |
+| 2 | Companion-controlled hover at 1 m | Logged drift within bounds — not merely "it hovered" |
+| 3 | Same hover, detector running (logging only) | `dx`/`dy` signs verified |
+| 4 | Search pattern, no detector | Ends in `TARGET_NOT_FOUND` — that *is* the pass |
+| 5 | Search + detect + centre | Centres over the pad, nothing droppable on board |
+| 6 | **Full indoor delivery** | The complete mission of demo (a), for real |
 
 Which milestone can be shown at demo time depends on how far the flight-test
-campaign has progressed by then; a realistic minimal flight demo is milestone 1 or
-3, with milestone 5 as the goal.
+campaign has progressed by then; a realistic minimal flight demo is milestone 2 or
+4, with milestone 6 as the goal.
 
 Prerequisites, in order:
 
@@ -84,8 +87,14 @@ Prerequisites, in order:
    wires, boot stock 4.6.3), then either connector repair or replacement hardware
    (see the [incident page](../problems/incident-analysis-2026-08-21.md#collateral-damage-and-the-current-hardware-state)).
 2. **Parameter restore** — load `fc_baseline_463_20260821.parm`, then
-   `fc_safe_overrides.parm` (fence off, the mandated `EK3_SRC1_POSZ=2` with
-   `RNGFND1_GNDCLEAR=2`, arming checks on).
+   `fc_safe_overrides.parm` (fence off, `EK3_SRC1_POSZ=2` with
+   `RNGFND1_GNDCLEAR=5`, arming checks on). The rangefinder height source
+   `EK3_SRC1_POSZ=2` is what the
+   aircraft currently flies, under the documented safety protocol; the task
+   prescribes no EKF source parameter. Putting the EKF height source back on
+   the barometer (`EK3_SRC1_POSZ=1`) remains an available option. Either way
+   the LiDAR stays the sensor the assignment asks the project to use for
+   altitude and position hold.
 3. **Mounts** — 3D-printed mounts for MTF-01P, camera and servo (to be designed).
 4. **Manual shakedown** — AltHold and PosHold by a pilot before any milestone.
 

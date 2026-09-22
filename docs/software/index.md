@@ -34,7 +34,7 @@ flowchart TB
 | **Flight controller firmware** | ArduCopter **4.6.3** (pinned) on the Flywoo GOKU GN745 AIO. Provides the EKF state estimation, GUIDED mode and the MAVLink interface the companion depends on. | [Flight Controller Firmware](flight-controller.md) |
 | **Ground station (GCS)** | Mission Planner (our main tool) and QGroundControl — parameter management, the Messages tab, dataflash log download. Not part of the autonomous loop, indispensable for everything around it. | [Ground Control Station](gcs.md) |
 | **Pi OS + MAVLink routing** | Raspberry Pi OS (Debian 13 *trixie* base) with the UART freed for the FC link and **mavlink-router** as a systemd service fanning the FC stream out to local UDP consumers. | [Raspberry Pi OS](raspberry-pi-os.md) |
-| **Companion mission code** | The [**Pi-Code** repository](https://github.com/ki-drohnen-ss26/Pi-Code): a pymavlink state machine (IDLE → TAKEOFF → SEARCH → APPROACH → DROP → RECOVER) with failsafe monitor, staged bring-up milestones 1–5 and a `--takeover` pilot handover. | [Pi-Code README](https://github.com/ki-drohnen-ss26/Pi-Code#readme) |
+| **Companion mission code** | The [**Pi-Code** repository](https://github.com/ki-drohnen-ss26/Pi-Code): a pymavlink state machine (IDLE → TAKEOFF → SEARCH → APPROACH → DROP → RECOVER) with failsafe monitor, staged bring-up milestones 1–6 and a `--takeover` pilot handover. | [Pi-Code README](https://github.com/ki-drohnen-ss26/Pi-Code#readme) |
 | **AI stack** | The pad detector runs **on the camera sensor** (Sony IMX500) as a packaged `.rpk`; `picamera2` reads the detections as frame metadata. The Pi CPU stays free for MAVLink. | [AI Software](ai-software.md) |
 | **Simulation (SITL)** | ArduPilot Software-in-the-Loop, checked out at the **same tag** the FC runs (Copter-4.6.3). The companion connects to it exactly as it connects to the real drone. | [Setup Simulation](SetupSimulation.md) · [SITL Testing](sitl-testing.md) |
 
@@ -63,9 +63,11 @@ camera source) are confined to one config preset and documented in
 the component relationships and mission flow are in
 [Pi-Code `docs/ARCHITECTURE.md`](https://github.com/ki-drohnen-ss26/Pi-Code/blob/main/docs/ARCHITECTURE.md).
 
-!!! info "Status (2026-08-22)"
+!!! info "Status (2026-09-21)"
     The SITL pipeline and the companion code are fully working, including the GPS-denied
-    indoor path on ArduCopter 4.6.3 SITL. On the real aircraft the staged milestones 1–5
+    indoor path on ArduCopter 4.6.3 SITL. On the real aircraft the staged milestones 1–6
     have **not yet been flown** — the drone is grounded pending the barometer/I2C repair
-    from the [2026-08-21 incident](../problems/incident-analysis-2026-08-21.md), and the detector's
-    `.rpk` export is still pending (see [AI Software](ai-software.md)).
+    from the [2026-08-21 incident](../problems/incident-analysis-2026-08-21.md). The pad detector
+    has since been re-exported to the IMX500's `.rpk` format, and object detection now works
+    on the real aircraft (see [AI Software](ai-software.md)); the autonomous milestone bring-up
+    flights with it are still ahead.

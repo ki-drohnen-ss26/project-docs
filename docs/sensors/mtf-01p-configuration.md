@@ -63,7 +63,7 @@ set and the FC has booted with it.
 | `RNGFND1_MIN_CM` | `1` | Minimum range in **centimetres** — see the warning below |
 | `RNGFND1_MAX_CM` | `800` | Maximum range, 8 m |
 | `RNGFND1_ORIENT` | `25` | Facing down |
-| `RNGFND1_GNDCLEAR` | `2` | Ground clearance in **cm** = the sensor's real mounted height (~2 cm), not the 10 cm default: EKF3 treats it as the rangefinder reading to expect when landed, so it must match reality — a mitigation for the on-ground EKF divergence with `EK3_SRC1_POSZ = 2`. |
+| `RNGFND1_GNDCLEAR` | `5` | Ground clearance in **cm**. The MTF-01P's real mounted height is about 2 cm, but this ArduCopter build's Mission Planner refuses any `RNGFND1_GNDCLEAR` value below `5` (a `2` was tried on 2026-09-21 and rejected), so `5` is the closest value the firmware actually accepts. EKF3 treats this value as the rangefinder reading to expect when landed, so `5` slightly overstates the true mounting height by about 3 cm: the best available given the firmware floor, and still a large improvement over the 10 cm default. This is our mitigation for the on-ground EKF divergence with `EK3_SRC1_POSZ = 2`. |
 
 Reboot once more so the rangefinder backend re-reads its limits.
 
@@ -92,9 +92,13 @@ not this sensor — see the [incident analysis](../problems/incident-analysis-20
 
 !!! note "The sensor being healthy is only half the job"
     These steps make the FC *receive* flow and range data. Making the EKF *use*
-    them (`EK3_SRC1_VELXY = 5` and the assignment-mandated `EK3_SRC1_POSZ = 2` — the
-    rangefinder as the EKF height source, **not** the barometer) is a separate step
-    with its own failure modes: it is exactly this configuration that crashed us on
+    them (`EK3_SRC1_VELXY = 5` plus `EK3_SRC1_POSZ = 2`, the rangefinder as the EKF
+    height source rather than the barometer) is a separate step with its own failure
+    modes. The `POSZ = 2` half is the configuration we currently fly,
+    not something the assignment prescribes: the task asks us to *use* the LiDAR for
+    altitude and position hold, which it does under either source setting, and moving
+    the EKF height source back to the barometer (`EK3_SRC1_POSZ = 1`) remains an
+    available option. It is exactly this configuration that crashed us on
     2026-08-21, so it is flown only under the safety protocol covered in
     [Position & Altitude Hold](../autopilot/position-altitude-hold.md) and on the
     [LiDAR page](lidar.md).

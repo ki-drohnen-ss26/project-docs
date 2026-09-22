@@ -8,9 +8,11 @@ allowed to change it**.
 
 Every flight-controller parameter is set in **exactly one place — Mission Planner —
 against the published, versioned flight parameter set**. The companion computer
-**never writes a parameter**. It reads them back and **verifies** them (see
-`preflight.py`), and refuses to fly when what it finds disagrees with what the mission
-expects; it does not "fix" anything on the FC.
+**never writes a parameter**. Before every mission it reads a curated subset of the
+flight parameters back and **verifies** them read-only against the published set, and it
+refuses to fly when a flight-critical value differs (abort reason
+`FC_PARAMS_MISMATCH`); it does not "fix" anything on the FC. Until that check moved into
+the mission start-up, only the manual `preflight.py` tool compared the two.
 
 Two reasons drove this decision:
 
@@ -58,6 +60,12 @@ The SITL parameter mirror (`params/sitl_flight_v2.parm`) is **generated from thi
 the simulator tests the same behavioural parameters we fly — see
 [Testing the Companion Code in SITL](../software/sitl-testing.md).
 
+Publishing a new version is two commands in the Pi-Code repository: `python dumpparams.py`
+captures the aircraft into `params/flight_v<next>.param`, then
+`python params/generate_sitl_flight_params.py` regenerates the SITL mirror from it. The
+mission parameter check and `preflight.py` both resolve the highest published version
+automatically, so they follow the new file without an edit.
+
 !!! info "A v3 will supersede this file"
     `v2` does not yet contain the flight-mode switch mapping (`FLTMODE1`–`FLTMODE6` are
     all `0` in this file — the mapping is done on the transmitter for now). **`v3` adds
@@ -87,7 +95,7 @@ Full rationale on the [Position & Altitude Hold](position-altitude-hold.md) page
 | `EK3_ENABLE` | `1` | EKF3 enabled |
 | `EK3_SRC1_POSXY` | `0` | No absolute horizontal position exists indoors (None) |
 | `EK3_SRC1_VELXY` | `5` | Horizontal velocity from optical flow (MTF-01P) |
-| `EK3_SRC1_POSZ` | `2` | **Height from the rangefinder — mandated** (not the barometer) |
+| `EK3_SRC1_POSZ` | `2` | **Height from the rangefinder** |
 | `EK3_SRC1_VELZ` | `0` | No vertical-velocity sensor (None) |
 | `EK3_SRC1_YAW` | `1` | Heading from the compass |
 
@@ -99,7 +107,7 @@ Full rationale on the [Position & Altitude Hold](position-altitude-hold.md) page
 | `RNGFND1_ORIENT` | `25` | Facing straight down |
 | `RNGFND1_MIN_CM` | `1` | Minimum valid range (4.6.3 `_CM` name) |
 | `RNGFND1_MAX_CM` | `800` | Maximum valid range, 8 m (4.6.3 `_CM` name) |
-| `RNGFND1_GNDCLEAR` | `10` | Ground clearance when landed — **kept at 10, an open item** (see below) |
+| `RNGFND1_GNDCLEAR` | `5` | Ground clearance when landed. **Adopted at `5`, the firmware's own minimum** (see below) |
 | `FLOW_TYPE` | `5` | MAVLink optical flow |
 | `SERIAL5_PROTOCOL` | `1` | MAVLink1 on the MTF-01P port |
 | `SERIAL5_BAUD` | `115` | 115200 baud for the MTF-01P |
@@ -188,9 +196,14 @@ are decisions, not oversights — recorded here so nobody "corrects" them by acc
       includes the INS and RC checks) was **declined for now**. `41350` decodes to
       **Baro (2) + Compass (4) + Board voltage (128) + Battery (256) + System (8192) +
       RangeFinder (32768)** = 41350. The declined `786390` adds INS and RC groups on top.
-    - **`RNGFND1_GNDCLEAR` still `10`** — `2` was recommended (the sensor sits ~2 cm above
-      the ground). Left at `10` for now; this is an **open** item, and a candidate suspect
-      in the on-ground EKF-height investigation on the
+    - **`RNGFND1_GNDCLEAR` adopted at `5`.** `2` was the original recommendation (the
+      sensor sits ~2 cm above the ground). On 2026-09-21 the team tried setting the real
+      aircraft to `2` in Mission Planner and found the parameter refuses anything below
+      `5`: that is this ArduCopter build's own valid-range floor, not a re-measurement.
+      `5` is the closest value the firmware accepts, so that is what the aircraft now
+      runs, and the item is no longer open. The true mounting height is still about
+      2 cm, so the parameter now overstates ground clearance by roughly 3 cm; that gap
+      remains a candidate suspect in the on-ground EKF-height investigation on the
       [Position & Altitude Hold](position-altitude-hold.md) page.
     - **`RNGFND1_MIN_CM = 1` now under review** — a SITL 2×2 matrix (2026-08-25) showed the
       on-ground EKF-fusion blocker is this **validity floor**, not the height source: SITL's

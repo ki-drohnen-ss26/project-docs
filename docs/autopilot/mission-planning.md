@@ -77,20 +77,21 @@ east of the launch point", served by the optical-flow position estimate
   polling. The final approach uses body-frame offsets ("0.3 m forward, 0.2 m right")
   computed from the camera's pixel offsets.
 
-## Staged bring-up: milestones 1–5
+## Staged bring-up: milestones 1–6
 
 The full mission has four unknowns at once — position hold, detector, search pattern,
 release. Each milestone adds exactly one, so a failure names its own cause:
 
 | Milestone | Flies | Adds | Pass condition |
 |---|---|---|---|
-| 1 | climb to 1 m, hold, land | position hold | drift of centimetres, not metres |
-| 2 | hover over the pad, detector logging only | the detector | correct `dx/dy` **sign** |
-| 3 | the search pattern, no detector | the pattern | pattern completed, ends `TARGET_NOT_FOUND` — that abort *is* the pass |
-| 4 | search + detect + centre, no drop | the approach | centred, "releasing NOTHING" |
-| 5 | the full delivery | the release | drop confirmed |
+| 1 | arm, hold armed on the ground, disarm | arm/disarm verification | log line `[ARM_TEST] PASS: automatic arm and disarm both confirmed` |
+| 2 | climb to 0.8 m, hold, land | position hold | drift of centimetres, not metres |
+| 3 | hover over the pad, detector logging only | the detector | correct `dx/dy` **sign** |
+| 4 | the search pattern, no detector | the pattern | pattern completed, ends `TARGET_NOT_FOUND` — that abort *is* the pass |
+| 5 | search + detect + centre, no drop | the approach | centred, "releasing NOTHING" |
+| 6 | the full delivery | the release | drop confirmed |
 
-Milestone 1 can start from the pilot's hands (`--takeover`) instead of the ground —
+Milestone 2 can start from the pilot's hands (`--takeover`) instead of the ground —
 see the [on-ground deadlock](position-altitude-hold.md#the-on-ground-deadlock-and-the-pilot-takeover).
 
 ## Rehearsed in SITL first
@@ -105,7 +106,7 @@ ArduCopter 4.6.3 the aircraft runs. The full simulation→hardware transition is
 documented in the Pi-Code repo (`docs/SIM_TO_REAL.md`).
 
 !!! info "Status"
-    The mission logic, failsafes and SITL rehearsals of all five milestones are done
+    The mission logic, failsafes and SITL rehearsals of all six milestones are done
     and green in simulation. **None of the milestones has flown on the real aircraft
     yet** — the drone is grounded pending the post-crash barometer/I2C repair
     ([incident report](../problems/incident-analysis-2026-08-21.md)), and sensor/camera mounts

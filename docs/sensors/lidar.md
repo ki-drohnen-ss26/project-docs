@@ -3,11 +3,12 @@
 The second half of the [MTF-01P](mtf-01p-configuration.md) is a downward-facing
 LiDAR rangefinder. It measures the distance to the floor directly below the
 aircraft — the **height above ground**. That number has several jobs on our aircraft.
-Most are uncontroversial; the contested one — being the EKF's *only* height source — is
-simultaneously the job the assignment **mandates**, the job ArduPilot warns against in
+Most are uncontroversial. The contested one, being the EKF's *only* height source, is
+simultaneously the configuration **we chose**, the job ArduPilot warns against in
 general, and the job that crashed the drone on 2026-08-21 when we flew it without a
-safety protocol. We now fly it deliberately: mandated, mitigated, and under
-investigation.
+safety protocol. We fly it deliberately today: chosen, mitigated, and under
+investigation, and moving the EKF height source back to the barometer stays an
+available option.
 
 !!! quote "ArduPilot's own guidance (EKF source selection)"
     *"Baro is the default and works well for most vehicles and situations. […]
@@ -15,9 +16,9 @@ investigation.
     where the floor is flat with no ground clutter (e.g. no chairs, boxes, etc)."*
     — [Copter docs: GPS / Non-GPS sources (EK3_SRC)](https://ardupilot.org/copter/docs/common-ekf-sources.html).
     We keep this quote because it names our situation exactly: a **flat indoor hall** is
-    the one exception it allows. Our assignment *mandates* the rangefinder as the EKF
-    height source (`EK3_SRC1_POSZ = 2`), so we operate in precisely that exception — and
-    documenting that we deliberately work against the general recommendation, why it is
+    the one exception it allows. We have *chosen* the rangefinder as the EKF height
+    source (`EK3_SRC1_POSZ = 2`), so we operate in precisely that exception.
+    Documenting that we deliberately work against the general recommendation, why it is
     permissible here, and with which mitigations, is part of the graded "limits of the
     systems" analysis. Our 2026-08-21 crash is the case study for why the mitigations are
     not optional.
@@ -51,23 +52,28 @@ on the crash day, tracking the fatal climb sample-for-sample from 0.02 m up to
    (*does the rangefinder actually follow the altitude?*) gate on the rangefinder,
    precisely because it is a direct measurement rather than an estimate.
 
-## The mandated, contested job: the EKF's only height source
+## The chosen, contested job: the EKF's only height source
 
-!!! danger "`EK3_SRC1_POSZ = 2` is mandated — and it is the configuration that crashed us"
-    The assignment requires the rangefinder to be the EKF's **only** vertical position
-    source (`EK3_SRC1_POSZ = 2`); the barometer as the EKF source is **not permitted**.
-    This is exactly how our aircraft was configured on 2026-08-21, flown **without a
-    safety protocol** — and EKF3 never fused a single height measurement. The vertical
+!!! danger "`EK3_SRC1_POSZ = 2` is the configuration that crashed us"
+    We run the rangefinder as the EKF's **only** vertical position source
+    (`EK3_SRC1_POSZ = 2`). That is the team's own configuration choice, not something the
+    assignment prescribes: Task 4 asks us to *use* the LiDAR and the optical flow for
+    position hold and altitude hold, and says nothing about which ArduPilot EKF source
+    parameter carries the vertical position. This is exactly how our aircraft was
+    configured on 2026-08-21, flown **without a safety protocol**, and EKF3 never fused a
+    single height measurement. The vertical
     estimate diverged **quadratically while the aircraft stood on the floor** — −268 m
     after 90 seconds, **−1070 m** after three minutes, with an indicated "climb rate" of
     −12.6 m/s on a motionless vehicle. The first altitude-controlled mode (a fence-forced
     LAND) then chased that estimate to 100 % throttle and flew the aircraft into the hall
-    ceiling. We may **not** fix this by moving the EKF back to the barometer — that is
-    what the task forbids. We fly `POSZ = 2` under the safety protocol documented on
-    [Position & Altitude Hold](../autopilot/position-altitude-hold.md), and we are still
-    investigating why fusion never engaged: a colleague team flies the same sensor with
-    `POSZ = 2` successfully, so the next step is a full parameter diff against their
-    aircraft. Full chain of events:
+    ceiling. Moving the EKF height source back to the barometer (`EK3_SRC1_POSZ = 1`) is
+    an option we have deliberately **not** taken: the rangefinder is the sensor the task
+    is about, and the 2026-08-25 SITL work showed the on-ground non-fusion was the
+    `RNGFND1_MIN_CM` validity floor rather than the source choice itself. It stays on the
+    table if the real aircraft disagrees. We fly `POSZ = 2` under the safety protocol
+    documented on [Position & Altitude Hold](../autopilot/position-altitude-hold.md), and
+    a full parameter diff against a colleague team that flies the same sensor with
+    `POSZ = 2` successfully is still pending for the real aircraft. Full chain of events:
     [incident analysis](../problems/incident-analysis-2026-08-21.md).
 
 Why does this fail so badly? A rangefinder on a resting aircraft reports a
@@ -81,27 +87,32 @@ The barometer, by contrast, is an absolute pressure reference. It is noisy near 
 ground (the downwash spike above) but it never *diverges*: in the same crash logs
 `CTUN.BAlt` stayed within ±0.4 m the whole time the EKF estimate ran away by a
 kilometre. That is exactly why we keep the barometer logging as an **independent
-witness** against the EKF estimate, even though the assignment forbids it as the EKF
-source.
+witness** against the EKF estimate, and why returning it to the EKF source role
+(`EK3_SRC1_POSZ = 1`) remains an available option rather than something the task rules
+out.
 
 ## The division of labour
 
-| Role | Sensor | Parameter |
-|---|---|---|
-| EKF height source (**mandated**) | **LiDAR rangefinder** | `EK3_SRC1_POSZ = 2`, flown only under the safety protocol |
+| Role                                                  | Sensor | Parameter |
+|-------------------------------------------------------|---|---|
+| EKF height source                                     | **LiDAR rangefinder** | `EK3_SRC1_POSZ = 2`, flown only under the safety protocol |
 | Optical-flow scaling & low-altitude terrain reference | **LiDAR rangefinder** | rangefinder configured as above |
-| Independent height witness in the logs | **Barometer** | not an EKF source, a cross-check reference only |
+| Independent height witness in the logs                | **Barometer** | not our EKF source today, a cross-check reference and the fallback that stays on the table |
 
 This is how the EKF sources are documented on
 [Position & Altitude Hold](../autopilot/position-altitude-hold.md); the safe-overrides
-parameter file carries the mandated `EK3_SRC1_POSZ = 2` together with the protocol
-parameters (fence off, `ARMING_CHECK = 786390`, `RNGFND1_GNDCLEAR = 2`).
+parameter file carries `EK3_SRC1_POSZ = 2` together with the protocol
+parameters (fence off, `ARMING_CHECK = 786390`, `RNGFND1_GNDCLEAR = 5`, the
+parameter's own minimum accepted by Mission Planner: the true mounting height is ~2 cm,
+but a value of `2` is rejected).
 
 !!! info "Status"
     The rangefinder itself is configured, verified on the real aircraft and healthy in
-    every log. The mandated `EK3_SRC1_POSZ = 2` lives in the safe-overrides parameter
+    every log. `EK3_SRC1_POSZ = 2` lives in the safe-overrides parameter
     file alongside the protocol parameters, and is applied when the FC is restored after
-    the post-crash barometer/I2C repair. Why the on-ground fusion did not engage is still
-    open — a parameter diff against a team flying the same sensor with `POSZ = 2` is the
-    next step — so the aircraft has not yet flown the mandated, protocol-guarded
-    configuration.
+    the post-crash barometer/I2C repair. On the real aircraft the on-ground fusion
+    question is still open (the 2026-08-25 SITL work points at the `RNGFND1_MIN_CM`
+    validity floor, and a parameter diff against a team flying the same sensor with
+    `POSZ = 2` is still pending), so the aircraft has not yet flown the chosen,
+    protocol-guarded configuration. Switching the EKF height source to the barometer
+    remains available if the real aircraft disagrees with the simulator.
