@@ -13,7 +13,7 @@ tags:
     That takes three steps, and they cannot all run on the same machine: the last one
     only works on ARM hardware. We use GitHub's free ARM build server for it.
 
-    The rest of this page is the traps, so nobody has to find them twice.
+    The remainder documents the failure modes encountered during that process.
 
 ## Why the model runs inside the camera
 
@@ -22,7 +22,7 @@ occupied talking to the flight controller, watching the failsafes and running th
 mission. It cannot also run a detector at a useful rate.
 
 The camera we were given solves that: the Raspberry Pi AI Camera has a small AI
-processor built into the sensor itself. The model runs **inside the camera**, and the Pi
+processor built into the sensor itself. The model runs inside the camera, and the Pi
 only receives the finished answer.
 
 That leaves exactly one route to get the model onto the aircraft, and the rest of this
@@ -38,7 +38,7 @@ page is it.
 
 !!! note "A CPU version exists, and was never used"
     `export.py` can also produce a `.tflite` file that runs on the Pi's own processor.
-    It was built and measured, but never put on the aircraft — the Pi is not fast enough
+    It was built and measured, but never put on the aircraft: the Pi is not fast enough
     for it. It is kept only as a reference point in [How we tested it](evaluation.md), and
     is not described further here.
 
@@ -48,7 +48,7 @@ They cannot all happen in one place:
 
 | Step | Where it runs | What comes out |
 |---|---|---|
-| 1. Shrink the model | any Linux machine — and macOS works too | a shrunk model |
+| 1. Shrink the model | any Linux machine, and macOS works too | a shrunk model |
 | 2. Convert it | same | `packerOut.zip` |
 | 3. Package it | **only on ARM Linux** | `network.rpk` |
 
@@ -61,11 +61,11 @@ imx500-package -i packerOut.zip -o ~/models/pad      # step 3, on the Pi
 
 ### Why step 3 needs different hardware
 
-The packaging tool is compiled for **ARM processors only**. It does not run on a Mac, an
+The packaging tool is compiled for ARM processors only. It does not run on a Mac, an
 ordinary PC or in Google Colab. That leaves two practical options:
 
-- **the Raspberry Pi itself**, since the hardware is already there;
-- **GitHub's free ARM build server**, which is what this project uses: upload
+- the Raspberry Pi itself, since the hardware is already there;
+- GitHub's free ARM build server, which is what this project uses: upload
   `packerOut.zip`, and about two minutes later `network.rpk` is ready to download. The Pi
   does not even have to be switched on.
 
@@ -111,22 +111,22 @@ Two scripts, because there are two ways into the camera.
     The camera hands back four blocks of data: the boxes, how confident it is, which
     category, and how many detections are valid.
 
-    The cleanup of overlapping boxes has already happened **inside the camera**, so the
+    The cleanup of overlapping boxes has already happened inside the camera, so the
     Pi only reads and converts. That is not a guess: the export tool bakes it in and says
-    so — `IMX export requires nms=True, setting nms=True` — and the raw model produced
+    so — `IMX export requires nms=True, setting nms=True`, and the raw model produced
     2100 candidate boxes per picture before export, against the 300 slots the sensor
     returns.
 
     !!! warning "Two details that silently produce boxes in the wrong place"
-        - **The numbers are pixels, not fractions.** The boxes come back measured in
+        - The numbers are pixels, not fractions. The boxes come back measured in
           pixels of the 320-pixel window, not as values between 0 and 1. They have to be
           divided by the window size first.
-        - **The order is different.** The model gives left-top-right-bottom; the helper
+        - The order is different. The model gives left-top-right-bottom; the helper
           that maps them onto the real picture expects top-left-bottom-right. They have
           to be swapped.
 
         Both are taken from the camera manufacturer's own example. Getting either wrong
-        gives you plausible-looking boxes in entirely the wrong place — see
+        produces plausible-looking boxes in entirely the wrong place; see
         [Integration](integration.md).
 
 === "`pi_aicam.py`"
@@ -180,8 +180,8 @@ landingPad  centre 0.638,0.133  size 0.189x0.175  conf 0.56
 The centre is where the pad sits in the picture — `0.5, 0.5` would be dead centre.
 
 !!! note "Confidence comes back in steps"
-    You will only ever see certain values — 0.32, 0.38, 0.44, 0.50, 0.56 and so on,
-    about 0.06 apart. That is normal, and it is why the threshold is 0.5 rather than 0.3
+    Only discrete values occur: 0.32, 0.38, 0.44, 0.50, 0.56 and so on, approximately
+    0.06 apart. That is normal, and it is why the threshold is 0.5 rather than 0.3
     ([the reasoning](evaluation.md#what-the-real-camera-does-differently)).
 
 ## Two things that look broken and are not

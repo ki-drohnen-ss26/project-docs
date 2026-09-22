@@ -10,20 +10,20 @@ tags:
     We trained the model six times with different settings, to find out which settings
     actually help.
 
-    **What helped most:** showing it the pad at many different sizes. Without that it
+    What helped most: showing it the pad at many different sizes. Without that it
     only recognised pads that were large in the picture — useless for a drone looking
     down from a height.
 
-    **The mistake worth remembering:** our best-scoring model reported landing pads on
-    a rucksack, a poster and a chair. It had almost never seen a photo *without* a pad,
-    so "there is nothing here" was an answer it had never learned.
+    The most instructive failure: the best-scoring model reported landing pads on a
+    rucksack, a poster and a chair. It had almost never been shown a photograph
+    *without* a pad, so "there is nothing here" was an answer it had never learned.
 
-    **What we use:** the sixth attempt, which we call run F.
+    What we use: the sixth attempt, which we call run F.
 
 ## First: three old models, and the scripts pointed at the worst one
 
 When this work started, three trained models from earlier attempts were lying around,
-all with names like *"best"*. The test scripts loaded the **oldest and weakest** of the
+all with names like *"best"*. The test scripts loaded the oldest and weakest of the
 three.
 
 Here they are, graded on the same photos. The grade is a single number between 0 and 1;
@@ -48,7 +48,7 @@ A much better model already existed. Nobody had switched over to it.
     [Dataset](dataset.md#the-sorting-problem). They had already seen the photos they
     were being graded on, so the grades measure memory, not ability.
 
-    That is why the comparison below **starts the old settings again from scratch**
+    That is why the comparison below starts the old settings again from scratch
     (we call it run A). Only then are the numbers comparable.
 
 ??? note "The exact figures, for the record"
@@ -61,7 +61,7 @@ A much better model already existed. Nobody had switched over to it.
     | `pad_v2/weights/best.pt` | 24 Jun, 80 epochs @ 416 px | 0.995 | 0.971 |
 
     A shrunk copy of that same checkpoint had also been prepared for the Raspberry Pi's
-    processor, and measured **mAP50 0.657** in that form. It was never put on the
+    processor, and measured mAP50 0.657 in that form. It was never put on the
     aircraft.
 
 ## The six attempts
@@ -77,34 +77,34 @@ Same pictures every time, so only the settings differ.
 | E | as D, plus fake distant pads pasted onto floors | no improvement |
 | **F** | **as D, plus the 76 pictures with no pad** | **this is the one we use** |
 
-**Every single one scored about 0.995.** The standard grade could not tell them apart
-at all — which is what the [Evaluation](evaluation.md) page is about.
+Every single one scored about 0.995. The standard grade could not tell them apart
+at all, which is what the [Evaluation](evaluation.md) page is about.
 
 ## What actually helped, and what did not
 
-**Showing the pad at many sizes: this was the whole gain.** In the first attempt the
+Showing the pad at many sizes: this was the whole gain. In the first attempt the
 model lost half its detections once the pad got small in the picture. Simply varying the
 size during training more than doubled how well it coped. Nothing else came close.
 
-**Fake motion blur: useless on its own, valuable in combination.** Tested by itself, it
+Fake motion blur: useless on its own, valuable in combination. Tested by itself, it
 made no measurable difference — every model handled a blurry photo fine. But on a pad
-that was *both* small *and* rotated *and* blurred — which is what an approaching drone
+that was *both* small *and* rotated *and* blurred, which is what an approaching drone
 actually sees — it lifted the hit rate from 0.12 to 0.69.
 
-**Bigger pictures: not worth it.** 416 pixels instead of 320 costs 1.7× the computing
+Bigger pictures: not worth it. 416 pixels instead of 320 costs 1.7× the computing
 time and made the model *worse* at small pads, because it was then being used further
 from the size it was trained at.
 
-**Turning the pad through a full circle during training: bought nothing.** That was
-expected in hindsight — the pad is a square with a symmetrical cross, so it already
+Turning the pad through a full circle during training: bought nothing. That was
+expected in hindsight: the pad is a square with a symmetrical cross, so it already
 looks the same every quarter turn. We kept it because it costs nothing.
 
-**Pasted-on fake distant pads: no.** They made the box slightly tighter but performed
+Pasted-on fake distant pads: no. They made the box slightly tighter but performed
 worse on exactly the hard cases they were meant to fix. See
 [Dataset](dataset.md#what-did-not-work-fake-pictures).
 
 !!! tip "Use the model at the size it was trained at"
-    The same model produces **no** false alarms at 320 pixels and **more than one per
+    The same model produces no false alarms at 320 pixels and **more than one per
     picture** at 416. Nothing about the model changed — only the size of the picture fed
     into it.
 
@@ -116,16 +116,16 @@ Run on a live webcam in an office, it reported landing pads on a **rucksack, a w
 poster and a chair back** — with confidence up to 0.87, higher than many of its correct
 detections. No threshold could have separated them.
 
-**Why our tests missed this.** Every one of the 16 grading photos *contains* a pad. So
+Why our tests missed this. Every one of the 16 grading photos *contains* a pad. So
 "false alarms per picture" only ever counted extra boxes drawn *next to* a real pad. The
 failure that matters — claiming a pad in a room where there is none — could not show up,
 because there was no such picture to show it in.
 
-**Why the model did it.** Not one of the 175 training pictures was empty. "There is
+Why the model did it. Not one of the 175 training pictures was empty. "There is
 nothing here" was an answer it had literally never seen, so it always pointed at
 whatever looked most pad-like.
 
-**The fix:** the 76 empty pictures from [Dataset](dataset.md#the-pictures-with-nothing-in-them).
+The fix: the 76 empty pictures from [Dataset](dataset.md#the-pictures-with-nothing-in-them).
 Measured on 91 pad-free pictures the model had never seen:
 
 | | False alarms per picture | Still finds real pads | Still finds *distant* pads |
@@ -137,21 +137,22 @@ Measured on 91 pad-free pictures the model had never seen:
 Run F has the old settings' false-alarm rate *and* the new settings' range. It also got
 better at rotated and distant pads at the same time.
 
-!!! success "The lesson in one sentence"
-    A model trained only on pictures that contain the thing learns that the thing is
-    always there. Test it on pictures containing nothing.
+!!! note "Conclusion"
+    A model trained almost exclusively on pictures containing the target learns that the
+    target is always present. Evaluation must therefore include pictures that contain
+    nothing.
 
 ## What it cost: box accuracy
 
 Training on heavily varied pictures buys detection range and costs precision in where
-exactly the box sits. On close-up pads — the last metre before touchdown:
+exactly the box sits. On close-up pads: the last metre before touchdown:
 
 | Run | Black background | **Hall** | Office |
 |---|---|---|---|
 | A (old) | 0.97 | **0.93** | 0.96 |
 | D | 0.76 | **0.91** | 0.85 |
 
-Read the **Hall** column first — it is the only one showing the place the drone actually
+Read the Hall column first — it is the only one showing the place the drone actually
 works. It is also the one that barely moves: 0.93 → 0.91, against 0.97 → 0.76 on the
 black-background pictures.
 
@@ -163,19 +164,19 @@ in flight.
 It would be useful to know whether somebody is standing on the pad. On a normal computer
 that is easy — run a second, off-the-shelf model alongside ours.
 
-**The camera chip cannot do that.** It holds exactly one model at a time, and swapping
+The camera chip cannot do that. It holds exactly one model at a time, and swapping
 means restarting the camera. So detecting people as well would mean training *one*
 model that recognises both, from scratch, including gathering and marking up pictures of
 people.
 
-We tried it to see what it would cost. **The pad half kept working** — the combined
+We tried it to see what it would cost. The pad half kept working: the combined
 model finds pads just as well as ours does. The people half worked less well, and the
 combined model got noticeably worse at the difficult pad cases.
 
-We did not pursue it further. **The model on the drone is the pad-only one**, because
+We did not pursue it further. The model on the drone is the pad-only one, because
 the pad is what the mission needs, and that decision is easy to revisit later.
 
-??? note "The numbers, if you want them"
+??? note "Detailed figures"
     Two attempts at the combined model:
 
     | Run | What changed | Finds pads | Finds people |
@@ -203,7 +204,7 @@ the pad is what the mission needs, and that decision is easy to revisit later.
     truncated), and show the pad pictures more often during training — they are only 172
     of 2601 marked objects.
 
-## Doing it again yourself
+## Reproducing the training
 
 ```bash
 python3 build_dataset.py     # re-sort the piles
@@ -214,7 +215,7 @@ python3 robustness.py runs/*/weights/best.pt
 python3 fp_bench.py   runs/*/weights/best.pt
 ```
 
-Run F takes about **20 minutes** on an Apple laptop with a graphics chip — 149 passes
+Run F takes about 20 minutes on an Apple laptop with a graphics chip — 149 passes
 over the pictures at roughly 8 seconds each. The shorter runs take 8 to 18 minutes; the
 combined pad-and-people model takes about 36. Set `device="cpu"` if there is no graphics
 chip available; it just takes longer.
