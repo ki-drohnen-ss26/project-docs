@@ -130,6 +130,7 @@ nav:
       - Raspberry Pi OS: software/raspberry-pi-os.md
       - Ground Control Station: software/gcs.md
       - AI Software: software/ai-software.md
+      - MAVLink Basics: software/MAVLink.md
   - Landing Pad Detection:
       - landing-pad/index.md
       - The pictures: landing-pad/dataset.md
