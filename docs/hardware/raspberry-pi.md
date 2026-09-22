@@ -226,7 +226,7 @@ To connect the flight controller and the board computer, we have to connect the 
 ![Pi_Pinouts.png](../Images/RaspberryPi/Pi_Pinouts.png)
 
 ## Install MAVLink-router
-MAVLink(Micro Air Vehicle Link) is the standard communication protocol used by autopilots to talk to ground control software and companion computers, like our Raspberry Pi.
+MAVLink(Micro Air Vehicle Link) is the standard communication protocol used by autopilots to talk to ground control software and companion computers, like our Raspberry Pi. We look at the basics of the MAVLink format in [Mavlink Basics](../software/MAVLink.md)
 We need a program that listens for MAVLink traffic on one port and forwards it to others. We use `mavlink-router` for this: https://github.com/mavlink-router/mavlink-router
 
 The packages that we need to install mavlink router are
